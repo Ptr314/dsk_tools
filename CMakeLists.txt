@@ -8,6 +8,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(${PROJECT_NAME} STATIC
     include/dsk_tools/dsk_tools.h
     src/dsk_tools.cpp
+    include/dsk_tools/loader.h
+    src/loader.cpp
+    include/dsk_tools/loader_raw.h
+    src/loader_raw.cpp
+    include/dsk_tools/disk_image.h
+    src/disk_image.cpp
+    include/dsk_tools/image_agat140.h
+    src/image_agat140.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
