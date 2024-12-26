@@ -9,10 +9,17 @@ namespace dsk_tools {
         protected:
             std::vector<uint8_t> buffer;
             Loader * loader;
+            int format_heads;
+            int format_tracks;
+            int format_sectors;
+            int format_sector_size;
         public:
             diskImage(Loader * loader);
-            virtual int check() = 0;
+            virtual int check() = 0;    // Checks physical image parameters
+            virtual int open() = 0;     // Opens disk's filesystem
             virtual int load();
+            virtual int translate_sector(int sector);
+            virtual std::byte * get_sector_data(int head, int track, int sector);
     };
 }
 
