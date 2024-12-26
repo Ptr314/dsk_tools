@@ -1,16 +1,19 @@
 #include "dsk_tools/disk_image.h"
+#include "dsk_tools/dsk_tools.h"
 
 namespace dsk_tools {
 
     diskImage::diskImage(Loader * loader):
-        loader(loader)
-    {
-
-    }
+          loader(loader)
+        , is_loaded(false)
+        , is_open(false)
+    {}
 
     int diskImage::load()
     {
-        return loader->load(&buffer);
+        int result = loader->load(&buffer);
+        is_loaded = (result == FDD_LOAD_OK);
+        return result;
     }
 
     std::byte * diskImage::get_sector_data(int head, int track, int sector)
