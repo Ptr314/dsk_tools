@@ -1,7 +1,7 @@
 #include <fstream>
 #include <iostream>
-#include <iterator>
 
+#include "dsk_tools/dsk_tools.h"
 #include "dsk_tools/loader_raw.h"
 
 namespace dsk_tools {
@@ -18,18 +18,18 @@ namespace dsk_tools {
 
         std::ifstream file(file_name, std::ios::binary);
 
-        const auto begin = file.tellg();
-        file.seekg (0, std::ios::end);
-        const auto end = file.tellg();
-        const auto fsize = (end-begin);
+        if (!file.good()) {
+            return FDD_LOAD_ERROR;
+        }
+
+        file.seekg (0, file.end);
+        auto fsize = file.tellg();
+        file.seekg (0, file.beg);
 
         std::cout << "File size: " << fsize << std::endl;
 
-        buffer->reserve(fsize);
-
-        buffer->insert(buffer->begin(),
-                   std::istream_iterator<uint8_t>(file),
-                   std::istream_iterator<uint8_t>());
+        buffer->resize(fsize);
+        file.read (reinterpret_cast<char*>(buffer->data()), fsize);
 
         loaded = true;
 
