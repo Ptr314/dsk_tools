@@ -16,6 +16,8 @@ add_library(${PROJECT_NAME} STATIC
     src/disk_image.cpp
     include/dsk_tools/image_agat140.h
     src/image_agat140.cpp
+    include/dsk_tools/definitions.h
+    include/dsk_tools/utils.h
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
