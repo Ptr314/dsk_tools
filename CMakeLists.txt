@@ -18,6 +18,16 @@ add_library(${PROJECT_NAME} STATIC
     src/image_agat140.cpp
     include/dsk_tools/definitions.h
     include/dsk_tools/utils.h
+    include/dsk_tools/image_agat840.h
+    src/image_agat840.cpp
+    include/dsk_tools/writer.h
+    include/dsk_tools/writer_mfm.h
+    include/dsk_tools/writer_hxc_hfe.h
+    include/dsk_tools/writer.cpp
+    include/dsk_tools/writer_hxc_hfe.cpp
+    include/dsk_tools/writer_mfm.cpp
+    include/dsk_tools/writer_hxc_mfm.h
+    include/dsk_tools/writer_hxc_mfm.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC

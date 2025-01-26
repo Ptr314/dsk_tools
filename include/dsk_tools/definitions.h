@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace dsk_tools {
 
@@ -21,23 +22,25 @@ namespace dsk_tools {
     #define FDD_OP_OK                   0
     #define FDD_OP_NOT_OPEN             1
 
+    #define FILE_PRORECTION             1
+    #define FILE_TYPE                   2
+    #define FILE_DELETE                 4
+
+    #define FDD_WRITE_OK                0
+    #define FDD_WRITE_ERROR             1
+
     struct fileData
     {
-        uint8_t     original_name[100];
-        int         original_name_length;
-        std::string name;
-        bool        is_protected;
-        bool        is_deleted;
-        uint32_t    attributes;
-    };
-
-
-    static const int agat_140_raw2dos[16] = {
-        0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15
-    };
-
-    static const int agat_140_dos2raw[16] = {
-        0, 13, 11, 9, 7, 5, 3, 1, 14, 12, 10, 8, 6, 4, 2, 15
+        uint8_t                 original_name[100];
+        int                     original_name_length;
+        std::string             name;
+        std::string             type_str;
+        std::string             type_str_short;
+        bool                    is_protected;
+        bool                    is_deleted;
+        uint32_t                attributes;
+        uint32_t                size;
+        std::vector<uint32_t>   location;
     };
 
     static const std::string koi8map[] =  {
@@ -60,6 +63,14 @@ namespace dsk_tools {
     };
 
     static const std::string koi7map[] =  {
+        ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".",
+        ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".",
+        " ", "!","\"", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/",
+        "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":", ";", "<", "=", ">", "?",
+        "@", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+        "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "[","\\", "]", "^", "_",
+        "Ю", "А", "Б", "Ц", "Д", "Е", "Ф", "Г", "Х", "И", "Й", "К", "Л", "М", "Н", "О",
+        "П", "Я", "Р", "С", "Т", "У", "Ж", "В", "Ь", "Ы", "З", "Ш", "Э", "Щ", "Ч", "Ъ",
         ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".",
         ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".",
         " ", "!","\"", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/",

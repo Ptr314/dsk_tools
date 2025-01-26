@@ -8,4 +8,15 @@ namespace dsk_tools {
         , loaded(false)
 
     {}
+
+    std::string Loader::get_file_name()
+    {
+        return file_name;
+    }
+
+    std::string Loader::get_type_id()
+    {
+        return type_id;
+    }
+
 }
