@@ -20,6 +20,8 @@ namespace dsk_tools {
             Loader(std::string file_name, std::string format_id, std::string type_id);
             ~Loader();
 
+            std::string get_file_name();
+            std::string get_type_id();
             virtual int load(std::vector<uint8_t> * buffer) = 0;
 
     };

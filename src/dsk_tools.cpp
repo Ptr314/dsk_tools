@@ -2,6 +2,7 @@
 #include "dsk_tools/dsk_tools.h"
 #include "dsk_tools/loader_raw.h"
 #include "dsk_tools/image_agat140.h"
+#include "dsk_tools/image_agat840.h"
 
 namespace dsk_tools {
 
@@ -17,6 +18,10 @@ namespace dsk_tools {
 
         if (type_id == "TYPE_AGAT_140") {
             dsk_tools::imageAgat140 * disk_image = new dsk_tools::imageAgat140(loader);
+            return disk_image;
+        } else
+        if (type_id == "TYPE_AGAT_840") {
+            dsk_tools::imageAgat840 * disk_image = new dsk_tools::imageAgat840(loader);
             return disk_image;
         }
 
