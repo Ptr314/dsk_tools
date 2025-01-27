@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "dsk_tools/definitions.h"
+
 namespace dsk_tools {
 
     class Loader
@@ -22,7 +24,7 @@ namespace dsk_tools {
 
             std::string get_file_name();
             std::string get_type_id();
-            virtual int load(std::vector<uint8_t> * buffer) = 0;
+            virtual int load(BYTES * buffer) = 0;
 
     };
 

@@ -45,8 +45,8 @@ namespace dsk_tools {
     {
 
     protected:
-        void write_hxc_hfe_header(std::vector<uint8_t> & out);
-        void write_hxc_hfe_tracks_lut(std::vector<uint8_t> & out);
+        void write_hxc_hfe_header(BYTES & out);
+        void write_hxc_hfe_tracks_lut(BYTES & out);
     public:
         WriterHxCHFE(const std::string & format_id, diskImage *image_to_save);
         virtual std::string get_default_ext() override;

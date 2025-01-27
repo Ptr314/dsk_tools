@@ -82,11 +82,11 @@ namespace dsk_tools {
     class WriterMFM:public Writer
     {
     protected:
-        void write_gcr62_track(std::vector<uint8_t> &out, uint8_t track);
-        void write_agat840_track(std::vector<uint8_t> &out, uint8_t head, uint8_t track);
+        void write_gcr62_track(BYTES &out, uint8_t track);
+        void write_agat840_track(BYTES &out, uint8_t head, uint8_t track);
         uint16_t encode_agat_MFM_byte(uint8_t data, uint8_t * last_byte);
-        void write_agat_mfm_array(std::vector<uint8_t> &out, uint8_t data, uint16_t count, uint8_t * last_byte);
-        uint8_t write_agat_mfm_data(std::vector<uint8_t> &out, uint8_t * data, uint16_t count, uint8_t * last_byte);
+        void write_agat_mfm_array(BYTES &out, uint8_t data, uint16_t count, uint8_t * last_byte);
+        uint8_t write_agat_mfm_data(BYTES &out, uint8_t * data, uint16_t count, uint8_t * last_byte);
     public:
         WriterMFM(const std::string & format_id, diskImage *image_to_save);
 

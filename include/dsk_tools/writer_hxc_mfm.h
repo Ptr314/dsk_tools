@@ -35,7 +35,7 @@ namespace dsk_tools {
     {
 
     protected:
-        void write_hxc_mfm_header(std::vector<uint8_t> & out)        ;
+        void write_hxc_mfm_header(BYTES & out)        ;
     public:
         WriterHxCMFM(const std::string & format_id, diskImage *image_to_save);
         virtual std::string get_default_ext() override;

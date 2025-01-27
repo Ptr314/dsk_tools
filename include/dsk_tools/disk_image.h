@@ -32,7 +32,7 @@ namespace dsk_tools {
     class diskImage {
         protected:
             std::string type_id;
-            std::vector<uint8_t> buffer;
+            BYTES buffer;
             Loader * loader;
             int format_heads;
             int format_tracks;
@@ -53,7 +53,7 @@ namespace dsk_tools {
             virtual int open() = 0;                                             // Open and checks disk's filesystem
             virtual int get_capabilities() = 0;                                 // Get available functions
             virtual int dir(std::vector<dsk_tools::fileData> * files) = 0;      // List files
-            virtual std::vector<uint8_t> get_file(const fileData & fd) = 0;
+            virtual BYTES get_file(const fileData & fd) = 0;
             virtual int load();
             virtual int translate_sector_logic2raw(int sector);
             virtual int translate_sector_raw2logic(int sector);
@@ -67,6 +67,7 @@ namespace dsk_tools {
             int get_track_encoding();
             int get_floppyinterfacemode();
             std::string get_type_id();
+            BYTES * get_buffer();
     };
 }
 

@@ -90,5 +90,10 @@ namespace dsk_tools {
         return type_id;
     }
 
+    BYTES * diskImage::get_buffer()
+    {
+        return &buffer;
+    }
+
 
 }

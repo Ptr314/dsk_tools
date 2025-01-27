@@ -19,9 +19,9 @@ namespace dsk_tools {
         return (mfm_encoded << 8) + (mfm_encoded >> 8);
     }
 
-    void WriterMFM::write_gcr62_track(std::vector<uint8_t> & out, uint8_t track)
+    void WriterMFM::write_gcr62_track(BYTES & out, uint8_t track)
     {
-        std::vector<uint8_t> bytes;
+        BYTES bytes;
         uint8_t encoded_sector[344];                                            // 343+1
 
         // GAP 0
@@ -63,7 +63,7 @@ namespace dsk_tools {
 
     }
 
-    void WriterMFM::write_agat_mfm_array(std::vector<uint8_t> &out, uint8_t data, uint16_t count, uint8_t * last_byte)
+    void WriterMFM::write_agat_mfm_array(BYTES &out, uint8_t data, uint16_t count, uint8_t * last_byte)
     {
         uint16_t mfm_word;
         for (int i=0; i<count; i++) {
@@ -73,7 +73,7 @@ namespace dsk_tools {
         }
     }
 
-    uint8_t WriterMFM::write_agat_mfm_data(std::vector<uint8_t> &out, uint8_t * data, uint16_t count, uint8_t * last_byte)
+    uint8_t WriterMFM::write_agat_mfm_data(BYTES &out, uint8_t * data, uint16_t count, uint8_t * last_byte)
     {
         uint16_t mfm_word;
         uint16_t crc = 0;
@@ -87,7 +87,7 @@ namespace dsk_tools {
         return crc & 0xFF;
     }
 
-    void WriterMFM::write_agat840_track(std::vector<uint8_t> &out, uint8_t head, uint8_t track)
+    void WriterMFM::write_agat840_track(BYTES &out, uint8_t head, uint8_t track)
     {
         uint8_t last_byte = 0;
         // GAP 0
