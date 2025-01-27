@@ -69,12 +69,12 @@ int WriterHxCMFM::write(const std::string & file_name)
         }
     }
 
-    buffer.insert(buffer.end(), 0x800 - sizeof(HXC_MFM_HEADER) - sizeof(HXC_MFM_TRACK_INFO)*image->get_tracks()*image->get_heads(), 0xFF);
+    buffer.insert(buffer.end(), 0x800 - sizeof(HXC_MFM_HEADER) - sizeof(HXC_MFM_TRACK_INFO)*image->get_tracks()*image->get_heads(), 0x00);
 
     buffer.reserve(0x800 + image->get_tracks() * track_size);
 
     for (uint8_t track = 0; track < image->get_tracks(); track++){
-        write_gcr62_track(&out, track_variant, 0, track);
+        write_gcr62_track(buffer, track);
     }
 
     std::ofstream file(file_name, std::ios::binary);

@@ -19,17 +19,30 @@ namespace dsk_tools {
 
     uint8_t * diskImage::get_sector_data(int head, int track, int sector)
     {
+        return get_raw_sector_data(head, track, translate_sector_logic2raw(sector));
+    }
+
+    uint8_t * diskImage::get_raw_sector_data(int head, int track, int sector)
+    {
         // Assumes sector numbering from 0
-        long offset = ((track * format_heads  + head) * format_sectors + translate_sector(sector)) * format_sector_size;
+        long offset = ((track * format_heads  + head) * format_sectors + sector) * format_sector_size;
         return reinterpret_cast<uint8_t *>(&buffer[offset]);
     }
 
-    int diskImage::translate_sector(int sector)
+    int diskImage::translate_sector_logic2raw(int sector)
     {
-        // Assumes sector numbering from 1
+        // Assumes logic sector numbering from 1
         // Assumes no interleving
         // Needs to be overridden in inheriting classes otherwise
         return sector-1;
+    }
+
+    int diskImage::translate_sector_raw2logic(int sector)
+    {
+        // Assumes logic sector numbering from 1
+        // Assumes no interleving
+        // Needs to be overridden in inheriting classes otherwise
+        return sector+1;
     }
 
     std::string diskImage::file_name()

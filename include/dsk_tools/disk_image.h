@@ -55,8 +55,10 @@ namespace dsk_tools {
             virtual int dir(std::vector<dsk_tools::fileData> * files) = 0;      // List files
             virtual std::vector<uint8_t> get_file(const fileData & fd) = 0;
             virtual int load();
-            virtual int translate_sector(int sector);
-            virtual uint8_t *get_sector_data(int head, int track, int sector);
+            virtual int translate_sector_logic2raw(int sector);
+            virtual int translate_sector_raw2logic(int sector);
+            virtual uint8_t *get_sector_data(int head, int track, int sector);      // Uses sector starnslation
+            virtual uint8_t *get_raw_sector_data(int head, int track, int sector);  // Do not uses translation
             int get_heads();
             int get_tracks();
             int get_sectors();
