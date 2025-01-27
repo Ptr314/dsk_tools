@@ -74,9 +74,7 @@ namespace dsk_tools {
 
         std::vector<uint8_t> track_buffer[image->get_heads()];
 
-        // for (uint8_t track = 0; track < image->get_tracks(); track++){
-        //     for (uint8_t head = 0; head < image->get_heads(); head++){
-        for (uint8_t track = 0; track < 1; track++)
+        for (uint8_t track = 0; track < image->get_tracks(); track++)
         {
             for (uint8_t head = 0; head < image->get_heads(); head++)
             {
