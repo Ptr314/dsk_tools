@@ -16,7 +16,7 @@ namespace dsk_tools {
 
     void WriterHxCHFE::write_hxc_hfe_header(std::vector<uint8_t> & out)
     {
-        picfileformatheader header;
+        HXC_HFE_HEADER header;
         memset(&header, 0xFF, sizeof(header));
 
         std::strncpy(reinterpret_cast<char *>(&header.HEADERSIGNATURE[0]), "HXCPICFE", 8);
@@ -25,11 +25,11 @@ namespace dsk_tools {
         header.number_of_side = image->get_heads();
         header.track_encoding = image->get_track_encoding();
         header.bitRate = image->get_bitrate();
-        header.floppyRPM = image->get_rpm();
+        header.floppyRPM = 0; //image->get_rpm();
         header.floppyinterfacemode = image->get_floppyinterfacemode();
-        header.write_protected = 0xFF;
-        header.track_list_offset = 512;
-        header.write_allowed = 0xFF;
+        header.write_protected = 0x00;
+        header.track_list_offset = 512 / HFE_BLOCK_SIZE;
+        header.write_allowed = 0x00;
 
         // v1.1 extended fields
         header.single_step = 0xFF;
@@ -43,6 +43,22 @@ namespace dsk_tools {
         out.insert(out.end(), 512 - sizeof(header), 0xFF);
     }
 
+    void WriterHxCHFE::write_hxc_hfe_tracks_lut(std::vector<uint8_t> & out)
+    {
+        HXC_HFE_TRACK track;
+        uint8_t * ptr = reinterpret_cast<uint8_t*>(&track);
+        int offset = 2;
+        track.track_len = 12928 * 2; //TODO: calculate this value
+        for (int i=0; i < image->get_tracks(); i++) {
+            track.offset = offset;
+            offset += HFE_TRACK_LEN / HFE_BLOCK_SIZE;
+
+            out.insert(out.end(), ptr, ptr + sizeof(track));
+        };
+
+        out.insert(out.end(), HFE_BLOCK_SIZE - sizeof(track) * image->get_tracks(), 0xFF);
+    }
+
     int WriterHxCHFE::write(const std::string & file_name)
     {
         std::cout << "Converting started" << std::endl;
@@ -54,6 +70,30 @@ namespace dsk_tools {
         buffer.reserve(buffer.size() + 512);
 
         write_hxc_hfe_header(buffer);
+        write_hxc_hfe_tracks_lut(buffer);
+
+        std::vector<uint8_t> track_buffer[image->get_heads()];
+
+        // for (uint8_t track = 0; track < image->get_tracks(); track++){
+        //     for (uint8_t head = 0; head < image->get_heads(); head++){
+        for (uint8_t track = 0; track < 1; track++)
+        {
+            for (uint8_t head = 0; head < image->get_heads(); head++)
+            {
+                track_buffer[head].clear();
+                write_agat840_track(track_buffer[head], head, track);
+            }
+            int blocks = 13056*2 / HFE_BLOCK_SIZE; // TODO: calculate
+            for (int block=0; block < blocks; block++)
+            {
+                for (uint8_t head=0; head < 2; head ++)
+                {
+                    uint8_t * ptr = track_buffer[head].data() + block*256;
+                    buffer.insert(buffer.end(), ptr, ptr+256);
+                }
+            }
+        }
+
 
         std::ofstream file(file_name, std::ios::binary);
 
