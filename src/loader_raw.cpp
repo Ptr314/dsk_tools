@@ -10,7 +10,7 @@ namespace dsk_tools {
         , msb_first(msb_first)
     {}
 
-    int LoaderRAW::load(std::vector<uint8_t> * buffer)
+    int LoaderRAW::load(BYTES * buffer)
     {
         uint8_t res = FDD_LOAD_OK;
 

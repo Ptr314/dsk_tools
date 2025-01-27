@@ -28,6 +28,8 @@ add_library(${PROJECT_NAME} STATIC
     include/dsk_tools/writer_mfm.cpp
     include/dsk_tools/writer_hxc_mfm.h
     include/dsk_tools/writer_hxc_mfm.cpp
+    include/dsk_tools/writer_raw.h
+    include/dsk_tools/writer_raw.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC

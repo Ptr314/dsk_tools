@@ -101,7 +101,7 @@ namespace dsk_tools {
             virtual int translate_sector_logic2raw(int sector) override;
             virtual int translate_sector_raw2logic(int sector) override;
             virtual int dir(std::vector<dsk_tools::fileData> * files) override;
-            virtual std::vector<uint8_t> get_file(const fileData & fd) override;
+            virtual BYTES get_file(const fileData & fd) override;
     };
 }
 

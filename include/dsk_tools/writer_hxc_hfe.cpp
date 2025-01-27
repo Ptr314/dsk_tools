@@ -14,7 +14,7 @@ namespace dsk_tools {
         return "hfe";
     }
 
-    void WriterHxCHFE::write_hxc_hfe_header(std::vector<uint8_t> & out)
+    void WriterHxCHFE::write_hxc_hfe_header(BYTES & out)
     {
         HXC_HFE_HEADER header;
         memset(&header, 0xFF, sizeof(header));
@@ -65,14 +65,14 @@ namespace dsk_tools {
         std::cout << format_id << std::endl;
         std::cout << file_name << std::endl;
 
-        std::vector<uint8_t> buffer;
+        BYTES buffer;
 
         buffer.reserve(buffer.size() + 512);
 
         write_hxc_hfe_header(buffer);
         write_hxc_hfe_tracks_lut(buffer);
 
-        std::vector<uint8_t> track_buffer[image->get_heads()];
+        BYTES track_buffer[image->get_heads()];
 
         for (uint8_t track = 0; track < image->get_tracks(); track++)
         {

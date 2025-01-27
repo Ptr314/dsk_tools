@@ -7,6 +7,7 @@
 #include "dsk_tools/image_agat140.h"
 #include "dsk_tools/writer_hxc_hfe.h"
 #include "dsk_tools/writer_hxc_mfm.h"
+#include "dsk_tools/writer_raw.h"
 
 namespace dsk_tools {
 

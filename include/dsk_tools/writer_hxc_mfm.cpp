@@ -14,7 +14,7 @@ std::string WriterHxCMFM::get_default_ext()
     return "mfm";
 }
 
-void WriterHxCMFM::write_hxc_mfm_header(std::vector<uint8_t> & out)
+void WriterHxCMFM::write_hxc_mfm_header(BYTES & out)
 {
     HXC_MFM_HEADER header;
 
@@ -37,7 +37,7 @@ int WriterHxCMFM::write(const std::string & file_name)
     // std::cout << format_id << std::endl;
     // std::cout << file_name << std::endl;
 
-    std::vector<uint8_t> buffer;
+    BYTES buffer;
 
     buffer.reserve(buffer.size() + sizeof(HXC_MFM_HEADER));
 

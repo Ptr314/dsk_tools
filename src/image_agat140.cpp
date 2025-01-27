@@ -181,9 +181,9 @@ namespace dsk_tools {
         return FDD_OP_OK;
     }
 
-    std::vector<uint8_t> imageAgat140::get_file(const fileData & fd)
+    BYTES imageAgat140::get_file(const fileData & fd)
     {
-        std::vector<uint8_t> data;
+        BYTES data;
 
         int list_track = fd.location.at(0);
         int list_sector = fd.location.at(1);
