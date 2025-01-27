@@ -29,6 +29,8 @@ namespace dsk_tools {
     #define FDD_WRITE_OK                0
     #define FDD_WRITE_ERROR             1
 
+    #define BYTES   std::vector<uint8_t>
+
     struct fileData
     {
         uint8_t                 original_name[100];

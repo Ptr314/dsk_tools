@@ -14,7 +14,12 @@ namespace dsk_tools {
         format_floppyinterfacemode = GENERIC_SHUGGART_DD_FLOPPYMODE;
     }
 
-    int imageAgat840::translate_sector(int sector)
+    int imageAgat840::translate_sector_logic2raw(int sector)
+    {
+        return sector;
+    }
+
+    int imageAgat840::translate_sector_raw2logic(int sector)
     {
         return sector;
     }

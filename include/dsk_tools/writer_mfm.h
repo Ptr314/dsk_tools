@@ -6,6 +6,7 @@
 #define AGAT_140_GAP0    48
 #define AGAT_140_GAP1    6
 #define AGAT_140_GAP2    27
+#define AGAT_140_GAP3    (6400 - (AGAT_140_GAP0 + 16 * (3 + 8 + 3 + AGAT_140_GAP1 + 3 + 343 + 3 + AGAT_140_GAP2)))
 
 
 namespace dsk_tools {

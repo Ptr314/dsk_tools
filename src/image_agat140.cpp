@@ -29,9 +29,14 @@ namespace dsk_tools {
         return FDD_LOAD_OK;
     }
 
-    int imageAgat140::translate_sector(int sector)
+    int imageAgat140::translate_sector_logic2raw(int sector)
     {
-        return agat_140_raw2dos[sector];
+        return agat_140_logic2raw[sector];
+    }
+
+    int imageAgat140::translate_sector_raw2logic(int sector)
+    {
+        return agat_140_raw2logic[sector];
     }
 
     int imageAgat140::get_capabilities()
