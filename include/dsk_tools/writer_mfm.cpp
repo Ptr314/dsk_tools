@@ -94,16 +94,16 @@ namespace dsk_tools {
         write_agat_mfm_array(out, 0xAA, 144, &last_byte);
         for (uint8_t sector = 0; sector < image->get_sectors(); sector++) {
             // Desync
-            out.push_back(0x22);
-            out.push_back(0x09);
+            out.push_back(0x22);                                        // 0
+            out.push_back(0x09);                                        // 1
             last_byte = 0xA4;
-            write_agat_mfm_array(out, 0xFF, 1, &last_byte);
+            write_agat_mfm_array(out, 0xFF, 1, &last_byte);             // 2-3
             // Index start
-            write_agat_mfm_array(out, 0x95, 1, &last_byte);
-            write_agat_mfm_array(out, 0x6A, 1, &last_byte);
+            write_agat_mfm_array(out, 0x95, 1, &last_byte);             // 4-5
+            write_agat_mfm_array(out, 0x6A, 1, &last_byte);             // 6-7
             // VTS
-            write_agat_mfm_array(out, 0xFE, 1, &last_byte); //Volume
-            write_agat_mfm_array(out, track, 1, &last_byte);
+            write_agat_mfm_array(out, 0xFE, 1, &last_byte); //Volume    // 8-9
+            write_agat_mfm_array(out, track*2 + head, 1, &last_byte);   // A-B
             write_agat_mfm_array(out, sector, 1, &last_byte);
             // Index end
             write_agat_mfm_array(out, 0x5A, 1, &last_byte);
@@ -128,5 +128,8 @@ namespace dsk_tools {
         }
         // GAP
         write_agat_mfm_array(out, 0xAA, 20, &last_byte);
+        // Fill until standard hfe track length
+        write_agat_mfm_array(out, 0xAA, (HFE_TRACK_LEN/2 - (144 + 302*image->get_sectors() + 20)*2)/2, &last_byte);
+
     }
 }
