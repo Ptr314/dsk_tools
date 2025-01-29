@@ -8,7 +8,7 @@ namespace dsk_tools {
     #define AGAT_140_GAP0    48
     #define AGAT_140_GAP1    6
     #define AGAT_140_GAP2    27
-    #define AGAT_140_GAP3    (6400 - (AGAT_140_GAP0 + 16 * (3 + 8 + 3 + AGAT_140_GAP1 + 3 + 343 + 3 + AGAT_140_GAP2)))
+    #define AGAT_140_GAP3    (track_length - (AGAT_140_GAP0 + 16 * (3 + 8 + 3 + AGAT_140_GAP1 + 3 + 343 + 3 + AGAT_140_GAP2)))
 
     static uint16_t agat_MFM_tab[]=
         {
@@ -82,7 +82,8 @@ namespace dsk_tools {
     class WriterMFM:public Writer
     {
     protected:
-        void write_gcr62_track(BYTES &out, uint8_t track);
+        void write_gcr62_track(BYTES &out, uint8_t track, int track_length);
+        void write_gcr62_nic_track(BYTES &out, uint8_t track);
         void write_agat840_track(BYTES &out, uint8_t head, uint8_t track);
         uint16_t encode_agat_MFM_byte(uint8_t data, uint8_t * last_byte);
         void write_agat_mfm_array(BYTES &out, uint8_t data, uint16_t count, uint8_t * last_byte);
