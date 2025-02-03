@@ -17,16 +17,12 @@ namespace dsk_tools {
     class imageAgat140: public diskImage
     {
         protected:
-            // dsk_tools::Apple_DOS_VTOC * VTOC;
+
         public:
             imageAgat140(Loader * loader);
             virtual int check() override;
-            // virtual int open() override;
-            // virtual int get_capabilities() override;
             virtual int translate_sector_logic2raw(int sector) override;
             virtual int translate_sector_raw2logic(int sector) override;
-            // virtual int dir(std::vector<dsk_tools::fileData> * files) override;
-            // virtual BYTES get_file(const fileData & fd) override;
     };
 }
 

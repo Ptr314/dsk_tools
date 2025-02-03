@@ -1,7 +1,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "dsk_tools/dsk_tools.h"
 #include "loader_raw.h"
 
 namespace dsk_tools {

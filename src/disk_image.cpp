@@ -5,7 +5,6 @@ namespace dsk_tools {
     diskImage::diskImage(Loader * loader):
           loader(loader)
         , is_loaded(false)
-        // , is_open(false)
     {}
 
     int diskImage::load()

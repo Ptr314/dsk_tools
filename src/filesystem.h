@@ -15,7 +15,9 @@ namespace dsk_tools {
         virtual ~fileSystem() {};
         virtual int open() = 0;
         virtual int get_capabilities() = 0;
+        virtual std::string get_delimiter();
         virtual int dir(std::vector<dsk_tools::fileData> * files) = 0;
+        virtual void cd(const dsk_tools::fileData & dir) = 0;
         virtual BYTES get_file(const fileData & fd) = 0;
     };
 

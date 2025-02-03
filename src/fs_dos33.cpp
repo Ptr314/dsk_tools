@@ -11,7 +11,7 @@ namespace dsk_tools {
 
     int fsDOS33::get_capabilities()
     {
-        return FILE_PRORECTION | FILE_TYPE | FILE_DELETE;
+        return FILE_PROTECTION | FILE_TYPE | FILE_DELETE;
     }
 
     int fsDOS33::open()
@@ -21,53 +21,11 @@ namespace dsk_tools {
         VTOC = reinterpret_cast<dsk_tools::Apple_DOS_VTOC *>(image->get_sector_data(0, 0x11, 0));
         int sector_size = static_cast<int>(VTOC->bytes_per_sector);
 
-        std::cout << "VTOC";
-        std::cout << "Catalog on track: " << (int)VTOC->catalog_track << std::endl;
-        std::cout << "Catalog on sector: " << (int)VTOC->catalog_sector << std::endl;
-        std::cout << "DOS release: " << (int)VTOC->dos_release << std::endl;
-        std::cout << "Volume: " << (int)VTOC->volume_id << std::endl;
-        std::cout << "Pairs on sector: " << (int)VTOC->pairs_on_sector << std::endl;
-        std::cout << "Last track: " << (int)VTOC->last_track << std::endl;
-        std::cout << "direction: " << (int)VTOC->direction << std::endl;
-        std::cout << "Tracks total: " << (int)VTOC->tracks_total << std::endl;
-        std::cout << "Sectors on track: " << (int)VTOC->sectors_on_track << std::endl;
-        std::cout << "Bytes per sector: " << static_cast<int>(VTOC->bytes_per_sector) << std::endl;
-
         if (VTOC->dos_release != 3 || VTOC->sectors_on_track != image->get_sectors() || sector_size != 256) {
             return FDD_OPEN_BAD_FORMAT;
         }
 
-        // int catalog_track = VTOC->catalog_track;
-        // int catalog_sector = VTOC->catalog_sector;
-
-        // Apple_DOS_Catalog * catalog;
-
-        // do {
-
-        //     std::cout << "Catalog t/s: " << catalog_track << "/" << catalog_sector << std::endl;
-
-        //     catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(get_sector_data(0, catalog_track, catalog_sector));
-
-        //     catalog_track = catalog->next_track;
-        //     catalog_sector = catalog->next_sector;
-
-        //     std::cout << "Next t/s: " << catalog_track << "/" << catalog_sector << std::endl;
-
-        //     for (int i=0; i<7; i++) {
-        //         if (catalog->files[i].track == 0) break;
-        //         std::cout << "File entry " << i << ": t/s=" << (int)catalog->files[i].track << "/" << (int)catalog->files[i].sector << " ";
-        //         std::cout << "Type: $" << std::hex << (int)catalog->files[i].type << " ";
-        //         std::cout << "Size: " << std::dec << (int)catalog->files[i].size << " ";
-        //         for (int j=0; j<30; j++) std::cout << koi7map[catalog->files[i].name[j] & 0x7F];
-        //         // for (int j=0; j<30; j++) std::cout << " " << std::hex << (int)catalog->files[i].name[j];
-        //         std::cout << std::endl;
-        //     }
-        //     std::cout << std::endl;
-
-        // } while (catalog_track != 0);
-
         is_open = true;
-
         return FDD_OPEN_OK;
     }
 
@@ -93,16 +51,19 @@ namespace dsk_tools {
                 fileData file;
 
                 if (catalog->files[i].tbl_track == 0) break;
+                file.is_dir = false;
                 file.is_deleted = (catalog->files[i].type == 0xFF);
                 file.is_protected = (catalog->files[i].type & 0x80) != 0;
                 file.attributes = catalog->files[i].type & 0x7F;
                 memcpy(&file.original_name, &catalog->files[i].name, 30);
                 file.original_name_length = 30;
                 file.name = trim(koi7_to_utf(catalog->files[i].name, 30));
+                file.preferred_type = PREFERRED_BINARY;
                 switch (catalog->files[i].type & 0x7F) {
                 case 0x00:
                     file.type_str_short = "TXT";
-                    file.type_str = "TEST File";
+                    file.type_str = "TEXT File";
+                    file.preferred_type = PREFERRED_TEXT;
                     break;
                 case 0x01:
                     file.type_str_short = "IBS";
@@ -178,4 +139,8 @@ namespace dsk_tools {
 
         return data;
     }
+
+    void fsDOS33::cd(const dsk_tools::fileData & dir)
+    {}
+
 }

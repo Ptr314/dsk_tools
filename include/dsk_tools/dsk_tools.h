@@ -21,6 +21,7 @@
 
 #include "filesystem.h"
 #include "fs_dos33.h"
+#include "fs_spriteos.h"
 
 namespace dsk_tools {
 
