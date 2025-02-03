@@ -1,4 +1,4 @@
-#include "dsk_tools/loader.h"
+#include "loader.h"
 
 namespace dsk_tools {
     Loader::Loader(std::string file_name, std::string format_id, std::string type_id):

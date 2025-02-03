@@ -1,4 +1,3 @@
-#include "dsk_tools/disk_image.h"
 #include "dsk_tools/dsk_tools.h"
 
 namespace dsk_tools {
@@ -6,7 +5,7 @@ namespace dsk_tools {
     diskImage::diskImage(Loader * loader):
           loader(loader)
         , is_loaded(false)
-        , is_open(false)
+        // , is_open(false)
     {}
 
     int diskImage::load()
@@ -95,5 +94,9 @@ namespace dsk_tools {
         return &buffer;
     }
 
+    bool diskImage::get_loaded()
+    {
+        return is_loaded;
+    }
 
 }

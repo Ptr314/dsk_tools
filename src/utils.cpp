@@ -1,10 +1,8 @@
-#ifndef UTILS_H
-#define UTILS_H
-
 #include <cstdint>
 #include <string>
 
-#include "dsk_tools/definitions.h"
+#include "definitions.h"
+#include "utils.h"
 
 namespace dsk_tools
 {
@@ -18,8 +16,7 @@ namespace dsk_tools
         return out;
     }
 
-    std::string trim(const std::string& str,
-                     const std::string& whitespace = " \t")
+    std::string trim(const std::string& str, const std::string& whitespace)
     {
         const auto strBegin = str.find_first_not_of(whitespace);
         if (strBegin == std::string::npos)
@@ -30,5 +27,5 @@ namespace dsk_tools
 
         return str.substr(strBegin, strRange);
     }
-}
-#endif // UTILS_H
+
+} // namespace

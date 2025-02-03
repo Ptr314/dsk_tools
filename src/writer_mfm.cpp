@@ -1,7 +1,7 @@
 #include <cstring>
 
 #include "dsk_tools/dsk_tools.h"
-#include "dsk_tools/writer_mfm.h"
+#include "writer_mfm.h"
 
 namespace dsk_tools {
 

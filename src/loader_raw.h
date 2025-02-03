@@ -1,7 +1,7 @@
 #ifndef LOADER_RAW_H
 #define LOADER_RAW_H
 
-#include "dsk_tools/loader.h"
+#include "loader.h"
 
 namespace dsk_tools {
 

@@ -1,5 +1,4 @@
-#include "dsk_tools/image_agat840.h"
-
+#include "image_agat840.h"
 
 namespace dsk_tools {
     imageAgat840::imageAgat840(Loader * loader):

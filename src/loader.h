@@ -3,9 +3,8 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
-#include "dsk_tools/definitions.h"
+#include "definitions.h"
 
 namespace dsk_tools {
 

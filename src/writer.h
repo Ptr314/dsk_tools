@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "dsk_tools/disk_image.h"
+#include "disk_image.h"
 
 namespace dsk_tools {
 
