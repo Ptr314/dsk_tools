@@ -43,18 +43,12 @@ namespace dsk_tools {
             int format_track_encoding;
             int format_floppyinterfacemode;
             bool is_loaded;
-            // bool is_open;
-
 
         public:
             diskImage(Loader * loader);
             virtual ~diskImage() {};
             std::string file_name();
             virtual int check() = 0;                                            // Check physical image parameters
-            // virtual int open() = 0;                                             // Open and checks disk's filesystem
-            // virtual int get_capabilities() = 0;                                 // Get available functions
-            // virtual int dir(std::vector<dsk_tools::fileData> * files) = 0;      // List files
-            // virtual BYTES get_file(const fileData & fd) = 0;
             virtual int load();
             virtual int translate_sector_logic2raw(int sector);
             virtual int translate_sector_raw2logic(int sector);

@@ -88,6 +88,7 @@ namespace dsk_tools {
         fsDOS33(diskImage * image);
         virtual int open() override;
         virtual int get_capabilities() override;
+        virtual void cd(const dsk_tools::fileData & dir) override;
         virtual int dir(std::vector<dsk_tools::fileData> * files) override;
         virtual BYTES get_file(const fileData & fd) override;
     };

@@ -17,11 +17,6 @@ namespace dsk_tools {
         format_rpm = 300;
         format_track_encoding = UNKNOWN_ENCODING;
         format_floppyinterfacemode = GENERIC_SHUGGART_DD_FLOPPYMODE;
-
-
-        std::cout << std::filesystem::current_path() << std::endl;
-
-        // std::ifstream charmap_file(, std::ios::in | std::ios::binary);
     }
 
     int imageAgat140::check()

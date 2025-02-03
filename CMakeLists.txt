@@ -21,6 +21,8 @@ add_library(${PROJECT_NAME} STATIC
     src/writer_raw.h                    src/writer_raw.cpp
     src/filesystem.h                    src/filesystem.cpp
     src/fs_dos33.h                      src/fs_dos33.cpp
+    src/fs_spriteos.h
+    src/fs_spriteos.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC

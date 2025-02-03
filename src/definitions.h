@@ -22,9 +22,10 @@ namespace dsk_tools {
     #define FDD_OP_OK                   0
     #define FDD_OP_NOT_OPEN             1
 
-    #define FILE_PRORECTION             1
+    #define FILE_PROTECTION             1
     #define FILE_TYPE                   2
     #define FILE_DELETE                 4
+    #define FILE_DIRS                   8
 
     #define FDD_WRITE_OK                0
     #define FDD_WRITE_ERROR             1
@@ -32,6 +33,9 @@ namespace dsk_tools {
 
     #define FDD_DETECT_OK               0
     #define FDD_DETECT_ERROR            1
+
+    #define PREFERRED_BINARY            0
+    #define PREFERRED_TEXT              1
 
 
     #define BYTES   std::vector<uint8_t>
@@ -45,9 +49,12 @@ namespace dsk_tools {
         std::string             type_str_short;
         bool                    is_protected;
         bool                    is_deleted;
+        bool                    is_dir;
         uint32_t                attributes;
         uint32_t                size;
+        int                     preferred_type;
         std::vector<uint32_t>   location;
+        std::vector<uint8_t>    metadata;
     };
 
     static const std::string koi8map[] =  {

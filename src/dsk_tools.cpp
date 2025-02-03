@@ -50,6 +50,9 @@ namespace dsk_tools {
         dsk_tools::fileSystem * fs;
         if (filesystem_id == "FILESYSTEM_DOS33") {
             fs = new dsk_tools::fsDOS33(image);
+        } else
+        if (filesystem_id == "FILESYSTEM_SPRITE_OS") {
+            fs = new dsk_tools::fsSpriteOS(image);
         } else {
             return nullptr;
         }
