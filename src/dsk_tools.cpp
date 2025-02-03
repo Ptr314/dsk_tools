@@ -1,8 +1,9 @@
+#include <algorithm>
 #include <iostream>
+#include <fstream>
+#include <filesystem>
+
 #include "dsk_tools/dsk_tools.h"
-#include "dsk_tools/loader_raw.h"
-#include "dsk_tools/image_agat140.h"
-#include "dsk_tools/image_agat840.h"
 
 namespace dsk_tools {
 
@@ -44,6 +45,18 @@ namespace dsk_tools {
         return nullptr;
     }
 
+    dsk_tools::fileSystem * prepare_filesystem(diskImage *image, std::string filesystem_id)
+    {
+        dsk_tools::fileSystem * fs;
+        if (filesystem_id == "FILESYSTEM_DOS33") {
+            fs = new dsk_tools::fsDOS33(image);
+        } else {
+            return nullptr;
+        }
+
+        return fs;
+    }
+
     BYTES code44(const BYTES & buffer)
     {
         BYTES result;
@@ -80,5 +93,55 @@ namespace dsk_tools {
         // And finally add a crc byte
         data_out[342] = m_write_translate_table[crc];
     }
+
+    int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id)
+    {
+        namespace fs = std::filesystem;
+
+        std::string ext = fs::path(file_name).extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+        // format_if
+        if (ext == ".dsk") {
+            format_id = "FILE_RAW_MSB";
+        } else
+            return FDD_DETECT_ERROR;
+
+        std::ifstream file(file_name, std::ios::binary);
+
+        if (!file.good()) {
+            return FDD_LOAD_ERROR;
+        }
+
+        file.seekg (0, file.end);
+        auto fsize = file.tellg();
+        file.seekg (0, file.beg);
+
+        // type_id
+        if (format_id == "FILE_RAW_MSB" && fsize == 143360) {
+            type_id = "TYPE_AGAT_140";
+        } else
+        if (format_id == "FILE_RAW_MSB" && (fsize == 860160 || fsize == 860164)) {
+            type_id = "TYPE_AGAT_840";
+        } else
+            return FDD_DETECT_ERROR;
+
+        // filesystem_id
+        if (format_id == "FILE_RAW_MSB" && (type_id == "TYPE_AGAT_140" || type_id == "TYPE_AGAT_840")) {
+            BYTES buffer(32);
+            file.read (reinterpret_cast<char*>(buffer.data()), buffer.size());
+            if (buffer[0] == 0x01) {
+                if (buffer[2] == 0x58) {
+                    filesystem_id = "FILESYSTEM_SPRITE_OS";
+                } else {
+                    filesystem_id = "FILESYSTEM_DOS33";
+                }
+            } else
+                return FDD_DETECT_ERROR;
+        }
+
+        return FDD_DETECT_OK;
+    }
+
 
 } // namespace

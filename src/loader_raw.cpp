@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "dsk_tools/dsk_tools.h"
-#include "dsk_tools/loader_raw.h"
+#include "loader_raw.h"
 
 namespace dsk_tools {
     LoaderRAW::LoaderRAW(std::string file_name, std::string format_id, std::string type_id, bool msb_first):

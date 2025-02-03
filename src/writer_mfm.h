@@ -1,7 +1,7 @@
 #ifndef WRITER_MFM_H
 #define WRITER_MFM_H
 
-#include "dsk_tools/writer.h"
+#include "writer.h"
 
 namespace dsk_tools {
 

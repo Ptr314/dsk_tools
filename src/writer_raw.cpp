@@ -1,7 +1,7 @@
 #include <fstream>
 
 
-#include "dsk_tools/writer_raw.h"
+#include "writer_raw.h"
 
 namespace dsk_tools {
 
