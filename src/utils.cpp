@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <string>
 
@@ -26,6 +27,16 @@ namespace dsk_tools
         const auto strRange = strEnd - strBegin + 1;
 
         return str.substr(strBegin, strRange);
+    }
+
+    std::string get_file_ext(const std::string &file_name) {
+        size_t dot_pos = file_name.find_last_of('.');
+        if (dot_pos == std::string::npos || dot_pos == 0) {
+            return "";
+        }
+        std::string ext = file_name.substr(dot_pos);
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        return ext;
     }
 
 } // namespace

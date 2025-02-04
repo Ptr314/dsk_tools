@@ -1,7 +1,5 @@
-#include <algorithm>
 #include <iostream>
 #include <fstream>
-#include <filesystem>
 
 #include "dsk_tools/dsk_tools.h"
 
@@ -99,10 +97,7 @@ namespace dsk_tools {
 
     int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id)
     {
-        namespace fs = std::filesystem;
-
-        std::string ext = fs::path(file_name).extension().string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        std::string ext = get_file_ext(file_name);
 
         // format_if
         if (ext == ".dsk") {
