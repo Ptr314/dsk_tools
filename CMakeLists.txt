@@ -32,4 +32,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 set_source_files_properties(include/dsk_tools/dsk_tools.h PROPERTIES COMPILE_FLAGS "-Wno-unused-include")
 
-add_subdirectory(utils)
+option(ENABLE_DSK_TOOLS "Enable command line tools" ON)
+
+if(ENABLE_DSK_TOOLS)
+    add_subdirectory(utils)
+endif()

@@ -1,9 +1,5 @@
-#include <filesystem>
-#include <iostream>
-
 #include "loader.h"
 #include "image_agat140.h"
-#include "utils.h"
 
 namespace dsk_tools {
     imageAgat140::imageAgat140(Loader * loader):

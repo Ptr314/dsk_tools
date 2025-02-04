@@ -1,6 +1,5 @@
-#include <algorithm>
+#include <stdexcept>
 #include <cstring>
-#include <filesystem>
 #include <set>
 
 #include "utils.h"
@@ -101,9 +100,7 @@ namespace dsk_tools {
                 file.is_deleted = dir_entry->NAME[0] == 0xFF;
 
                 std::set<std::string> txts = {".txt", ".doc", ".pas", ".cmd", ".def", ".hlp"};
-                namespace fs = std::filesystem;
-                std::string ext = fs::path(file.name).extension().string();
-                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                std::string ext = get_file_ext(file.name);
                 file.preferred_type = (txts.find(ext) != txts.end())?PREFERRED_TEXT:PREFERRED_BINARY;
 
                 file.metadata.resize(sizeof(SPRITE_OS_DIR_ENTRY));
