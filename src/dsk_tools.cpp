@@ -24,9 +24,12 @@ namespace dsk_tools {
     dsk_tools::diskImage * prepare_image(std::string file_name, std::string format_id, std::string type_id)
     {
         std::cout << file_name << std::endl;
-        dsk_tools::LoaderRAW * loader;
+        dsk_tools::Loader * loader;
         if (format_id == "FILE_RAW_MSB") {
             loader = new dsk_tools::LoaderRAW(file_name, format_id, type_id, true);
+        } else
+        if (format_id == "FILE_AIM") {
+            loader = new dsk_tools::LoaderAIM(file_name, format_id, type_id);
         } else {
             return nullptr;
         }
@@ -102,32 +105,47 @@ namespace dsk_tools {
         // format_if
         if (ext == ".dsk") {
             format_id = "FILE_RAW_MSB";
+
+            std::ifstream file(file_name, std::ios::binary);
+
+            if (!file.good()) {
+                return FDD_LOAD_ERROR;
+            }
+
+            file.seekg (0, file.end);
+            auto fsize = file.tellg();
+            file.seekg (0, file.beg);
+
+            // type_id
+            if (fsize == 143360) {
+                type_id = "TYPE_AGAT_140";
+            } else
+            if (fsize == 860160 || fsize == 860164) {
+                type_id = "TYPE_AGAT_840";
+            } else
+                return FDD_DETECT_ERROR;
+
+            // filesystem_id
+            if (type_id == "TYPE_AGAT_140" || type_id == "TYPE_AGAT_840") {
+                BYTES buffer(32);
+                file.read (reinterpret_cast<char*>(buffer.data()), buffer.size());
+                if (buffer[0] == 0x01) {
+                    if (buffer[2] == 0x58) {
+                        filesystem_id = "FILESYSTEM_SPRITE_OS";
+                    } else {
+                        filesystem_id = "FILESYSTEM_DOS33";
+                    }
+                } else
+                    return FDD_DETECT_ERROR;
+            }
+
         } else
-            return FDD_DETECT_ERROR;
-
-        std::ifstream file(file_name, std::ios::binary);
-
-        if (!file.good()) {
-            return FDD_LOAD_ERROR;
-        }
-
-        file.seekg (0, file.end);
-        auto fsize = file.tellg();
-        file.seekg (0, file.beg);
-
-        // type_id
-        if (format_id == "FILE_RAW_MSB" && fsize == 143360) {
-            type_id = "TYPE_AGAT_140";
-        } else
-        if (format_id == "FILE_RAW_MSB" && (fsize == 860160 || fsize == 860164)) {
+        if (ext == ".aim") {
+            format_id = "FILE_AIM";
             type_id = "TYPE_AGAT_840";
-        } else
-            return FDD_DETECT_ERROR;
-
-        // filesystem_id
-        if (format_id == "FILE_RAW_MSB" && (type_id == "TYPE_AGAT_140" || type_id == "TYPE_AGAT_840")) {
-            BYTES buffer(32);
-            file.read (reinterpret_cast<char*>(buffer.data()), buffer.size());
+            dsk_tools::LoaderAIM loader(file_name, format_id, type_id);
+            BYTES buffer;
+            loader.load(buffer);
             if (buffer[0] == 0x01) {
                 if (buffer[2] == 0x58) {
                     filesystem_id = "FILESYSTEM_SPRITE_OS";
@@ -136,7 +154,8 @@ namespace dsk_tools {
                 }
             } else
                 return FDD_DETECT_ERROR;
-        }
+        } else
+            return FDD_DETECT_ERROR;
 
         return FDD_DETECT_OK;
     }

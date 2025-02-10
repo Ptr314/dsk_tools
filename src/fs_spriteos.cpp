@@ -99,7 +99,7 @@ namespace dsk_tools {
                 file.is_dir = (dir_entry->STATUS & 0x01) != 0;
                 file.is_deleted = dir_entry->NAME[0] == 0xFF;
 
-                std::set<std::string> txts = {".txt", ".doc", ".pas", ".cmd", ".def", ".hlp"};
+                std::set<std::string> txts = {".txt", ".doc", ".pas", ".cmd", ".def", ".hlp", ".gid"};
                 std::string ext = get_file_ext(file.name);
                 file.preferred_type = (txts.find(ext) != txts.end())?PREFERRED_TEXT:PREFERRED_BINARY;
 
@@ -133,6 +133,41 @@ namespace dsk_tools {
             memcpy(&CURRENT_DIR, dir.metadata.data(), sizeof(CURRENT_DIR));
             current_path.push_back(CURRENT_DIR);
         }
+    }
+
+    std::string fsSpriteOS::file_info(const fileData & fd) {
+        std::string result = "";
+        std::string attrs = "";
+
+        const SPRITE_OS_DIR_ENTRY * dir_entry = reinterpret_cast<const SPRITE_OS_DIR_ENTRY*>(fd.metadata.data());
+
+        attrs += (dir_entry->STATUS & 0x80)?"P":"-";
+        attrs += (dir_entry->STATUS & 0x40)?"B":"-";
+        attrs += (dir_entry->STATUS & 0x20)?"U":"-";
+        attrs += (dir_entry->STATUS & 0x10)?"U":"-";
+        attrs += (dir_entry->STATUS & 0x08)?"T":"-";
+        attrs += (dir_entry->STATUS & 0x04)?"S":"-";
+        attrs += (dir_entry->STATUS & 0x02)?"H":"-";
+        attrs += (dir_entry->STATUS & 0x01)?"D":"-";
+
+        int year_bcd = dir_entry->DATE >> 11;
+        int year = (year_bcd & 0xF) + (year_bcd >> 4) * 10 + 1980;
+        std::string month = dsk_tools::toBCD((dir_entry->DATE >> 6) & 0b11111);
+        std::string day = dsk_tools::toBCD(dir_entry->DATE & 0b111111);
+
+        std::string date_str = day + "-" + month + "-" + std::to_string(year);
+
+        result += "{$FILE_NAME}: " +  trim(koi7_to_utf(dir_entry->NAME, 15)) + "\n";
+        result += "{$SIZE}: " +  std::to_string(dir_entry->FILELEN[0] + (dir_entry->FILELEN[1] << 8) + (dir_entry->FILELEN[2] << 16)) + " {$BYTES}\n";
+        result += "{$ATTRIBUTES}: $" + dsk_tools::int_to_hex(dir_entry->STATUS) + " (" + attrs + ") \n";
+        result += "{$DATE}: " + date_str + " ($" + dsk_tools::int_to_hex(dir_entry->DATE) +")\n";
+        result += "USRINF: $" + dsk_tools::int_to_hex(dir_entry->USRINF[0]) +
+                  " $" + dsk_tools::int_to_hex(dir_entry->USRINF[1]) +
+                  " $" + dsk_tools::int_to_hex(dir_entry->USRINF[2]) +
+                  " $" + dsk_tools::int_to_hex(dir_entry->USRINF[3]) +
+                  "\n";
+
+        return result;
     }
 
 }

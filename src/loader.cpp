@@ -9,6 +9,9 @@ namespace dsk_tools {
 
     {}
 
+    Loader::~Loader()
+    {}
+
     std::string Loader::get_file_name()
     {
         return file_name;

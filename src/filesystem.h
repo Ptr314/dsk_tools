@@ -19,6 +19,7 @@ namespace dsk_tools {
         virtual int dir(std::vector<dsk_tools::fileData> * files) = 0;
         virtual void cd(const dsk_tools::fileData & dir) = 0;
         virtual BYTES get_file(const fileData & fd) = 0;
+        virtual std::string file_info(const fileData & fd) = 0;
     };
 
 } // namespace

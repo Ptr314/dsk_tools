@@ -11,7 +11,7 @@ namespace dsk_tools {
             bool msb_first;
         public:
             LoaderRAW(std::string file_name, std::string format_id, std::string type_id, bool msb_first);
-            virtual int load(BYTES * buffer) override;
+            virtual int load(BYTES & buffer) override;
     };
 
 }

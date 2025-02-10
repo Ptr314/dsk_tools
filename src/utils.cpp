@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <cstdint>
+#include <iomanip>
+#include <ios>
 #include <string>
 
 #include "definitions.h"
@@ -37,6 +39,10 @@ namespace dsk_tools
         std::string ext = file_name.substr(dot_pos);
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         return ext;
+    }
+
+    std::string toBCD(uint8_t byte) {
+        return std::to_string(byte >> 4) + std::to_string(byte & 0xF);
     }
 
 } // namespace

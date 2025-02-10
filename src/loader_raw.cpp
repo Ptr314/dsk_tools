@@ -9,7 +9,7 @@ namespace dsk_tools {
         , msb_first(msb_first)
     {}
 
-    int LoaderRAW::load(BYTES * buffer)
+    int LoaderRAW::load(std::vector<uint8_t> &buffer)
     {
         uint8_t res = FDD_LOAD_OK;
 
@@ -27,8 +27,8 @@ namespace dsk_tools {
 
         std::cout << "File size: " << fsize << std::endl;
 
-        buffer->resize(fsize);
-        file.read (reinterpret_cast<char*>(buffer->data()), fsize);
+        buffer.resize(fsize);
+        file.read (reinterpret_cast<char*>(buffer.data()), fsize);
 
         loaded = true;
 

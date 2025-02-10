@@ -23,6 +23,8 @@ add_library(${PROJECT_NAME} STATIC
     src/fs_dos33.h                      src/fs_dos33.cpp
     src/fs_spriteos.h
     src/fs_spriteos.cpp
+    src/loader_aim.h
+    src/loader_aim.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
