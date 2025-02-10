@@ -12,6 +12,7 @@
 
 #include "loader.h"
 #include "loader_raw.h"
+#include "loader_aim.h"
 
 #include "writer.h"
 #include "writer_raw.h"

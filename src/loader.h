@@ -23,7 +23,7 @@ namespace dsk_tools {
 
             std::string get_file_name();
             std::string get_type_id();
-            virtual int load(BYTES * buffer) = 0;
+            virtual int load(BYTES & buffer) = 0;
 
     };
 

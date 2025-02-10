@@ -10,7 +10,7 @@ namespace dsk_tools {
     int diskImage::load()
     {
         type_id = loader->get_type_id();
-        int result = loader->load(&buffer);
+        int result = loader->load(buffer);
         is_loaded = (result == FDD_LOAD_OK);
         return result;
     }

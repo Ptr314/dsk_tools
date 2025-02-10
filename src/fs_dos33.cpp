@@ -143,4 +143,10 @@ namespace dsk_tools {
     void fsDOS33::cd(const dsk_tools::fileData & dir)
     {}
 
+    std::string fsDOS33::file_info(const fileData & fd) {
+        std::string result = "";
+        return result;
+    }
+
+
 }
