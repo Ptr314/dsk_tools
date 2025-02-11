@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include "utils.h"
 #include "fs_dos33.h"
@@ -29,6 +30,21 @@ namespace dsk_tools {
         return FDD_OPEN_OK;
     }
 
+    std::string fsDOS33::attr_to_type(uint8_t a)
+    {
+        // http://forum.agatcomp.ru//viewtopic.php?id=193
+        std::vector<std::string> types = {"T", "I", "A", "B", "S", "П", "К", "Д"};
+
+        uint8_t v = a & 0x7F;
+        int n = 0;
+        do {
+            if (v == 0 ) return types[n];
+            v <<= 1;
+            n++;
+        } while (n < 9);
+        return "";
+    }
+
     int fsDOS33::dir(std::vector<dsk_tools::fileData> * files)
     {
         if (!is_open) return FDD_OP_NOT_OPEN;
@@ -57,52 +73,18 @@ namespace dsk_tools {
                 file.attributes = catalog->files[i].type & 0x7F;
                 memcpy(&file.original_name, &catalog->files[i].name, 30);
                 file.original_name_length = 30;
-                file.name = trim(koi7_to_utf(catalog->files[i].name, 30));
-                file.preferred_type = PREFERRED_BINARY;
-                switch (catalog->files[i].type & 0x7F) {
-                case 0x00:
-                    file.type_str_short = "TXT";
-                    file.type_str = "TEXT File";
+                file.name = trim(agat_to_utf(catalog->files[i].name, 30));
+                file.type_str_short = attr_to_type(catalog->files[i].type);
+                if (file.type_str_short == "T")
                     file.preferred_type = PREFERRED_TEXT;
-                    break;
-                case 0x01:
-                    file.type_str_short = "IBS";
-                    file.type_str = "INTEGER BASIC File";
-                    break;
-                case 0x02:
-                    file.type_str_short = "ABS";
-                    file.type_str = "APPLESOFT BASIC File";
-                    break;
-                case 0x04:
-                    file.type_str_short = "BIN";
-                    file.type_str = "BINARY File";
-                    break;
-                case 0x08:
-                    file.type_str_short = "S";
-                    file.type_str = "S Type File";
-                    break;
-                case 0x10:
-                    file.type_str_short = "REL";
-                    file.type_str = "RELOCATABLE File";
-                    break;
-                case 0x20:
-                    file.type_str_short = "A";
-                    file.type_str = "A Type File";
-                    break;
-                case 0x40:
-                    file.type_str_short = "A";
-                    file.type_str = "B Type File";
-                    break;
-                default:
-                    file.type_str_short = "?";
-                    file.type_str = "Unknown File";
-                    break;
-                };
+                else
+                    file.preferred_type = PREFERRED_BINARY;
+
                 file.size = catalog->files[i].size * 256;
 
-                // To avoid finding the file, we use a vector to store its location
-                file.location.push_back(catalog->files[i].tbl_track);
-                file.location.push_back(catalog->files[i].tbl_sector);
+                file.metadata.resize(sizeof(catalog->files[i]));
+                memcpy(file.metadata.data(), &(catalog->files[i]), sizeof(catalog->files[i]));
+
 
                 files->push_back(file);
             }
@@ -116,8 +98,9 @@ namespace dsk_tools {
     {
         BYTES data;
 
-        int list_track = fd.location.at(0);
-        int list_sector = fd.location.at(1);
+        const dsk_tools::Apple_DOS_File * dir_entry = reinterpret_cast<const dsk_tools::Apple_DOS_File *>(fd.metadata.data());
+        int list_track = dir_entry->tbl_track;
+        int list_sector = dir_entry->tbl_sector;
 
         Apple_DOS_TS_List * ts_list;
 
@@ -148,5 +131,33 @@ namespace dsk_tools {
         return result;
     }
 
+    std::vector<std::string> fsDOS33::get_save_file_formats()
+    {
+        return {"FILE_FIL", "FILE_BINARY"};
+    }
+
+    int fsDOS33::save_file(const std::string & format_id, const std::string & file_name, const fileData &fd)
+    {
+        const Apple_DOS_File * dir_entry = reinterpret_cast<const Apple_DOS_File *>(fd.metadata.data());
+
+        BYTES buffer = get_file(fd);
+        if (format_id == "FILE_BINARY") {
+            std::ofstream file(file_name, std::ios::binary);
+
+            if (!file.good()) {
+                return FDD_WRITE_ERROR;
+            }
+
+            file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
+        } else
+        if (format_id == "FILE_FIL") {
+            FIL_header header;
+            memcpy(&header.name, &(dir_entry->name), sizeof(header.name));
+            header.type = dir_entry->type;
+            //header.tsl
+        }
+
+        return FDD_WRITE_OK;
+    }
 
 }

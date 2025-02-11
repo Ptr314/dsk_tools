@@ -51,6 +51,8 @@
         virtual int dir(std::vector<dsk_tools::fileData> * files) override;
         virtual BYTES get_file(const fileData & fd) override;
         virtual std::string file_info(const fileData & fd) override;
+        virtual std::vector<std::string> get_save_file_formats() override;
+        virtual int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) override;
     };
 }
 

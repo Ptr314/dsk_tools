@@ -94,7 +94,7 @@ namespace dsk_tools {
             SPRITE_OS_DIR_ENTRY * dir_entry = reinterpret_cast<SPRITE_OS_DIR_ENTRY*>(buffer.data() + i*sizeof(SPRITE_OS_DIR_ENTRY));
             if (dir_entry->NAME[0] != 0) {
                 fileData file;
-                file.name = trim(koi7_to_utf(dir_entry->NAME, 15));
+                file.name = trim(agat_to_utf(dir_entry->NAME, 15));
                 file.size = dir_entry->FILELEN[0] + (dir_entry->FILELEN[1] << 8) + (dir_entry->FILELEN[2] << 16);
                 file.is_dir = (dir_entry->STATUS & 0x01) != 0;
                 file.is_deleted = dir_entry->NAME[0] == 0xFF;
@@ -157,7 +157,7 @@ namespace dsk_tools {
 
         std::string date_str = day + "-" + month + "-" + std::to_string(year);
 
-        result += "{$FILE_NAME}: " +  trim(koi7_to_utf(dir_entry->NAME, 15)) + "\n";
+        result += "{$FILE_NAME}: " +  trim(agat_to_utf(dir_entry->NAME, 15)) + "\n";
         result += "{$SIZE}: " +  std::to_string(dir_entry->FILELEN[0] + (dir_entry->FILELEN[1] << 8) + (dir_entry->FILELEN[2] << 16)) + " {$BYTES}\n";
         result += "{$ATTRIBUTES}: $" + dsk_tools::int_to_hex(dir_entry->STATUS) + " (" + attrs + ") \n";
         result += "{$DATE}: " + date_str + " ($" + dsk_tools::int_to_hex(dir_entry->DATE) +")\n";
@@ -169,5 +169,17 @@ namespace dsk_tools {
 
         return result;
     }
+
+    std::vector<std::string> fsSpriteOS::get_save_file_formats()
+    {
+        return {"FILE_SOS", "FILE_BINARY"};
+    }
+
+    int fsSpriteOS::save_file(const std::string & format_id, const std::string & file_name, const fileData &fd)
+    {
+        return FDD_WRITE_OK;
+    }
+
+
 
 }
