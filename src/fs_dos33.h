@@ -77,6 +77,13 @@ namespace dsk_tools {
         uint8_t         ts[122][2];         // 0C-FF
     };
 
+    struct FIL_header
+    {
+        uint8_t     name[30];
+        uint8_t     tsl[9];
+        uint8_t     type;
+    };
+
     #pragma pack(pop)
 
 
@@ -84,6 +91,7 @@ namespace dsk_tools {
     {
     protected:
         dsk_tools::Apple_DOS_VTOC * VTOC;
+        std::string attr_to_type(uint8_t a);
     public:
         fsDOS33(diskImage * image);
         virtual int open() override;
@@ -92,6 +100,8 @@ namespace dsk_tools {
         virtual int dir(std::vector<dsk_tools::fileData> * files) override;
         virtual BYTES get_file(const fileData & fd) override;
         virtual std::string file_info(const fileData & fd) override;
+        virtual std::vector<std::string> get_save_file_formats() override;
+        virtual int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) override;
     };
 }
 

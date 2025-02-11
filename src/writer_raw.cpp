@@ -1,6 +1,5 @@
 #include <fstream>
 
-
 #include "writer_raw.h"
 
 namespace dsk_tools {
@@ -27,8 +26,6 @@ namespace dsk_tools {
 
         file.write(reinterpret_cast<char*>(buffer->data()), buffer->size());
 
-        file.close();
-
-        return 0;
+        return FDD_WRITE_OK;
     }
 }

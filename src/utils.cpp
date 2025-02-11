@@ -9,11 +9,11 @@
 
 namespace dsk_tools
 {
-    std::string koi7_to_utf(const uint8_t in[], int len)
+    std::string agat_to_utf(const uint8_t in[], int len)
     {
         std::string out;
         for (int i=0; i < len; i ++) {
-            out.append(koi7map[in[i] & 0x7F]);
+            out.append(agat_charmap[in[i]]);
         }
 
         return out;
