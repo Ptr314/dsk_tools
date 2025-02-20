@@ -1,6 +1,8 @@
+#include <iostream>
 #include <stdexcept>
 #include <cstring>
 #include <set>
+#include <fstream>
 
 #include "utils.h"
 #include "fs_spriteos.h"
@@ -177,9 +179,21 @@ namespace dsk_tools {
 
     int fsSpriteOS::save_file(const std::string & format_id, const std::string & file_name, const fileData &fd)
     {
+        BYTES buffer = get_file(fd);
+
+        if (format_id == "FILE_BINARY") {
+            std::ofstream file(file_name, std::ios::binary);
+
+            if (!file.good()) {
+                return FDD_WRITE_ERROR;
+            }
+
+            file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
+
+        } else
+        if (format_id == "FILE_SOS") {
+            std::cout << dsk_tools::base64_encode(buffer, 32) << std::endl;
+        }
         return FDD_WRITE_OK;
     }
-
-
-
 }

@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <ios>
 #include <string>
+#include <vector>
 
 namespace dsk_tools
 {
@@ -23,6 +24,9 @@ namespace dsk_tools
     }
 
     std::string toBCD(uint8_t b);
+
+    std::string base64_encode(const std::vector<uint8_t>& data, size_t line_length_limit = 0);
+    std::vector<uint8_t> base64_decode(const std::string& encoded);
 
 }
 #endif // UTILS_H
