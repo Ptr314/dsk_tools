@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <ios>
 #include <string>
+#include <unordered_map>
 
 #include "definitions.h"
 #include "utils.h"
@@ -43,6 +44,84 @@ namespace dsk_tools
 
     std::string toBCD(uint8_t byte) {
         return std::to_string(byte >> 4) + std::to_string(byte & 0xF);
+    }
+
+
+    constexpr char BASE64_CHARS[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456789+/";
+
+    std::string base64_encode(const std::vector<uint8_t>& data, size_t line_length_limit) {
+        std::string encoded;
+        int val = 0;
+        int valb = -6;
+        size_t line_length = 0; // Счетчик символов в строке
+
+        for (uint8_t c : data) {
+            val = (val << 8) + c;
+            valb += 8;
+            while (valb >= 0) {
+                encoded.push_back(BASE64_CHARS[(val >> valb) & 0x3F]);
+                valb -= 6;
+                line_length++;
+
+                // Если установлен лимит строки и он достигнут, добавляем перевод строки
+                if (line_length_limit > 0 && line_length == line_length_limit) {
+                    encoded.push_back('\n');
+                    line_length = 0;
+                }
+            }
+        }
+
+        if (valb > -6) {
+            encoded.push_back(BASE64_CHARS[((val << (6 + valb)) & 0x3F)]);
+            line_length++;
+        }
+
+        while (encoded.size() % 4) {
+            encoded.push_back('=');
+            line_length++;
+
+            // Учитываем лимит строки при добавлении '='
+            if (line_length_limit > 0 && line_length == line_length_limit) {
+                encoded.push_back('\n');
+                line_length = 0;
+            }
+        }
+
+        return encoded;
+    }
+
+    std::vector<uint8_t> base64_decode(const std::string& encoded) {
+        // Таблица для обратного поиска Base64 символов
+        std::unordered_map<char, uint8_t> base64_map;
+        for (size_t i = 0; i < 64; ++i) {
+            base64_map[BASE64_CHARS[i]] = static_cast<uint8_t>(i);
+        }
+
+        std::vector<uint8_t> decoded;
+        int val = 0;
+        int valb = -8;
+
+        for (char c : encoded) {
+            if (c == '=' || c == '\n' || c == '\r') {
+                continue; // Игнорируем символы перевода строки и '=' (заполнитель)
+            }
+            if (base64_map.find(c) == base64_map.end()) {
+                throw std::invalid_argument("Incorrect base64 character");
+            }
+
+            val = (val << 6) + base64_map[c];
+            valb += 6;
+
+            if (valb >= 0) {
+                decoded.push_back(static_cast<uint8_t>((val >> valb) & 0xFF));
+                valb -= 8;
+            }
+        }
+
+        return decoded;
     }
 
 } // namespace
