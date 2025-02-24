@@ -24,6 +24,8 @@ namespace dsk_tools
     }
 
     std::string toBCD(uint8_t b);
+    std::string toHexList(const std::vector<uint8_t> & data, std::string prefix = "");
+    std::string toHexList(const uint8_t *data, int len, std::string prefix = "");
 
     std::string base64_encode(const std::vector<uint8_t>& data, size_t line_length_limit = 0);
     std::vector<uint8_t> base64_decode(const std::string& encoded);
