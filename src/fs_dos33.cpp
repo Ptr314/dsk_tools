@@ -128,7 +128,53 @@ namespace dsk_tools {
     {}
 
     std::string fsDOS33::file_info(const fileData & fd) {
+        const dsk_tools::Apple_DOS_File * dir_entry = reinterpret_cast<const dsk_tools::Apple_DOS_File *>(fd.metadata.data());
+
         std::string result = "";
+        result += "{$DIRECTORY_ENTRY}:\n";
+        result += "    {$FILE_NAME}: " +  trim(agat_to_utf(dir_entry->name, 30)) + " (" + toHexList(dir_entry->name, 30, "$") +")\n";
+        result += "    {$SIZE}: " + std::to_string(dir_entry->size * 256) + " {$BYTES} (" + std::to_string(dir_entry->size) + " {$SECTORS})\n";
+        result += "    {$TYPE}: " + attr_to_type(dir_entry->type) + " ($" + int_to_hex(dir_entry->type) + ")\n";
+        result += "    {$PROTECTED}: " + (((dir_entry->type & 0x80) > 0)?std::string("{$YES}"):std::string("{$NO}")) + "\n";
+        result += "    {$TS_LIST_LOCATION}: " + std::to_string(dir_entry->tbl_track) + ":" + std::to_string(dir_entry->tbl_sector) + "\n";
+
+
+        int list_track = dir_entry->tbl_track;
+        int list_sector = dir_entry->tbl_sector;
+        Apple_DOS_TS_List * ts_list;
+
+        do {
+            result += "T/S "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
+            if (list_track < (image->get_tracks()*image->get_heads()) && image->get_sectors()) {
+                ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+
+
+                for (int i = 0; i < VTOC->pairs_on_sector; i++){
+                    int file_track = ts_list->ts[i][0];
+                    int file_sector = ts_list->ts[i][1];
+                    result += "    "  + std::to_string(file_track) + ":" + std::to_string(file_sector) + "\n";
+
+                    if (file_track == 0) break;
+                }
+
+
+                list_track = ts_list->next_track;
+                list_sector = ts_list->next_sector;
+                if (list_track != 0 || list_sector != 0) {
+                    result += "    {$NEXT_TS}: "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
+                } else {
+                    result += "{$FILE_END_REACHED}";
+                }
+            } else {
+                result += "{$INCORRECT_TS_DATA}!!!\n";
+                break;
+            }
+
+        } while (list_track != 0);
+
+
+
+
         return result;
     }
 

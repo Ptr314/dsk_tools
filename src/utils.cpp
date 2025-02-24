@@ -124,4 +124,21 @@ namespace dsk_tools
         return decoded;
     }
 
+    std::string toHexList(const std::vector<uint8_t> & data, std::string prefix)
+    {
+        return toHexList(static_cast<const uint8_t*>(data.data()), data.size(), prefix);
+    }
+
+    std::string toHexList(const uint8_t *data, int len, std::string prefix)
+    {
+        std::string out = "";
+        for (int i=0; i < len; i++) {
+            uint8_t b = data[i];
+            if (out.size() > 0) out += " ";
+            out += prefix;
+            out += int_to_hex(b);
+        }
+        return out;
+    }
+
 } // namespace

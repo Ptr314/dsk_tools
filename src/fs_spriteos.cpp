@@ -163,12 +163,7 @@ namespace dsk_tools {
         result += "{$SIZE}: " +  std::to_string(dir_entry->FILELEN[0] + (dir_entry->FILELEN[1] << 8) + (dir_entry->FILELEN[2] << 16)) + " {$BYTES}\n";
         result += "{$ATTRIBUTES}: $" + dsk_tools::int_to_hex(dir_entry->STATUS) + " (" + attrs + ") \n";
         result += "{$DATE}: " + date_str + " ($" + dsk_tools::int_to_hex(dir_entry->DATE) +")\n";
-        result += "USRINF: $" + dsk_tools::int_to_hex(dir_entry->USRINF[0]) +
-                  " $" + dsk_tools::int_to_hex(dir_entry->USRINF[1]) +
-                  " $" + dsk_tools::int_to_hex(dir_entry->USRINF[2]) +
-                  " $" + dsk_tools::int_to_hex(dir_entry->USRINF[3]) +
-                  "\n";
-
+        result += "USRINF: " + dsk_tools::toHexList(dir_entry->USRINF, sizeof(dir_entry->USRINF), "$") + "\n";
         return result;
     }
 
