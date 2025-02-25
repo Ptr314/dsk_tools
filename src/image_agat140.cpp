@@ -2,7 +2,7 @@
 #include "image_agat140.h"
 
 namespace dsk_tools {
-    imageAgat140::imageAgat140(Loader * loader):
+imageAgat140::imageAgat140(Loader * loader):
           diskImage(loader)
     {
         format_heads = 1;
@@ -20,14 +20,14 @@ namespace dsk_tools {
         return FDD_LOAD_OK;
     }
 
-    int imageAgat140::translate_sector_logic2raw(int sector)
-    {
-        return agat_140_logic2raw[sector];
-    }
+    // int imageAgat140::translate_sector_logic2raw(int sector)
+    // {
+    //     return sector; //agat_140_logic2raw[sector];
+    // }
 
-    int imageAgat140::translate_sector_raw2logic(int sector)
-    {
-        return agat_140_raw2logic[sector];
-    }
+    // int imageAgat140::translate_sector_raw2logic(int sector)
+    // {
+    //     return sector; //agat_140_raw2logic[sector];
+    // }
 
 }

@@ -13,20 +13,20 @@ namespace dsk_tools {
         format_floppyinterfacemode = GENERIC_SHUGGART_DD_FLOPPYMODE;
     }
 
-    int imageAgat840::translate_sector_logic2raw(int sector)
-    {
-        return sector;
-    }
+    // int imageAgat840::translate_sector_logic2raw(int sector)
+    // {
+    //     return sector;
+    // }
 
-    int imageAgat840::translate_sector_raw2logic(int sector)
-    {
-        return sector;
-    }
+    // int imageAgat840::translate_sector_raw2logic(int sector)
+    // {
+    //     return sector;
+    // }
 
-    uint8_t * imageAgat840::get_sector_data(int head, int track, int sector)
-    {
-        return get_raw_sector_data(track & 1, track >> 1, sector);
-    }
+    // uint8_t * imageAgat840::get_sector_data(int head, int track, int sector)
+    // {
+    //     return get_raw_sector_data(track & 1, track >> 1, sector);
+    // }
 
 
 }

@@ -33,7 +33,7 @@ namespace dsk_tools {
         protected:
             std::string type_id;
             BYTES buffer;
-            Loader * loader;
+            Loader * loader = nullptr;
             int format_heads;
             int format_tracks;
             int format_sectors;
@@ -46,14 +46,14 @@ namespace dsk_tools {
 
         public:
             diskImage(Loader * loader);
-            virtual ~diskImage() {};
+            virtual ~diskImage();
             std::string file_name();
             virtual int check() = 0;                                            // Check physical image parameters
             virtual int load();
-            virtual int translate_sector_logic2raw(int sector);
-            virtual int translate_sector_raw2logic(int sector);
+            // virtual int translate_sector_logic2raw(int sector);
+            // virtual int translate_sector_raw2logic(int sector);
             virtual uint8_t *get_sector_data(int head, int track, int sector);      // Uses sector starnslation
-            virtual uint8_t *get_raw_sector_data(int head, int track, int sector);  // Do not uses translation
+            // virtual uint8_t *get_raw_sector_data(int head, int track, int sector);  // Do not uses translation
             bool get_loaded();
             int get_heads();
             int get_tracks();

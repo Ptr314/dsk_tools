@@ -176,19 +176,23 @@ namespace dsk_tools {
     {
         BYTES buffer = get_file(fd);
 
-        if (format_id == "FILE_BINARY") {
-            std::ofstream file(file_name, std::ios::binary);
+        if (buffer.size() > 0) {
+            if (format_id == "FILE_BINARY") {
+                std::ofstream file(file_name, std::ios::binary);
 
-            if (!file.good()) {
-                return FDD_WRITE_ERROR;
+                if (!file.good()) {
+                    return FDD_WRITE_ERROR;
+                }
+
+                file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
+
+            } else
+            if (format_id == "FILE_SOS") {
+                std::cout << dsk_tools::base64_encode(buffer, 32) << std::endl;
             }
-
-            file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
-
-        } else
-        if (format_id == "FILE_SOS") {
-            std::cout << dsk_tools::base64_encode(buffer, 32) << std::endl;
+            return FDD_WRITE_OK;
+        } else {
+            return FDD_WRITE_ERROR_READING;
         }
-        return FDD_WRITE_OK;
     }
 }

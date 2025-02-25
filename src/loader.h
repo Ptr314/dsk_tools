@@ -19,7 +19,7 @@ namespace dsk_tools {
 
         public:
             Loader(std::string file_name, std::string format_id, std::string type_id);
-            ~Loader();
+            virtual ~Loader();
 
             std::string get_file_name();
             std::string get_type_id();

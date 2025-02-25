@@ -9,9 +9,9 @@ namespace dsk_tools {
     {
     public:
         imageAgat840(Loader * loader);
-        virtual int translate_sector_logic2raw(int sector) override;
-        virtual int translate_sector_raw2logic(int sector) override;
-        virtual uint8_t *get_sector_data(int head, int track, int sector) override;
+        // virtual int translate_sector_logic2raw(int sector) override;
+        // virtual int translate_sector_raw2logic(int sector) override;
+        // virtual uint8_t *get_sector_data(int head, int track, int sector) override;
     };
 
 }
