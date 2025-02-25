@@ -13,7 +13,6 @@ namespace dsk_tools {
         0, 13, 11, 9, 7, 5, 3, 1, 14, 12, 10, 8, 6, 4, 2, 15
     };
 
-
     class imageAgat140: public diskImage
     {
         protected:
@@ -21,8 +20,8 @@ namespace dsk_tools {
         public:
             imageAgat140(Loader * loader);
             virtual int check() override;
-            virtual int translate_sector_logic2raw(int sector) override;
-            virtual int translate_sector_raw2logic(int sector) override;
+            // virtual int translate_sector_logic2raw(int sector) override;
+            // virtual int translate_sector_raw2logic(int sector) override;
     };
 }
 

@@ -39,10 +39,10 @@ namespace dsk_tools {
         uint8_t v = a & 0x7F;
         int n = 0;
         do {
-            if (v == 0 ) return types[n];
+            if (v == 0) return types[n];
             v <<= 1;
             n++;
-        } while (n < 9);
+        } while (n < 8);
         return "";
     }
 
@@ -55,21 +55,22 @@ namespace dsk_tools {
         int catalog_track = VTOC->catalog_track;
         int catalog_sector = VTOC->catalog_sector;
 
+        std::cout << "VTOC->root/first: " << catalog_track << ":" << catalog_sector << std::endl;
+
         Apple_DOS_Catalog * catalog;
 
 
         do {
             catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_track, catalog_sector));
-
-            catalog_track = catalog->next_track;
-            catalog_sector = catalog->next_sector;
+            //std::cout << catalog_track << ":" << catalog_sector << std::endl;
 
             for (int i=0; i<7; i++) {
                 fileData file;
 
-                if (catalog->files[i].tbl_track == 0) break;
+                //std::cout << "    F: " << (int)catalog->files[i].type << ":" << (int)catalog->files[i].size << ":" << (int)catalog->files[i].tbl_sector << ":" << (int)catalog->files[i].tbl_track  << std::endl;
+                if (catalog->files[i].tbl_track == 0) return FDD_OP_OK;
                 file.is_dir = false;
-                file.is_deleted = (catalog->files[i].type == 0xFF);
+                file.is_deleted = (catalog->files[i].type == 0xFF || catalog->files[i].tbl_track == 0xFF);
                 file.is_protected = (catalog->files[i].type & 0x80) != 0;
                 file.attributes = catalog->files[i].type & 0x7F;
                 memcpy(&file.original_name, &catalog->files[i].name, 30);
@@ -86,9 +87,12 @@ namespace dsk_tools {
                 file.metadata.resize(sizeof(catalog->files[i]));
                 memcpy(file.metadata.data(), &(catalog->files[i]), sizeof(catalog->files[i]));
 
-
                 files->push_back(file);
             }
+
+            catalog_track = catalog->next_track;
+            catalog_sector = catalog->next_sector;
+            //std::cout << "    Next: " << catalog_track << ":" << catalog_sector << std::endl;
 
         } while (catalog_track != 0);
 
@@ -103,24 +107,25 @@ namespace dsk_tools {
         int list_track = dir_entry->tbl_track;
         int list_sector = dir_entry->tbl_sector;
 
-        Apple_DOS_TS_List * ts_list;
+        if (list_track != 0xFF) {
+            Apple_DOS_TS_List * ts_list;
 
-        do {
-            ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+            do {
+                ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
 
-            for (int i = 0; i < VTOC->pairs_on_sector; i++){
-                int file_track = ts_list->ts[i][0];
-                int file_sector = ts_list->ts[i][1];
-                if (file_track == 0) break;
-                std::uint8_t * sector = image->get_sector_data(0, file_track, file_sector);
-                data.insert(data.end(),&sector[0],&sector[256]);
-            }
+                for (int i = 0; i < VTOC->pairs_on_sector; i++){
+                    int file_track = ts_list->ts[i][0];
+                    int file_sector = ts_list->ts[i][1];
+                    if (file_track == 0) break;
+                    std::uint8_t * sector = image->get_sector_data(0, file_track, file_sector);
+                    data.insert(data.end(),&sector[0],&sector[256]);
+                }
 
-            list_track = ts_list->next_track;
-            list_sector = ts_list->next_sector;
+                list_track = ts_list->next_track;
+                list_sector = ts_list->next_sector;
 
-        } while (list_track != 0);
-
+            } while (list_track != 0);
+        }
         return data;
     }
 
@@ -141,40 +146,41 @@ namespace dsk_tools {
 
         int list_track = dir_entry->tbl_track;
         int list_sector = dir_entry->tbl_sector;
-        Apple_DOS_TS_List * ts_list;
 
-        do {
-            result += "T/S "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
-            if (list_track < (image->get_tracks()*image->get_heads()) && image->get_sectors()) {
-                ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+        if (list_track != 0xFF) {
+            Apple_DOS_TS_List * ts_list;
 
-
-                for (int i = 0; i < VTOC->pairs_on_sector; i++){
-                    int file_track = ts_list->ts[i][0];
-                    int file_sector = ts_list->ts[i][1];
-                    result += "    "  + std::to_string(file_track) + ":" + std::to_string(file_sector) + "\n";
-
-                    if (file_track == 0) break;
-                }
+            do {
+                result += "T/S "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
+                if (list_track < (image->get_tracks()*image->get_heads()) && image->get_sectors()) {
+                    ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
 
 
-                list_track = ts_list->next_track;
-                list_sector = ts_list->next_sector;
-                if (list_track != 0 || list_sector != 0) {
-                    result += "    {$NEXT_TS}: "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
+                    for (int i = 0; i < VTOC->pairs_on_sector; i++){
+                        int file_track = ts_list->ts[i][0];
+                        int file_sector = ts_list->ts[i][1];
+                        result += "    "  + std::to_string(file_track) + ":" + std::to_string(file_sector) + "\n";
+
+                        if (file_track == 0) break;
+                    }
+
+
+                    list_track = ts_list->next_track;
+                    list_sector = ts_list->next_sector;
+                    if (list_track != 0 || list_sector != 0) {
+                        result += "    {$NEXT_TS}: "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
+                    } else {
+                        result += "{$FILE_END_REACHED}";
+                    }
                 } else {
-                    result += "{$FILE_END_REACHED}";
+                    result += "{$INCORRECT_TS_DATA}!!!\n";
+                    break;
                 }
-            } else {
-                result += "{$INCORRECT_TS_DATA}!!!\n";
-                break;
-            }
 
-        } while (list_track != 0);
-
-
-
-
+            } while (list_track != 0);
+        } else {
+            result += "{$FILE_DELETED}\n";
+        }
         return result;
     }
 
@@ -188,23 +194,27 @@ namespace dsk_tools {
         const Apple_DOS_File * dir_entry = reinterpret_cast<const Apple_DOS_File *>(fd.metadata.data());
 
         BYTES buffer = get_file(fd);
-        if (format_id == "FILE_BINARY") {
-            std::ofstream file(file_name, std::ios::binary);
+        if (buffer.size() > 0) {
+            if (format_id == "FILE_BINARY") {
+                std::ofstream file(file_name, std::ios::binary);
 
-            if (!file.good()) {
-                return FDD_WRITE_ERROR;
+                if (!file.good()) {
+                    return FDD_WRITE_ERROR;
+                }
+
+                file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
+            } else
+            if (format_id == "FILE_FIL") {
+                FIL_header header;
+                memcpy(&header.name, &(dir_entry->name), sizeof(header.name));
+                header.type = dir_entry->type;
+                //header.tsl
             }
 
-            file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
-        } else
-        if (format_id == "FILE_FIL") {
-            FIL_header header;
-            memcpy(&header.name, &(dir_entry->name), sizeof(header.name));
-            header.type = dir_entry->type;
-            //header.tsl
+            return FDD_WRITE_OK;
+        } else {
+            return FDD_WRITE_ERROR_READING;
         }
-
-        return FDD_WRITE_OK;
     }
 
 }

@@ -2,10 +2,15 @@
 
 namespace dsk_tools {
 
-    diskImage::diskImage(Loader * loader):
+diskImage::diskImage(Loader * loader):
           loader(loader)
         , is_loaded(false)
     {}
+
+    diskImage::~diskImage()
+    {
+        if (loader) delete loader;
+    }
 
     int diskImage::load()
     {
@@ -17,31 +22,33 @@ namespace dsk_tools {
 
     uint8_t * diskImage::get_sector_data(int head, int track, int sector)
     {
-        return get_raw_sector_data(head, track, translate_sector_logic2raw(sector));
-    }
-
-    uint8_t * diskImage::get_raw_sector_data(int head, int track, int sector)
-    {
-        // Assumes sector numbering from 0
+        // return get_raw_sector_data(head, track, translate_sector_logic2raw(sector));
         long offset = ((track * format_heads  + head) * format_sectors + sector) * format_sector_size;
         return reinterpret_cast<uint8_t *>(&buffer[offset]);
     }
 
-    int diskImage::translate_sector_logic2raw(int sector)
-    {
-        // Assumes logic sector numbering from 1
-        // Assumes no interleving
-        // Needs to be overridden in inheriting classes otherwise
-        return sector-1;
-    }
+    // uint8_t * diskImage::get_raw_sector_data(int head, int track, int sector)
+    // {
+    //     // Assumes sector numbering from 0
+    //     long offset = ((track * format_heads  + head) * format_sectors + sector) * format_sector_size;
+    //     return reinterpret_cast<uint8_t *>(&buffer[offset]);
+    // }
 
-    int diskImage::translate_sector_raw2logic(int sector)
-    {
-        // Assumes logic sector numbering from 1
-        // Assumes no interleving
-        // Needs to be overridden in inheriting classes otherwise
-        return sector+1;
-    }
+    // int diskImage::translate_sector_logic2raw(int sector)
+    // {
+    //     // Assumes logic sector numbering from 1
+    //     // Assumes no interleving
+    //     // Needs to be overridden in inheriting classes otherwise
+    //     return sector-1;
+    // }
+
+    // int diskImage::translate_sector_raw2logic(int sector)
+    // {
+    //     // Assumes logic sector numbering from 1
+    //     // Assumes no interleving
+    //     // Needs to be overridden in inheriting classes otherwise
+    //     return sector+1;
+    // }
 
     std::string diskImage::file_name()
     {

@@ -30,6 +30,7 @@ namespace dsk_tools {
     #define FDD_WRITE_OK                0
     #define FDD_WRITE_ERROR             1
     #define FDD_WRITE_UNSUPPORTED       2
+    #define FDD_WRITE_ERROR_READING     3
 
     #define FDD_DETECT_OK               0
     #define FDD_DETECT_ERROR            1
