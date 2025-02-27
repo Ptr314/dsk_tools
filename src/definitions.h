@@ -9,8 +9,7 @@ namespace dsk_tools {
 
     #define FDD_LOAD_OK                 0
     #define FDD_LOAD_ERROR              1
-    #define FDD_LOAD_SIZE_SMALLER       2
-    #define FDD_LOAD_SIZE_LARGER        3
+    #define FDD_LOAD_SIZE_MISMATCH      2
     #define FDD_LOAD_PARAMS_MISMATCH    4
     #define FDD_LOAD_INCORRECT_FILE     5
     #define FDD_LOAD_FILE_CORRUPT       6
