@@ -38,6 +38,7 @@ namespace dsk_tools {
             int format_tracks;
             int format_sectors;
             int format_sector_size;
+            int expected_size;
             int format_bitrate;
             int format_rpm;
             int format_track_encoding;

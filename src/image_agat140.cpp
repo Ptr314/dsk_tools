@@ -9,6 +9,7 @@ imageAgat140::imageAgat140(Loader * loader):
         format_tracks = 35;
         format_sectors = 16;
         format_sector_size = 256;
+        expected_size = format_heads * format_tracks * format_sectors * format_sector_size;
         format_bitrate = 250;
         format_rpm = 300;
         format_track_encoding = UNKNOWN_ENCODING;

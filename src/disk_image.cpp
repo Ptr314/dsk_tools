@@ -1,4 +1,5 @@
 #include "dsk_tools/dsk_tools.h"
+#include <iostream>
 
 namespace dsk_tools {
 
@@ -16,7 +17,15 @@ diskImage::diskImage(Loader * loader):
     {
         type_id = loader->get_type_id();
         int result = loader->load(buffer);
-        is_loaded = (result == FDD_LOAD_OK);
+        if (result == FDD_LOAD_OK) {
+            int buffer_size = buffer.size();
+            if (buffer_size >= expected_size && buffer_size <= expected_size + 4) {
+                is_loaded = true;
+                return FDD_LOAD_OK;
+            } else {
+                return FDD_LOAD_SIZE_MISMATCH;
+            }
+        }
         return result;
     }
 

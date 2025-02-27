@@ -7,6 +7,8 @@ namespace dsk_tools {
         format_heads = 2;
         format_tracks = 80;
         format_sectors = 21;
+        format_sector_size = 256;
+        expected_size = format_heads * format_tracks * format_sectors * format_sector_size;
         format_bitrate = 250;
         format_rpm = 300;
         format_track_encoding = ISOIBM_MFM_ENCODING;
@@ -23,10 +25,10 @@ namespace dsk_tools {
     //     return sector;
     // }
 
-    // uint8_t * imageAgat840::get_sector_data(int head, int track, int sector)
-    // {
-    //     return get_raw_sector_data(track & 1, track >> 1, sector);
-    // }
+    uint8_t * imageAgat840::get_sector_data(int head, int track, int sector)
+    {
+        return diskImage::get_sector_data(track & 1, track >> 1, sector);
+    }
 
 
 }
