@@ -114,4 +114,14 @@ diskImage::diskImage(Loader * loader):
         return is_loaded;
     }
 
+    int diskImage::get_size()
+    {
+        return expected_size;
+    }
+
+    int diskImage::get_sector_size()
+    {
+        return format_sector_size;
+    }
+
 }

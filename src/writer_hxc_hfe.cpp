@@ -7,8 +7,8 @@
 
 namespace dsk_tools {
 
-    WriterHxCHFE::WriterHxCHFE(const std::string & format_id, diskImage * image_to_save):
-        WriterMFM(format_id, image_to_save)
+WriterHxCHFE::WriterHxCHFE(const std::string & format_id, diskImage * image_to_save, const uint8_t volume_id, const std::string &interleaving_id):
+        WriterMFM(format_id, image_to_save, volume_id, interleaving_id)
     {}
 
     std::string WriterHxCHFE::get_default_ext()
@@ -61,14 +61,9 @@ namespace dsk_tools {
         out.insert(out.end(), HFE_BLOCK_SIZE - sizeof(track) * image->get_tracks(), 0xFF);
     }
 
-    int WriterHxCHFE::write(const std::string & file_name)
+    int WriterHxCHFE::write(BYTES &buffer)
     {
-        std::cout << "Converting started" << std::endl;
-        std::cout << format_id << std::endl;
-        std::cout << file_name << std::endl;
-
-        BYTES buffer;
-
+        buffer.clear();
         buffer.reserve(buffer.size() + 512);
 
         write_hxc_hfe_header(buffer);
@@ -93,19 +88,12 @@ namespace dsk_tools {
                 }
             }
         }
-
-
-        std::ofstream file(file_name, std::ios::binary);
-
-        if (!file.good()) {
-            return FDD_WRITE_ERROR;
-        }
-
-        file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
-
-        file.close();
-
         return 0;
+    }
+
+    int WriterHxCHFE::substitute_tracks(BYTES & buffer, std::vector<uint8_t> &tmplt, const int numtracks)
+    {
+        return -1;
     }
 
 }

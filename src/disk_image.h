@@ -59,6 +59,8 @@ namespace dsk_tools {
             int get_heads();
             int get_tracks();
             int get_sectors();
+            int get_sector_size();
+            int get_size();
             int get_bitrate();
             int get_rpm();
             int get_track_encoding();

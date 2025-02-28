@@ -10,8 +10,8 @@ namespace dsk_tools {
     public:
         WriterRAW(const std::string & format_id, diskImage *image_to_save);
         virtual std::string get_default_ext() override;
-        virtual int write(const std::string & file_name) override;
-
+        virtual int write(BYTES & buffer) override;
+        virtual int substitute_tracks(BYTES & buffer, BYTES & tmplt, const int numtracks) override;
     };
 
 }

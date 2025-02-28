@@ -5,8 +5,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "definitions.h"
 #include "utils.h"
+#include "charmaps.h"
 
 namespace dsk_tools
 {
@@ -14,7 +14,7 @@ namespace dsk_tools
     {
         std::string out;
         for (int i=0; i < len; i ++) {
-            out.append(agat_charmap[in[i]]);
+            out.append(dsk_tools::agat_charmap[in[i]]);
         }
 
         return out;
