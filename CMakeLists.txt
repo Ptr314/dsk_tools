@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(${PROJECT_NAME} STATIC
     include/dsk_tools/dsk_tools.h       src/dsk_tools.cpp
     src/definitions.h
+    src/charmaps.h
     src/utils.h                         src/utils.cpp
     src/loader.h                        src/loader.cpp
     src/loader_raw.h                    src/loader_raw.cpp

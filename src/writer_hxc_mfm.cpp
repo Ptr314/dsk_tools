@@ -7,8 +7,8 @@
 
 namespace dsk_tools {
 
-    WriterHxCMFM::WriterHxCMFM(const std::string & format_id, diskImage * image_to_save):
-        WriterMFM(format_id, image_to_save)
+    WriterHxCMFM::WriterHxCMFM(const std::string & format_id, diskImage * image_to_save, const uint8_t volume_id, const std::string & interleaving_id):
+        WriterMFM(format_id, image_to_save, volume_id, interleaving_id)
     {}
 
     std::string WriterHxCMFM::get_default_ext()
@@ -39,14 +39,13 @@ namespace dsk_tools {
         out.insert(out.end(), ptr, ptr + sizeof(header));
     }
 
-    int WriterHxCMFM::write(const std::string & file_name)
+    int WriterHxCMFM::write(BYTES &buffer)
     {
-        BYTES buffer;
+        buffer.clear();
 
         int track_size;
 
         std::string type_id = image->get_type_id();
-
 
         if (format_id == "FILE_HXC_MFM") {
             if (type_id == "TYPE_AGAT_140") {
@@ -105,18 +104,12 @@ namespace dsk_tools {
         } else
             return FDD_WRITE_UNSUPPORTED;
 
-
-        std::ofstream file(file_name, std::ios::binary);
-
-        if (!file.good()) {
-            return FDD_WRITE_ERROR;
-        }
-
-        file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
-
-        file.close();
-
         return 0;
+    }
+
+    int WriterHxCMFM::substitute_tracks(BYTES & buffer, BYTES & tmplt, const int numtracks)
+    {
+        return -1;
     }
 
 }

@@ -82,6 +82,11 @@ namespace dsk_tools {
     class WriterMFM:public Writer
     {
     protected:
+        uint8_t m_volume_id;
+        std::string m_interleaving_id;
+
+        std::vector<int> sector_translation;
+
         void write_gcr62_track(BYTES &out, uint8_t track, int track_length);
         void write_gcr62_nic_track(BYTES &out, uint8_t track);
         void write_agat840_track(BYTES &out, uint8_t head, uint8_t track);
@@ -89,7 +94,8 @@ namespace dsk_tools {
         void write_agat_mfm_array(BYTES &out, uint8_t data, uint16_t count, uint8_t * last_byte);
         uint8_t write_agat_mfm_data(BYTES &out, uint8_t * data, uint16_t count, uint8_t * last_byte);
     public:
-        WriterMFM(const std::string & format_id, diskImage *image_to_save);
+        virtual int sector_raw2logic(int sector) override;
+        WriterMFM(const std::string & format_id, diskImage *image_to_save, const uint8_t volume_id, const std::string & interleaving_id);
 
     };
 

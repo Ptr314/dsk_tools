@@ -1,4 +1,4 @@
-#include <fstream>
+#include <iostream>
 
 #include "writer_raw.h"
 
@@ -14,18 +14,23 @@ namespace dsk_tools {
     }
 
 
-    int WriterRAW::write(const std::string & file_name)
+    int WriterRAW::write(BYTES &buffer)
     {
-        std::ofstream file(file_name, std::ios::binary);
+        buffer = *image->get_buffer();
+        return FDD_WRITE_OK;
+    }
 
-        if (!file.good()) {
-            return FDD_WRITE_ERROR;
-        }
+    int WriterRAW::substitute_tracks(BYTES & buffer, BYTES &tmplt, const int numtracks)
+    {
+        if (buffer.size() != tmplt.size()) return FDD_WRITE_INCORECT_TEMPLATE;
+        if (buffer.size() != image->get_size()) return FDD_WRITE_INCORECT_SOURCE;
+        int block_size = image->get_sectors() * image->get_sector_size() * image->get_heads();
 
-        BYTES * buffer = image->get_buffer();
+        BYTES out;
+        out.insert(out.end(), tmplt.begin(), tmplt.begin() + block_size);
+        out.insert(out.end(), buffer.begin() + block_size, buffer.end());
 
-        file.write(reinterpret_cast<char*>(buffer->data()), buffer->size());
-
+        buffer = out;
         return FDD_WRITE_OK;
     }
 }
