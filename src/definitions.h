@@ -40,7 +40,7 @@ namespace dsk_tools {
     #define PREFERRED_TEXT              1
 
 
-    #define BYTES   std::vector<uint8_t>
+    typedef std::vector<uint8_t> BYTES;
 
     struct fileData
     {
