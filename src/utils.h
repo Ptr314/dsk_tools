@@ -14,12 +14,12 @@ namespace dsk_tools
     std::string get_file_ext(const std::string &file_name);
 
     template< typename T >
-    std::string int_to_hex( T i )
+    std::string int_to_hex( T i, bool fill = true )
     {
         std::stringstream stream;
-        stream << std::uppercase
-               << std::setfill ('0') << std::setw(sizeof(T)*2)
-               << std::hex << static_cast<unsigned int>(i);
+        stream << std::uppercase;
+        if (fill) stream << std::setfill ('0') << std::setw(sizeof(T)*2);
+        stream << std::hex << static_cast<unsigned int>(i);
         return stream.str();
     }
 

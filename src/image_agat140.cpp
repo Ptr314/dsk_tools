@@ -18,17 +18,8 @@ imageAgat140::imageAgat140(Loader * loader):
 
     int imageAgat140::check()
     {
+        // TODO: Implement
         return FDD_LOAD_OK;
     }
-
-    // int imageAgat140::translate_sector_logic2raw(int sector)
-    // {
-    //     return sector; //agat_140_logic2raw[sector];
-    // }
-
-    // int imageAgat140::translate_sector_raw2logic(int sector)
-    // {
-    //     return sector; //agat_140_raw2logic[sector];
-    // }
 
 }

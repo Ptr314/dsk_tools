@@ -13,8 +13,6 @@ namespace dsk_tools {
     {
         uint8_t res = FDD_LOAD_OK;
 
-        std::cout << "File name: " << file_name << std::endl;
-
         std::ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
@@ -25,8 +23,6 @@ namespace dsk_tools {
         auto fsize = file.tellg();
         file.seekg (0, file.beg);
 
-        std::cout << "File size: " << fsize << std::endl;
-
         buffer.resize(fsize);
         file.read (reinterpret_cast<char*>(buffer.data()), fsize);
 
@@ -34,4 +30,29 @@ namespace dsk_tools {
 
         return FDD_LOAD_OK;
     }
+
+    std::string LoaderRAW::file_info()
+    {
+        std::string result = "";
+
+        std::ifstream file(file_name, std::ios::binary);
+
+        if (!file.good()) {
+            result += "{$ERROR_OPENING}:\n";
+            return result;
+        }
+
+        file.seekg (0, file.end);
+        auto fsize = file.tellg();
+        file.seekg (0, file.beg);
+
+        size_t pos = file_name.find_last_of("/\\");
+        std::string file_short = (pos == std::string::npos) ? file_name : file_name.substr(pos + 1);
+        result += "{$FILE_NAME}: " + file_short + "\n";
+        result += "{$SIZE}: " + std::to_string(fsize) + " {$BYTES}\n";
+
+        return result;
+
+    }
+
 }

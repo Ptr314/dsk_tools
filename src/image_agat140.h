@@ -20,8 +20,6 @@ namespace dsk_tools {
         public:
             imageAgat140(Loader * loader);
             virtual int check() override;
-            // virtual int translate_sector_logic2raw(int sector) override;
-            // virtual int translate_sector_raw2logic(int sector) override;
     };
 }
 
