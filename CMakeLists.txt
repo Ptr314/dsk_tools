@@ -10,22 +10,25 @@ add_library(${PROJECT_NAME} STATIC
     src/definitions.h
     src/charmaps.h
     src/utils.h                         src/utils.cpp
+
     src/loader.h                        src/loader.cpp
     src/loader_raw.h                    src/loader_raw.cpp
+    src/loader_aim.h                    src/loader_aim.cpp
+    src/loader_gcr.h                    src/loader_gcr.cpp
+
     src/disk_image.h                    src/disk_image.cpp
     src/image_agat140.h                 src/image_agat140.cpp
     src/image_agat840.h                 src/image_agat840.cpp
+
     src/writer.h                        src/writer.cpp
     src/writer_hxc_hfe.h                src/writer_hxc_hfe.cpp
     src/writer_mfm.h                    src/writer_mfm.cpp
     src/writer_hxc_mfm.h                src/writer_hxc_mfm.cpp
     src/writer_raw.h                    src/writer_raw.cpp
+
     src/filesystem.h                    src/filesystem.cpp
     src/fs_dos33.h                      src/fs_dos33.cpp
-    src/fs_spriteos.h
-    src/fs_spriteos.cpp
-    src/loader_aim.h
-    src/loader_aim.cpp
+    src/fs_spriteos.h                   src/fs_spriteos.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
