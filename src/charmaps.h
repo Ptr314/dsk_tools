@@ -1,28 +1,8 @@
 #ifndef CHARMAPS_H
 #define CHARMAPS_H
 
-// #include <QString>
-
 #include <string>
 namespace dsk_tools {
-
-    // static const QString koi8map =
-    //                                 "................"
-    //                                 "................"
-    //                                 " !\"#$%&'()*+,-./"
-    //                                 "0123456789:;<=>?"
-    //                                 "@ABCDEFGHIJKLMNO"
-    //                                 "PQRSTUVWXYZ[\\]^_"
-    //                                 "`abcdefghijklmno"
-    //                                 "pqrstuvwxyz{|}~."
-    //                                 "................"
-    //                                 "................"
-    //                                 "...ё............"
-    //                                 "...Ё............"
-    //                                 "юабцдефгхийклмно"
-    //                                 "пярстужвьызшэщчъ"
-    //                                 "ЮАБЦДЕФГХИЙКЛМНО"
-    //                                 "ПЯРСТУЖВЬЫЗШЭЩЧЪ";
 
     // TODO: http://forum.agatcomp.ru//viewtopic.php?id=378
     static const std::string agat_charmap[256] =  {

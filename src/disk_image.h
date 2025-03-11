@@ -48,25 +48,23 @@ namespace dsk_tools {
         public:
             diskImage(Loader * loader);
             virtual ~diskImage();
-            std::string file_name();
             virtual int check() = 0;                                            // Check physical image parameters
             virtual int load();
-            // virtual int translate_sector_logic2raw(int sector);
-            // virtual int translate_sector_raw2logic(int sector);
             virtual uint8_t *get_sector_data(int head, int track, int sector);      // Uses sector starnslation
-            // virtual uint8_t *get_raw_sector_data(int head, int track, int sector);  // Do not uses translation
-            bool get_loaded();
-            int get_heads();
-            int get_tracks();
-            int get_sectors();
-            int get_sector_size();
-            int get_size();
-            int get_bitrate();
-            int get_rpm();
-            int get_track_encoding();
-            int get_floppyinterfacemode();
-            std::string get_type_id();
-            BYTES * get_buffer();
+
+            std::string file_name() {return loader->get_file_name();};
+            bool get_loaded() {return is_loaded;};
+            int get_heads() {return format_heads;};
+            int get_tracks() {return format_tracks;};
+            int get_sectors() {return format_sectors;};
+            int get_sector_size() {return format_sector_size;};
+            int get_size() {return expected_size;};
+            int get_bitrate() {return format_bitrate;};
+            int get_rpm() {return format_rpm;};
+            int get_track_encoding() {return format_track_encoding;};
+            int get_floppyinterfacemode() {return format_floppyinterfacemode;};
+            std::string get_type_id() {return type_id;};
+            BYTES * get_buffer() {return &buffer;};
     };
 }
 

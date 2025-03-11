@@ -10,7 +10,7 @@ namespace dsk_tools {
     #define AGAT_140_GAP2    27
     #define AGAT_140_GAP3    (track_length - (AGAT_140_GAP0 + 16 * (3 + 8 + 3 + AGAT_140_GAP1 + 3 + 343 + 3 + AGAT_140_GAP2)))
 
-    static uint16_t agat_MFM_tab[]=
+    static const uint16_t agat_MFM_tab[]=
         {
                 0x5555, 0x5595, 0x5525, 0x55A5, 0x5549, 0x5589, 0x5529, 0x55A9,
                 0x5552, 0x5592, 0x5522, 0x55A2, 0x554A, 0x558A, 0x552A, 0x55AA,

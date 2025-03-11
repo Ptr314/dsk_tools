@@ -29,6 +29,9 @@ add_library(${PROJECT_NAME} STATIC
     src/filesystem.h                    src/filesystem.cpp
     src/fs_dos33.h                      src/fs_dos33.cpp
     src/fs_spriteos.h                   src/fs_spriteos.cpp
+    src/loader_gcr_nic.h                src/loader_gcr_nic.cpp
+    src/loader_gcr_nib.h                src/loader_gcr_nib.cpp
+    src/loader_gcr_mfm.h                src/loader_gcr_mfm.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC

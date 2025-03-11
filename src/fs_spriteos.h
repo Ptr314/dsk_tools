@@ -3,7 +3,7 @@
 
 #include "filesystem.h"
 
-    namespace dsk_tools {
+namespace dsk_tools {
 
     #pragma pack(push, 1)
 

@@ -6,20 +6,6 @@ namespace dsk_tools {
         , format_id(format_id)
         , type_id(type_id)
         , loaded(false)
-
     {}
-
-    Loader::~Loader()
-    {}
-
-    std::string Loader::get_file_name()
-    {
-        return file_name;
-    }
-
-    std::string Loader::get_type_id()
-    {
-        return type_id;
-    }
 
 }
