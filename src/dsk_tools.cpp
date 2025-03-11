@@ -8,7 +8,6 @@ namespace dsk_tools {
     static const unsigned char FlipBit1[4] = { 0, 2,  1,  3  };
     static const unsigned char FlipBit2[4] = { 0, 8,  4,  12 };
     static const unsigned char FlipBit3[4] = { 0, 32, 16, 48 };
-    static const unsigned char FlipBit[4] = { 0,  2,  1,  3  };
 
     static const uint8_t m_write_translate_table[64] =
         {
@@ -22,7 +21,7 @@ namespace dsk_tools {
             0xF7,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF
     };
 
-    static uint8_t m_read_translate_table[] = {
+    static const uint8_t m_read_translate_table[] = {
         0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
         0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
         0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -52,8 +51,14 @@ namespace dsk_tools {
         if (format_id == "FILE_AIM") {
             loader = new dsk_tools::LoaderAIM(file_name, format_id, type_id);
         } else
-        if (format_id == "FILE_MFM_NIC" || format_id == "FILE_MFM_NIB" || format_id == "FILE_HXC_MFM") {
-            loader = new dsk_tools::LoaderGCR(file_name, format_id, type_id);
+        if (format_id == "FILE_MFM_NIC") {
+            loader = new dsk_tools::LoaderGCR_NIC(file_name, format_id, type_id);
+        } else
+        if (format_id == "FILE_MFM_NIB") {
+            loader = new dsk_tools::LoaderGCR_NIB(file_name, format_id, type_id);
+        } else
+        if (format_id == "FILE_HXC_MFM") {
+            loader = new dsk_tools::LoaderGCR_MFM(file_name, format_id, type_id);
         } else
             return nullptr;
 
@@ -139,9 +144,9 @@ namespace dsk_tools {
 
         for (int i=0; i<86; i++) {
             uint8_t x = (crc^m_read_translate_table[data_in[i]]) & 0x3f;
-            data_out[i+172] = FlipBit[(x>>4) & 3];
-            data_out[i+86] =  FlipBit[(x>>2) & 3];
-            data_out[i] =     FlipBit[ x     & 3];
+            data_out[i+172] = FlipBit1[(x>>4) & 3];
+            data_out[i+86] =  FlipBit1[(x>>2) & 3];
+            data_out[i] =     FlipBit1[ x     & 3];
             crc = x;
         }
         for (int i=0; i<256; i++) {
@@ -214,16 +219,26 @@ namespace dsk_tools {
                 return FDD_DETECT_ERROR;
         } else
         if (ext == ".nic" || ext == ".nib" || ext == ".mfm") {
-            if (ext == ".nic") format_id = "FILE_MFM_NIC";
-            else
-            if (ext == ".nib") format_id = "FILE_MFM_NIB";
-            else
-            if (ext == ".mfm") format_id = "FILE_HXC_MFM";
-
             type_id = "TYPE_AGAT_140";
-            dsk_tools::LoaderGCR loader(file_name, format_id, type_id);
+
             BYTES buffer;
-            loader.load(buffer);
+            if (ext == ".nic") {
+                format_id = "FILE_MFM_NIC";
+                dsk_tools::LoaderGCR_NIC loader(file_name, format_id, type_id);
+                loader.load(buffer);
+            } else
+            if (ext == ".nib") {
+                format_id = "FILE_MFM_NIB";
+                dsk_tools::LoaderGCR_NIB loader(file_name, format_id, type_id);
+                loader.load(buffer);
+            } else
+            if (ext == ".mfm") {
+                format_id = "FILE_HXC_MFM";
+                dsk_tools::LoaderGCR_MFM loader(file_name, format_id, type_id);
+                loader.load(buffer);
+            } else
+                return FDD_DETECT_ERROR;
+
             if (buffer[0] == 0x01) {
                 if (buffer[2] == 0x58) {
                     filesystem_id = "FILESYSTEM_SPRITE_OS";

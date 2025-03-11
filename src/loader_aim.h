@@ -13,7 +13,7 @@ namespace dsk_tools {
         bool msb_first;
     public:
         LoaderAIM(std::string file_name, std::string format_id, std::string type_id);
-        ~LoaderAIM();
+        virtual ~LoaderAIM() = default;
         virtual int load(std::vector<uint8_t> &buffer) override;
         virtual std::string file_info() override;
     };

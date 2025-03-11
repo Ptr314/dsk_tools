@@ -9,9 +9,6 @@ namespace dsk_tools {
         Loader(file_name, format_id, type_id)
     {}
 
-    LoaderAIM::~LoaderAIM()
-    {}
-
     bool LoaderAIM::iterate_until(const std::vector<uint16_t> & in, int & p, const uint8_t v)
     {
         uint16_t b;

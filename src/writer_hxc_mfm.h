@@ -5,7 +5,7 @@
 
 namespace dsk_tools {
 
-#pragma pack(push, 1)
+    #pragma pack(push, 1)
 
     struct HXC_MFM_HEADER
     {
@@ -29,7 +29,7 @@ namespace dsk_tools {
         uint32_t mfmtrackoffset;        // Offset of the track data from the beginning of the file in number of bytes.
     };
 
-#pragma pack(pop)
+    #pragma pack(pop)
 
     class WriterHxCMFM:public WriterMFM
     {

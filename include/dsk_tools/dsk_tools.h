@@ -14,6 +14,9 @@
 #include "loader_raw.h"
 #include "loader_aim.h"
 #include "loader_gcr.h"
+#include "loader_gcr_nib.h"
+#include "loader_gcr_nic.h"
+#include "loader_gcr_mfm.h"
 
 #include "writer.h"
 #include "writer_raw.h"

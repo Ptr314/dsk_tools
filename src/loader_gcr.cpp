@@ -8,15 +8,9 @@ namespace dsk_tools {
         Loader(file_name, format_id, type_id)
     {}
 
-    LoaderGCR::~LoaderGCR() = default;
-
     int LoaderGCR::load(std::vector<uint8_t> &buffer)
     {
-        HXC_MFM_HEADER * hdr;
-        HXC_MFM_TRACK_INFO * ti[200];
-
         std::ifstream file(file_name, std::ios::binary);
-
         if (!file.good()) {
             return FDD_LOAD_ERROR;
         }
@@ -33,34 +27,12 @@ namespace dsk_tools {
 
         file.read (reinterpret_cast<char*>(in.data()), fsize);
 
-        int track_len, tracks_offset;
-        if (format_id == "FILE_MFM_NIC") {
-            tracks_offset = 0;
-            track_len = 512*16;
-        } else
-        if (format_id == "FILE_MFM_NIB") {
-            tracks_offset = 0;
-            track_len = 416*16;
-        } else
-        if (format_id == "FILE_HXC_MFM") {
-            hdr = reinterpret_cast<HXC_MFM_HEADER *>(in.data());
-            for (int track=0; track<hdr->number_of_track; track++) {
-                ti[track] = reinterpret_cast<HXC_MFM_TRACK_INFO *>(in.data() + hdr->mfmtracklistoffset + track * sizeof(HXC_MFM_TRACK_INFO));
-            }
-        } else
-            return FDD_LOAD_ERROR;
-
-        int in_p = 0;
+        prepare_tracks_list(in);
 
         for (int track=0; track<35; track++) {
-            int in_base;
-            if (format_id == "FILE_HXC_MFM") {
-                in_base = ti[track]->mfmtrackoffset;
-                track_len = ti[track]->mfmtracksize;
-            } else {
-                in_base = track * track_len;
-            }
-            in_p = in_base;
+            int in_base = get_track_offset(track);
+            int track_len = get_track_len(track);
+            int in_p = in_base;
 
             while (in_p < in_base+track_len) {
                 // Looking for Index Mark
@@ -142,9 +114,6 @@ namespace dsk_tools {
     {
         std::string result = "";
 
-        HXC_MFM_HEADER * hdr;
-        HXC_MFM_TRACK_INFO * ti[200];
-
         std::ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
@@ -166,26 +135,24 @@ namespace dsk_tools {
 
         bool errors = false;
 
-        int track_len, tracks_offset;
-        if (format_id == "FILE_MFM_NIC") {
-            tracks_offset = 0;
-            track_len = 512*16;
-        } else
-        if (format_id == "FILE_MFM_NIB") {
-            tracks_offset = 0;
-            track_len = 416*16;
-        } else
+        prepare_tracks_list(in);
+
         if (format_id == "FILE_HXC_MFM") {
+            HXC_MFM_HEADER * hdr;
+
             hdr = reinterpret_cast<HXC_MFM_HEADER *>(in.data());
-            result += "{$TRACKS}: " + std::to_string(hdr->number_of_track) + "\n";
-            result += "{$SIDES}: " + std::to_string(hdr->number_of_side) + "\n";
-            result += "{$TRACKLIST_OFFSET}: $" + dsk_tools::int_to_hex(hdr->mfmtracklistoffset) + "\n";
+            result += "$" + dsk_tools::int_to_hex(static_cast<uint32_t>(0)) + " {$HEADER}\n";
+
+            result += "    {$TRACKS}: " + std::to_string(hdr->number_of_track) + "\n";
+            result += "    {$SIDES}: " + std::to_string(hdr->number_of_side) + "\n";
+            result += "$" + dsk_tools::int_to_hex(hdr->mfmtracklistoffset) + " {$TRACKLIST_OFFSET}\n";
 
             for (int track=0; track<hdr->number_of_track; track++) {
-                ti[track] = reinterpret_cast<HXC_MFM_TRACK_INFO *>(in.data() + hdr->mfmtracklistoffset + track * sizeof(HXC_MFM_TRACK_INFO));
-                result += "    T: " + std::to_string(ti[track]->track_number)
-                          + ", {$TRACK_OFFSET}: $" + dsk_tools::int_to_hex(ti[track]->mfmtrackoffset, false)
-                          + ", {$TRACK_SIZE}: $" + dsk_tools::int_to_hex(ti[track]->mfmtracksize, false)
+                HXC_MFM_TRACK_INFO * ti = reinterpret_cast<HXC_MFM_TRACK_INFO *>(in.data() + hdr->mfmtracklistoffset + track * sizeof(HXC_MFM_TRACK_INFO));
+                result += "    {$SIDE_SHORT}: " + std::to_string(ti->side_number)
+                          + ", {$TRACK_SHORT}=" + std::to_string(ti->track_number)
+                          + ", {$TRACK_OFFSET}: $" + dsk_tools::int_to_hex(ti->mfmtrackoffset, false)
+                          + ", {$TRACK_SIZE}: $" + dsk_tools::int_to_hex(ti->mfmtracksize, false)
                           + "\n";
             }
             result += "\n";
@@ -196,15 +163,11 @@ namespace dsk_tools {
         uint8_t e1, e2, e3;
 
         for (int track=0; track<35; track++) {
-            int in_base;
-            if (format_id == "FILE_HXC_MFM") {
-                in_base = ti[track]->mfmtrackoffset;
-                track_len = ti[track]->mfmtracksize;
-            } else {
-                in_base = track * track_len;
-            }
-            in_p = in_base;
-            result += "{$TRACK}: " + std::to_string(track) + "\n";
+            int in_base = get_track_offset(track);
+            int track_len = get_track_len(track);
+            int in_p = in_base;
+
+            result += "$" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_base)) + ": {$TRACK} " + std::to_string(track) + "\n";
             while (in_p < in_base+track_len) {
                 // Looking for Index Mark
                 bool index_found = false;
