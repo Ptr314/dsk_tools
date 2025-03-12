@@ -17,6 +17,7 @@
 #include "loader_gcr_nib.h"
 #include "loader_gcr_nic.h"
 #include "loader_gcr_mfm.h"
+#include "loader_hxc_hfe.h"
 
 #include "writer.h"
 #include "writer_raw.h"
@@ -37,6 +38,9 @@ int detect_fdd_type(const std::string &file_name, std::string &format_id, std::s
     BYTES decode44(const BYTES & buffer);
     void encode_gcr62(const uint8_t data_in[], uint8_t * data_out);
     bool decode_gcr62(const uint8_t data_in[], uint8_t * data_out);
+    uint16_t encode_agat_MFM_byte(uint8_t data, uint8_t &last_byte);
+    uint8_t decode_agat_MFM_byte(uint8_t data);
+
 
 } // namespace
 

@@ -32,6 +32,8 @@ add_library(${PROJECT_NAME} STATIC
     src/loader_gcr_nic.h                src/loader_gcr_nic.cpp
     src/loader_gcr_nib.h                src/loader_gcr_nib.cpp
     src/loader_gcr_mfm.h                src/loader_gcr_mfm.cpp
+    src/loader_hxc_hfe.h
+    src/loader_hxc_hfe.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
