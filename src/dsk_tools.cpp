@@ -160,6 +160,23 @@ namespace dsk_tools {
         return crc == r_crc;
     }
 
+    uint16_t encode_agat_MFM_byte(uint8_t data, uint8_t & last_byte)
+    {
+        uint16_t mfm_encoded;
+        mfm_encoded = agat_MFM_tab[((last_byte & 1) << 8) + data];
+
+        last_byte = data;
+
+        return (mfm_encoded << 8) + (mfm_encoded >> 8);
+    }
+
+
+    uint8_t decode_agat_MFM_byte(uint8_t data)
+    {
+        return agat_MFM_decode_tab[data >> 1];
+    }
+
+
 
     int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id)
     {
