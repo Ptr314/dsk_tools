@@ -141,4 +141,15 @@ namespace dsk_tools
         return out;
     }
 
+    bool iterate_until(const std::vector<uint8_t> & in, int & p, const uint8_t v)
+    {
+        uint8_t d;
+        do {
+            if (p >= in.size()) return false;
+            d = in.at(p++);
+        } while (d != v);
+        return true;
+    }
+
+
 } // namespace

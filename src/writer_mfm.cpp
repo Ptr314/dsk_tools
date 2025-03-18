@@ -121,74 +121,50 @@ WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, c
         }
     }
 
-    void WriterMFM::write_agat_mfm_array(BYTES &out, uint8_t data, uint16_t count, uint8_t & last_byte)
-    {
-        uint16_t mfm_word;
-        for (int i=0; i<count; i++) {
-            mfm_word = encode_agat_MFM_byte(data, last_byte);
-            out.push_back(mfm_word & 0xFF);
-            out.push_back((mfm_word >> 8) & 0xFF);
-        }
-    }
-
-    uint8_t WriterMFM::write_agat_mfm_data(BYTES &out, uint8_t * data, uint16_t count, uint8_t & last_byte)
-    {
-        uint16_t mfm_word;
-        uint16_t crc = 0;
-        for (int i=0; i<count; i++) {
-            mfm_word = encode_agat_MFM_byte(data[i], last_byte);
-            out.push_back(mfm_word & 0xFF);
-            out.push_back((mfm_word >> 8) & 0xFF);
-            if (crc > 0xFF) crc = (crc + 1) & 0xFF;
-            crc += data[i];
-        }
-        return crc & 0xFF;
-    }
-
     void WriterMFM::write_agat840_track(BYTES &out, uint8_t head, uint8_t track)
     {
         uint8_t last_byte = 0;
         // GAP 0
-        write_agat_mfm_array(out, 0xAA, 144, last_byte);
+        encode_agat_mfm_array(out, 0xAA, 144, last_byte);
         for (uint8_t sector = 0; sector < image->get_sectors(); sector++) {
             // Desync
             out.push_back(0x22);                                        // 0
             out.push_back(0x09);                                        // 1
             last_byte = 0xA4;
-            write_agat_mfm_array(out, 0xFF, 1, last_byte);             // 2-3
+            encode_agat_mfm_array(out, 0xFF, 1, last_byte);             // 2-3
             // Index start
-            write_agat_mfm_array(out, 0x95, 1, last_byte);             // 4-5
-            write_agat_mfm_array(out, 0x6A, 1, last_byte);             // 6-7
+            encode_agat_mfm_array(out, 0x95, 1, last_byte);             // 4-5
+            encode_agat_mfm_array(out, 0x6A, 1, last_byte);             // 6-7
             // VTS
-            write_agat_mfm_array(out, 0xFE, 1, last_byte); //Volume    // 8-9
-            write_agat_mfm_array(out, track*2 + head, 1, last_byte);   // A-B
+            encode_agat_mfm_array(out, 0xFE, 1, last_byte); //Volume    // 8-9
+            encode_agat_mfm_array(out, track*2 + head, 1, last_byte);   // A-B
             uint8_t sector_t = sector_raw2logic(sector);
-            write_agat_mfm_array(out, sector_t, 1, last_byte);
+            encode_agat_mfm_array(out, sector_t, 1, last_byte);
             // Index end
-            write_agat_mfm_array(out, 0x5A, 1, last_byte);
+            encode_agat_mfm_array(out, 0x5A, 1, last_byte);
             // GAP
-            write_agat_mfm_array(out, 0xAA, 3, last_byte);
+            encode_agat_mfm_array(out, 0xAA, 3, last_byte);
             // Desync
             out.push_back(0x22);
             out.push_back(0x09);
             last_byte = 0xA4;
-            write_agat_mfm_array(out, 0xFF, 1, last_byte);
+            encode_agat_mfm_array(out, 0xFF, 1, last_byte);
             // Data mark
-            write_agat_mfm_array(out, 0x6A, 1, last_byte);
-            write_agat_mfm_array(out, 0x95, 1, last_byte);
+            encode_agat_mfm_array(out, 0x6A, 1, last_byte);
+            encode_agat_mfm_array(out, 0x95, 1, last_byte);
             // Data + crc
             uint8_t * data = image->get_sector_data(0, track*2 + head, sector_t);
-            uint8_t crc = write_agat_mfm_data(out, data, 256, last_byte);
-            write_agat_mfm_array(out, crc, 1, last_byte);
+            uint8_t crc = encode_agat_mfm_data(out, data, 256, last_byte);
+            encode_agat_mfm_array(out, crc, 1, last_byte);
             // Data end
-            write_agat_mfm_array(out, 0x5A, 1, last_byte);
+            encode_agat_mfm_array(out, 0x5A, 1, last_byte);
             // GAP
-            write_agat_mfm_array(out, 0xAA, 29, last_byte);
+            encode_agat_mfm_array(out, 0xAA, 29, last_byte);
         }
         // GAP
-        write_agat_mfm_array(out, 0xAA, 20, last_byte);
+        encode_agat_mfm_array(out, 0xAA, 20, last_byte);
         // Fill until standard hfe track length
-        write_agat_mfm_array(out, 0xAA, (HFE_TRACK_LEN/2 - (144 + 302*image->get_sectors() + 20)*2)/2, last_byte);
+        encode_agat_mfm_array(out, 0xAA, (HFE_TRACK_LEN/2 - (144 + 302*image->get_sectors() + 20)*2)/2, last_byte);
 
     }
 }

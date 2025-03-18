@@ -29,6 +29,7 @@ namespace dsk_tools
 
     std::string base64_encode(const std::vector<uint8_t>& data, size_t line_length_limit = 0);
     std::vector<uint8_t> base64_decode(const std::string& encoded);
+    bool iterate_until(const std::vector<uint8_t> & in, int & p, const uint8_t v);
 
 }
 #endif // UTILS_H

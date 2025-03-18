@@ -12,7 +12,6 @@ namespace dsk_tools {
             virtual ~LoaderGCR_NIC() = default;
         protected:
             virtual int get_track_len(int track) override;
-            virtual int get_track_offset(int track) override;
     };
 
 }
