@@ -9,9 +9,4 @@ namespace dsk_tools {
     {
         return 512*16;
     }
-
-    int LoaderGCR_NIC::get_track_offset(int track)
-    {
-        return track * get_track_len(track);
-    }
 }

@@ -40,7 +40,9 @@ int detect_fdd_type(const std::string &file_name, std::string &format_id, std::s
     bool decode_gcr62(const uint8_t data_in[], uint8_t * data_out);
     uint16_t encode_agat_MFM_byte(uint8_t data, uint8_t &last_byte);
     uint8_t decode_agat_MFM_byte(uint8_t data);
-
+    void encode_agat_mfm_array(BYTES &out, uint8_t data, uint16_t count, uint8_t & last_byte);
+    uint8_t encode_agat_mfm_data(BYTES &out, uint8_t * data, uint16_t count, uint8_t & last_byte);
+    void decode_agat_mfm_data(BYTES &out, const BYTES & in);
 
 } // namespace
 

@@ -8,6 +8,12 @@ namespace dsk_tools {
         Loader(file_name, format_id, type_id)
     {}
 
+    int LoaderGCR::get_track_offset(int track)
+    {
+        return track * get_track_len(track);
+    }
+
+
     int LoaderGCR::load(std::vector<uint8_t> &buffer)
     {
         std::ifstream file(file_name, std::ios::binary);
@@ -100,16 +106,6 @@ namespace dsk_tools {
         return FDD_LOAD_OK;
     }
 
-    bool LoaderGCR::iterate_until(const BYTES & in, int & p, const uint8_t v)
-    {
-        uint8_t d;
-        do {
-            if (p >= in.size()) return false;
-            d = in.at(p++);
-        } while (d != v);
-        return true;
-    }
-
     std::string LoaderGCR::file_info()
     {
         std::string result = "";
@@ -156,8 +152,7 @@ namespace dsk_tools {
                           + "\n";
             }
             result += "\n";
-        } else
-            throw std::runtime_error("Incorrect file format id");
+        };
 
         int in_p = 0;
         uint8_t e1, e2, e3;

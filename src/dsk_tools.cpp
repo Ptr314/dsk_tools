@@ -176,6 +176,41 @@ namespace dsk_tools {
         return agat_MFM_decode_tab[data >> 1];
     }
 
+    void encode_agat_mfm_array(BYTES &out, uint8_t data, uint16_t count, uint8_t & last_byte)
+    {
+        uint16_t mfm_word;
+        for (int i=0; i<count; i++) {
+            mfm_word = encode_agat_MFM_byte(data, last_byte);
+            out.push_back(mfm_word & 0xFF);
+            out.push_back((mfm_word >> 8) & 0xFF);
+        }
+    }
+
+    uint8_t encode_agat_mfm_data(BYTES &out, uint8_t * data, uint16_t count, uint8_t & last_byte)
+    {
+        uint16_t mfm_word;
+        uint16_t crc = 0;
+        for (int i=0; i<count; i++) {
+            mfm_word = encode_agat_MFM_byte(data[i], last_byte);
+            out.push_back(mfm_word & 0xFF);
+            out.push_back((mfm_word >> 8) & 0xFF);
+            if (crc > 0xFF) crc = (crc + 1) & 0xFF;
+            crc += data[i];
+        }
+        return crc & 0xFF;
+    }
+
+    void decode_agat_mfm_data(BYTES & out, const BYTES & in) {
+        out.clear();
+
+        for (int i=0; i<in.size()/2; i++)
+        {
+            uint8_t b1 = in[i*2];
+            uint8_t b2 = in[i*2+1];
+            uint8_t b =  (agat_MFM_decode_tab[b1>>1] << 4) | agat_MFM_decode_tab[b2>>1];
+            out.push_back(b);
+        }
+    }
 
 
     int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id)
