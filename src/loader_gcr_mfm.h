@@ -12,7 +12,7 @@ namespace dsk_tools {
             HXC_MFM_HEADER * hdr;
             HXC_MFM_TRACK_INFO * ti[200];
         public:
-            LoaderGCR_MFM(std::string file_name, std::string format_id, std::string type_id);
+            LoaderGCR_MFM(const std::string &file_name, const std::string &format_id, const std::string &type_id);
             virtual ~LoaderGCR_MFM() = default;
         protected:
             virtual void prepare_tracks_list(BYTES &in) override;

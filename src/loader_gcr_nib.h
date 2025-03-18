@@ -8,7 +8,7 @@ namespace dsk_tools {
     class LoaderGCR_NIB:public LoaderGCR
     {
         public:
-            LoaderGCR_NIB(std::string file_name, std::string format_id, std::string type_id);
+            LoaderGCR_NIB(const std::string & file_name, const std::string & format_id, const std::string & type_id);
             virtual ~LoaderGCR_NIB() = default;
         protected:
             virtual int get_track_len(int track) override;
