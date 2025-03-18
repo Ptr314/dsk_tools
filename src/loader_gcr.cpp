@@ -4,7 +4,7 @@
 #include "dsk_tools/dsk_tools.h"
 
 namespace dsk_tools {
-    LoaderGCR::LoaderGCR(std::string file_name, std::string format_id, std::string type_id):
+LoaderGCR::LoaderGCR(const std::string &file_name, const std::string &format_id, const std::string &type_id):
         Loader(file_name, format_id, type_id)
     {}
 

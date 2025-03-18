@@ -8,7 +8,7 @@ namespace dsk_tools {
     class LoaderHXC_HFE:public Loader
     {
     public:
-        LoaderHXC_HFE(std::string file_name, std::string format_id, std::string type_id);
+        LoaderHXC_HFE(const std::string & file_name, const std::string & format_id, const std::string & type_id);
         virtual int load(BYTES & buffer) override;
         virtual std::string file_info() override;
     };

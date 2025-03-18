@@ -5,7 +5,7 @@
 #include "utils.h"
 
 namespace dsk_tools {
-    LoaderAIM::LoaderAIM(std::string file_name, std::string format_id, std::string type_id):
+LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id, const std::string &type_id):
         Loader(file_name, format_id, type_id)
     {}
 

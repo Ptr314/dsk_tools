@@ -41,12 +41,12 @@ namespace dsk_tools {
     };
 
 
-    dsk_tools::diskImage * prepare_image(std::string file_name, std::string format_id, std::string type_id)
+    dsk_tools::diskImage *  prepare_image(std::string file_name, std::string format_id, std::string type_id)
     {
         std::cout << file_name << std::endl;
         dsk_tools::Loader * loader;
         if (format_id == "FILE_RAW_MSB") {
-            loader = new dsk_tools::LoaderRAW(file_name, format_id, type_id, true);
+            loader = new dsk_tools::LoaderRAW(file_name, format_id, type_id);
         } else
         if (format_id == "FILE_AIM") {
             loader = new dsk_tools::LoaderAIM(file_name, format_id, type_id);
@@ -59,6 +59,9 @@ namespace dsk_tools {
         } else
         if (format_id == "FILE_HXC_MFM") {
             loader = new dsk_tools::LoaderGCR_MFM(file_name, format_id, type_id);
+        } else
+        if (format_id == "FILE_HXC_HFE") {
+            loader = new dsk_tools::LoaderHXC_HFE(file_name, format_id, type_id);
         } else
             return nullptr;
 
@@ -299,6 +302,34 @@ namespace dsk_tools {
                 }
             } else
                 return FDD_DETECT_ERROR;
+        } else
+        if (ext == ".hfe") {
+            format_id = "FILE_HXC_HFE";
+
+            std::ifstream file(file_name, std::ios::binary);
+
+            if (!file.good()) {
+                return FDD_LOAD_ERROR;
+            }
+
+            BYTES hdr_buffer(sizeof(HXC_HFE_HEADER));
+            file.read (reinterpret_cast<char*>(hdr_buffer.data()), hdr_buffer.size());
+            HXC_HFE_HEADER * hdr = reinterpret_cast<HXC_HFE_HEADER*>(hdr_buffer.data());
+
+            if (hdr->number_of_side == 2 && hdr->number_of_track == 80) {
+                type_id = "TYPE_AGAT_840";
+                BYTES buffer(sizeof(HXC_HFE_HEADER));
+                dsk_tools::LoaderHXC_HFE loader(file_name, format_id, type_id);
+                loader.load(buffer);
+                if (buffer[0] == 0x01) {
+                    if (buffer[2] == 0x58) {
+                        filesystem_id = "FILESYSTEM_SPRITE_OS";
+                    } else {
+                        filesystem_id = "FILESYSTEM_DOS33";
+                    }
+                } else
+                    return FDD_DETECT_ERROR;
+            }
         } else
             return FDD_DETECT_ERROR;
 

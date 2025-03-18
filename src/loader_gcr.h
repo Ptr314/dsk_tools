@@ -8,7 +8,7 @@ namespace dsk_tools {
     class LoaderGCR:public Loader
     {
     public:
-        LoaderGCR(std::string file_name, std::string format_id, std::string type_id);
+        LoaderGCR(const std::string & file_name, const std::string & format_id, const std::string & type_id);
         virtual ~LoaderGCR() = default;
         virtual int load(std::vector<uint8_t> &buffer) override;
         virtual std::string file_info() override;

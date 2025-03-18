@@ -13,6 +13,7 @@ namespace dsk_tools {
     #define FDD_LOAD_PARAMS_MISMATCH    4
     #define FDD_LOAD_INCORRECT_FILE     5
     #define FDD_LOAD_FILE_CORRUPT       6
+    #define FDD_LOAD_DATA_CORRUPT       7
 
     #define FDD_OPEN_OK                 0
     #define FDD_OPEN_NOT_LOADED         1
@@ -38,7 +39,6 @@ namespace dsk_tools {
 
     #define PREFERRED_BINARY            0
     #define PREFERRED_TEXT              1
-
 
     typedef std::vector<uint8_t> BYTES;
 

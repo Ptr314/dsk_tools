@@ -46,7 +46,7 @@ WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, c
             bytes = {0xD5, 0xAA, 0x96};
             out.insert(out.end(), bytes.data(), bytes.data() + bytes.size());   // +3
             // Address
-            uint8_t volume = 0xFE;
+            uint8_t volume = m_volume_id;
             uint8_t sector_t = sector_raw2logic(sector);
             BYTES address_field = {volume, track, sector_t, static_cast<uint8_t>(volume ^ track ^ sector_t)};
             bytes = code44(address_field);
@@ -136,7 +136,7 @@ WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, c
             encode_agat_mfm_array(out, 0x95, 1, last_byte);             // 4-5
             encode_agat_mfm_array(out, 0x6A, 1, last_byte);             // 6-7
             // VTS
-            encode_agat_mfm_array(out, 0xFE, 1, last_byte); //Volume    // 8-9
+            encode_agat_mfm_array(out, m_volume_id, 1, last_byte); //Volume    // 8-9
             encode_agat_mfm_array(out, track*2 + head, 1, last_byte);   // A-B
             uint8_t sector_t = sector_raw2logic(sector);
             encode_agat_mfm_array(out, sector_t, 1, last_byte);

@@ -4,9 +4,11 @@
 #include <ios>
 #include <string>
 #include <unordered_map>
+#include <fstream>
 
 #include "utils.h"
 #include "charmaps.h"
+#include "definitions.h"
 
 namespace dsk_tools
 {
@@ -150,6 +152,5 @@ namespace dsk_tools
         } while (d != v);
         return true;
     }
-
 
 } // namespace

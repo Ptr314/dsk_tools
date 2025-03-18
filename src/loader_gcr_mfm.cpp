@@ -1,7 +1,7 @@
 #include "loader_gcr_mfm.h"
 
 namespace dsk_tools {
-    LoaderGCR_MFM::LoaderGCR_MFM(std::string file_name, std::string format_id, std::string type_id):
+    LoaderGCR_MFM::LoaderGCR_MFM(const std::string & file_name, const std::string & format_id, const std::string & type_id):
         LoaderGCR(file_name, format_id, type_id)
     {}
 

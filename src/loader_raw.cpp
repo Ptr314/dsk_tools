@@ -4,7 +4,7 @@
 #include "loader_raw.h"
 
 namespace dsk_tools {
-    LoaderRAW::LoaderRAW(std::string file_name, std::string format_id, std::string type_id, bool msb_first):
+LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id, const std::string &type_id):
         Loader(file_name, format_id, type_id)
         , msb_first(msb_first)
     {}
@@ -23,8 +23,24 @@ namespace dsk_tools {
         auto fsize = file.tellg();
         file.seekg (0, file.beg);
 
-        buffer.resize(fsize);
-        file.read (reinterpret_cast<char*>(buffer.data()), fsize);
+        int image_size;
+        if (type_id == "TYPE_AGAT_840")
+            image_size = 2*80*21*256;
+        else
+        if (type_id == "TYPE_AGAT_140")
+            image_size = 1*35*16*256;
+        else
+            return FDD_LOAD_ERROR;
+
+        if (fsize<image_size)
+            return FDD_LOAD_ERROR;
+        else
+        if (fsize == image_size + 256)
+            // Image with a 256-byte header?
+            file.seekg (256, file.beg);
+
+        buffer.resize(image_size);
+        file.read (reinterpret_cast<char*>(buffer.data()), image_size);
 
         loaded = true;
 

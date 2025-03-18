@@ -41,7 +41,7 @@ namespace dsk_tools {
         int n = 0;
         do {
             if (v == 0) return types[n];
-            v <<= 1;
+            v >>= 1;
             n++;
         } while (n < 8);
         return "";
@@ -209,8 +209,19 @@ namespace dsk_tools {
                 FIL_header header;
                 memcpy(&header.name, &(dir_entry->name), sizeof(header.name));
                 header.type = dir_entry->type;
-                //header.tsl
-            }
+                if (attr_to_type(dir_entry->type) == "К") {
+                    // TODO: Correct for this type
+                    // http://agatcomp.ru/agat/PCutils/FileType/FIL.shtml
+                    std::memset(header.tsl, 0, sizeof(header.tsl));
+                } else
+                    std::memset(header.tsl, 0, sizeof(header.tsl));
+
+                std::ofstream file(file_name, std::ios::binary);
+
+                file.write(reinterpret_cast<char*>(&header), sizeof(FIL_header));
+                file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
+            } else
+                return FDD_WRITE_UNSUPPORTED;
 
             return FDD_WRITE_OK;
         } else {
