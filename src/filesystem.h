@@ -8,7 +8,8 @@ namespace dsk_tools {
     class fileSystem {
     protected:
         diskImage * image;
-        bool is_open;
+        bool is_open = false;
+        int volume_id = -1;
 
     public:
         fileSystem(diskImage * image);
@@ -22,6 +23,8 @@ namespace dsk_tools {
         virtual std::string file_info(const fileData & fd) = 0;
         virtual std::vector<std::string> get_save_file_formats() = 0;
         virtual int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) = 0;
+        virtual std::string information() = 0;
+        virtual int get_volume_id() {return volume_id;};
     };
 
 } // namespace

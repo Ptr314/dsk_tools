@@ -90,8 +90,8 @@ namespace dsk_tools {
     class fsDOS33: public fileSystem
     {
     protected:
-        dsk_tools::Apple_DOS_VTOC * VTOC;
-        std::string attr_to_type(uint8_t a);
+        dsk_tools::Agat_VTOC * VTOC;
+        int attr_to_type(uint8_t a);
     public:
         fsDOS33(diskImage * image);
         virtual int open() override;
@@ -102,6 +102,7 @@ namespace dsk_tools {
         virtual std::string file_info(const fileData & fd) override;
         virtual std::vector<std::string> get_save_file_formats() override;
         virtual int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) override;
+        virtual std::string information() override;
     };
 }
 

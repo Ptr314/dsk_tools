@@ -4,6 +4,7 @@
 #include <set>
 #include <fstream>
 
+#include "dsk_tools/dsk_tools.h"
 #include "utils.h"
 #include "fs_spriteos.h"
 
@@ -29,6 +30,8 @@ namespace dsk_tools {
         current_path.push_back(CURRENT_DIR);
 
         is_open = true;
+
+        volume_id = DPB.VOLUME;
 
         return FDD_OPEN_OK;
     }
@@ -195,4 +198,10 @@ namespace dsk_tools {
             return FDD_WRITE_ERROR_READING;
         }
     }
+
+    std::string fsSpriteOS::information()
+    {
+        return agat_sos_info(DPB);
+    }
+
 }
