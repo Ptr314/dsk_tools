@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cstring>
 
+#include "dsk_tools/dsk_tools.h"
 #include "utils.h"
 #include "fs_dos33.h"
 
@@ -20,7 +21,7 @@ namespace dsk_tools {
     {
         if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;
 
-        VTOC = reinterpret_cast<dsk_tools::Apple_DOS_VTOC *>(image->get_sector_data(0, 0x11, 0));
+        VTOC = reinterpret_cast<dsk_tools::Agat_VTOC *>(image->get_sector_data(0, 0x11, 0));
         int sector_size = static_cast<int>(VTOC->bytes_per_sector);
 
         // Also: https://retrocomputing.stackexchange.com/questions/15054/how-can-i-programmatically-determine-whether-an-apple-ii-dsk-disk-image-is-a-do
@@ -29,22 +30,20 @@ namespace dsk_tools {
         }
 
         is_open = true;
+        volume_id = VTOC->volume_id;
         return FDD_OPEN_OK;
     }
 
-    std::string fsDOS33::attr_to_type(uint8_t a)
+    int fsDOS33::attr_to_type(uint8_t a)
     {
-        // http://forum.agatcomp.ru//viewtopic.php?id=193
-        std::vector<std::string> types = {"T", "I", "A", "B", "S", "П", "К", "Д"};
-
         uint8_t v = a & 0x7F;
         int n = 0;
         do {
-            if (v == 0) return types[n];
+            if (v == 0) return n;
             v >>= 1;
             n++;
         } while (n < 8);
-        return "";
+        return 0;
     }
 
     int fsDOS33::dir(std::vector<dsk_tools::fileData> * files)
@@ -77,7 +76,7 @@ namespace dsk_tools {
                 memcpy(&file.original_name, &catalog->files[i].name, 30);
                 file.original_name_length = 30;
                 file.name = trim(agat_to_utf(catalog->files[i].name, 30));
-                file.type_str_short = attr_to_type(catalog->files[i].type);
+                file.type_str_short = std::string(agat_file_types[attr_to_type(catalog->files[i].type)]);
                 if (file.type_str_short == "T")
                     file.preferred_type = PREFERRED_TEXT;
                 else
@@ -108,25 +107,28 @@ namespace dsk_tools {
         int list_track = dir_entry->tbl_track;
         int list_sector = dir_entry->tbl_sector;
 
-        if (list_track != 0xFF) {
-            Apple_DOS_TS_List * ts_list;
-
-            do {
-                ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
-
-                for (int i = 0; i < VTOC->pairs_on_sector; i++){
-                    int file_track = ts_list->ts[i][0];
-                    int file_sector = ts_list->ts[i][1];
-                    if (file_track == 0) break;
-                    std::uint8_t * sector = image->get_sector_data(0, file_track, file_sector);
-                    data.insert(data.end(),&sector[0],&sector[256]);
-                }
-
-                list_track = ts_list->next_track;
-                list_sector = ts_list->next_sector;
-
-            } while (list_track != 0);
+        if (list_track == 0xFF) {
+            list_track = dir_entry->name[29];
         }
+
+        Apple_DOS_TS_List * ts_list;
+
+        do {
+            ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+
+            for (int i = 0; i < VTOC->pairs_on_sector; i++){
+                int file_track = ts_list->ts[i][0];
+                int file_sector = ts_list->ts[i][1];
+                if (file_track == 0) break;
+                std::uint8_t * sector = image->get_sector_data(0, file_track, file_sector);
+                data.insert(data.end(),&sector[0],&sector[256]);
+            }
+
+            list_track = ts_list->next_track;
+            list_sector = ts_list->next_sector;
+
+        } while (list_track != 0);
+
         return data;
     }
 
@@ -140,48 +142,59 @@ namespace dsk_tools {
         result += "{$DIRECTORY_ENTRY}:\n";
         result += "    {$FILE_NAME}: " +  trim(agat_to_utf(dir_entry->name, 30)) + " (" + toHexList(dir_entry->name, 30, "$") +")\n";
         result += "    {$SIZE}: " + std::to_string(dir_entry->size * 256) + " {$BYTES} (" + std::to_string(dir_entry->size) + " {$SECTORS})\n";
-        result += "    {$TYPE}: " + attr_to_type(dir_entry->type) + " ($" + int_to_hex(dir_entry->type) + ")\n";
+        result += "    {$TYPE}: " + std::string(agat_file_types[attr_to_type(dir_entry->type)]) + " ($" + int_to_hex(dir_entry->type) + ")\n";
         result += "    {$PROTECTED}: " + (((dir_entry->type & 0x80) > 0)?std::string("{$YES}"):std::string("{$NO}")) + "\n";
-        result += "    {$TS_LIST_LOCATION}: " + std::to_string(dir_entry->tbl_track) + ":" + std::to_string(dir_entry->tbl_sector) + "\n";
-
 
         int list_track = dir_entry->tbl_track;
         int list_sector = dir_entry->tbl_sector;
 
-        if (list_track != 0xFF) {
-            Apple_DOS_TS_List * ts_list;
+        if (list_track == 0xFF) {
+            result += "\n{$FILE_DELETED}:\n";
+            list_track = dir_entry->name[29];
+            result += "    {$TS_LIST_LOCATION}: " + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
+        } else {
+            result += "    {$TS_LIST_LOCATION}: " + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
+        }
 
-            do {
-                result += "T/S "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
-                if (list_track < (image->get_tracks()*image->get_heads()) && image->get_sectors()) {
-                    ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+        Apple_DOS_TS_List * ts_list;
+
+        ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+        BYTES ts_custom(9);
+        void * from = &(ts_list->_not_used_03);
+        std::memcpy(ts_custom.data(), from, 9);
+        result += "    {$CUSTOM_DATA}: [" +  toHexList(ts_custom, "$") +"]\n";
+
+        result += "\n";
+
+        do {
+            result += "T/S "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
+            if (list_track < (image->get_tracks()*image->get_heads()) && image->get_sectors()) {
+                ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
 
 
-                    for (int i = 0; i < VTOC->pairs_on_sector; i++){
-                        int file_track = ts_list->ts[i][0];
-                        int file_sector = ts_list->ts[i][1];
-                        result += "    "  + std::to_string(file_track) + ":" + std::to_string(file_sector) + "\n";
+                for (int i = 0; i < VTOC->pairs_on_sector; i++){
+                    int file_track = ts_list->ts[i][0];
+                    int file_sector = ts_list->ts[i][1];
+                    result += "    "  + std::to_string(file_track) + ":" + std::to_string(file_sector) + "\n";
 
-                        if (file_track == 0) break;
-                    }
-
-
-                    list_track = ts_list->next_track;
-                    list_sector = ts_list->next_sector;
-                    if (list_track != 0 || list_sector != 0) {
-                        result += "    {$NEXT_TS}: "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
-                    } else {
-                        result += "{$FILE_END_REACHED}";
-                    }
-                } else {
-                    result += "{$INCORRECT_TS_DATA}!!!\n";
-                    break;
+                    if (file_track == 0) break;
                 }
 
-            } while (list_track != 0);
-        } else {
-            result += "{$FILE_DELETED}\n";
-        }
+
+                list_track = ts_list->next_track;
+                list_sector = ts_list->next_sector;
+                if (list_track != 0 || list_sector != 0) {
+                    result += "    {$NEXT_TS}: "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
+                } else {
+                    result += "{$FILE_END_REACHED}";
+                }
+            } else {
+                result += "{$INCORRECT_TS_DATA}!!!\n";
+                break;
+            }
+
+        } while (list_track != 0);
+
         return result;
     }
 
@@ -209,10 +222,18 @@ namespace dsk_tools {
                 FIL_header header;
                 memcpy(&header.name, &(dir_entry->name), sizeof(header.name));
                 header.type = dir_entry->type;
-                if (attr_to_type(dir_entry->type) == "К") {
-                    // TODO: Correct for this type
+                if (attr_to_type(dir_entry->type) == 6) {
+                    // K Type
                     // http://agatcomp.ru/agat/PCutils/FileType/FIL.shtml
-                    std::memset(header.tsl, 0, sizeof(header.tsl));
+                    int list_track = dir_entry->tbl_track;
+                    int list_sector = dir_entry->tbl_sector;
+
+                    if (list_track != 0xFF) {
+                        Apple_DOS_TS_List * ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+                        void * from = &(ts_list->_not_used_03);
+                        std::memcpy(header.tsl, from, 9);
+                    } else
+                        std::memset(header.tsl, 0, sizeof(header.tsl));
                 } else
                     std::memset(header.tsl, 0, sizeof(header.tsl));
 
@@ -228,5 +249,11 @@ namespace dsk_tools {
             return FDD_WRITE_ERROR_READING;
         }
     }
+
+    std::string fsDOS33::information()
+    {
+        return agat_vtoc_info(*VTOC);
+    }
+
 
 }

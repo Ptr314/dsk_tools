@@ -336,5 +336,46 @@ namespace dsk_tools {
         return FDD_DETECT_OK;
     }
 
+    std::string agat_vtoc_info(const Agat_VTOC & VTOC)
+    {
+        std::string result = "";
+        if (VTOC.bytes_per_sector == 256 && (VTOC.dos_release == 2 || VTOC.dos_release == 3) ) {
+            result += "{$VTOC_FOUND}\n";
+            result += "    [$00]: $" + int_to_hex(VTOC._not_used_00) + " \n";
+            result += "    {$VTOC_CATALOG_TRACK}: $" + int_to_hex(VTOC.catalog_track) + " (" + std::to_string(VTOC.catalog_track) + ") \n";
+            result += "    {$VTOC_CATALOG_SECTOR}: $" + int_to_hex(VTOC.catalog_sector) + " (" + std::to_string(VTOC.catalog_sector) + ") \n";
+            result += "    {$VTOC_DOS_RELEASE}: $" + int_to_hex(VTOC.dos_release) + " (" + std::to_string(VTOC.dos_release) + ") \n";
+            result += "    [$04-05]: " + toHexList(&(VTOC._not_used_04[0]), 2, "$") + " \n";
+            result += "    {$VTOC_VOLUME_ID}: $" + int_to_hex(VTOC.volume_id) + " (" + std::to_string(VTOC.volume_id) + ") \n";
+            result += "    [$07]: $" + int_to_hex(VTOC._not_used_07) + " \n";
+            result += "    {$VTOC_VOLUME_NAME}: «" + trim(agat_to_utf(VTOC.volume_name, 31)) + "» (" + toHexList(VTOC.volume_name, 31, "$") +")\n";
+            result += "    {$VTOC_PAIRS_ON_SECTOR}: $" + int_to_hex(VTOC.pairs_on_sector) + " (" + std::to_string(VTOC.pairs_on_sector) + ") \n";
+            result += "    [$28-2F]: " + toHexList(&(VTOC._not_used_28[0]), 8, "$") + " \n";
+            result += "    {$VTOC_LAST_TRACK}: $" + int_to_hex(VTOC.last_track) + " (" + std::to_string(VTOC.last_track) + ") \n";
+            result += "    {$VTOC_DIRECTION}: $" + int_to_hex(VTOC.direction) + " (" + std::to_string(VTOC.direction) + ") \n";
+            result += "    [$32-33]: " + toHexList(&(VTOC._not_used_32[0]), 2, "$") + " \n";
+            result += "    {$VTOC_TRACKS_TOTAL}: $" + int_to_hex(VTOC.tracks_total) + " (" + std::to_string(VTOC.tracks_total) + ") \n";
+            result += "    {$VTOC_SECTORS_ON_TRACK}: $" + int_to_hex(VTOC.sectors_on_track) + " (" + std::to_string(VTOC.sectors_on_track) + ") \n";
+            result += "    {$VTOC_BYTES_PER_SECTOR}: $" + int_to_hex(VTOC.bytes_per_sector) + " (" + std::to_string(VTOC.bytes_per_sector) + ") \n";
+        } else {
+            result += "\n{$VTOC_NOT_FOUND}\n";
+        }
+        return result;
+    }
+
+    std::string agat_sos_info(const SPRITE_OS_DPB_DISK & DPB)
+    {
+        std::string result = "";
+        result += "{$DPB_INFO}\n";
+        result += "    {$DPB_VOLUME_ID}: $" + int_to_hex(DPB.VOLUME) + " (" + std::to_string(DPB.VOLUME) + ") \n";
+        result += "    {$DPB_TYPE}: $" + int_to_hex(DPB.TYPE) + " (" + std::to_string(DPB.TYPE) + ") \n";
+        result += "    {$DPB_DSIDE}: $" + int_to_hex(DPB.DSIDE) + " (" + std::to_string(DPB.DSIDE) + ") \n";
+        result += "    {$DPB_TSIZE}: $" + int_to_hex(DPB.TSIZE) + " (" + std::to_string(DPB.TSIZE) + ") \n";
+        result += "    {$DPB_DSIZE}: $" + int_to_hex(DPB.DSIZE) + " (" + std::to_string(DPB.DSIZE) + ") \n";
+        result += "    {$DPB_MAXBLOK}: $" + int_to_hex(DPB.MAXBLOK) + " (" + std::to_string(DPB.MAXBLOK) + ") \n";
+        result += "    {$DPB_VTOCADR}: $" + int_to_hex(DPB.VTOCADR) + " (" + std::to_string(DPB.VTOCADR) + ") \n";
+        return result;
+    }
+
 
 } // namespace

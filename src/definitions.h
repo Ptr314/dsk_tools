@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <array>
 
 namespace dsk_tools {
 
@@ -178,9 +179,11 @@ namespace dsk_tools {
         uint16_t	track_len;              // Length of the track data in byte.
     };
 
-
     #pragma pack(pop)
 
+    // http://forum.agatcomp.ru//viewtopic.php?id=193
+    // can't use vectors because of non-POD error
+    constexpr std::array<const char*, 8> agat_file_types = {"T", "I", "A", "B", "S", "П", "К", "Д"};
 
 }
 
