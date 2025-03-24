@@ -7,8 +7,8 @@
 
 namespace dsk_tools {
 
-    WriterHxCMFM::WriterHxCMFM(const std::string & format_id, diskImage * image_to_save, const uint8_t volume_id, const std::string & interleaving_id):
-        WriterMFM(format_id, image_to_save, volume_id, interleaving_id)
+    WriterHxCMFM::WriterHxCMFM(const std::string & format_id, diskImage * image_to_save, const uint8_t volume_id):
+        WriterMFM(format_id, image_to_save, volume_id)
     {}
 
     std::string WriterHxCMFM::get_default_ext()
