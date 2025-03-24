@@ -14,16 +14,12 @@ namespace dsk_tools {
     {
     protected:
         uint8_t m_volume_id;
-        std::string m_interleaving_id;
-
-        std::vector<int> sector_translation;
 
         void write_gcr62_track(BYTES &out, uint8_t track, int track_length);
         void write_gcr62_nic_track(BYTES &out, uint8_t track);
         void write_agat840_track(BYTES &out, uint8_t head, uint8_t track);
     public:
-        virtual int sector_raw2logic(int sector) override;
-        WriterMFM(const std::string & format_id, diskImage *image_to_save, const uint8_t volume_id, const std::string & interleaving_id);
+        WriterMFM(const std::string & format_id, diskImage *image_to_save, const uint8_t volume_id);
 
     };
 

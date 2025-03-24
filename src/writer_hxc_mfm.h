@@ -37,7 +37,7 @@ namespace dsk_tools {
     protected:
         void write_hxc_mfm_header(BYTES & out)        ;
     public:
-        WriterHxCMFM(const std::string & format_id, diskImage *image_to_save, const uint8_t volume_id, const std::string & interleaving_id);
+        WriterHxCMFM(const std::string & format_id, diskImage *image_to_save, const uint8_t volume_id);
         virtual std::string get_default_ext() override;
         virtual int write(BYTES & buffer) override;
         virtual int substitute_tracks(BYTES & buffer, std::vector<uint8_t> &tmplt, const int numtracks) override;

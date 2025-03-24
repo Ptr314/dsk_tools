@@ -5,31 +5,10 @@
 
 namespace dsk_tools {
 
-WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, const uint8_t volume_id, const std::string &interleaving_id):
+WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, const uint8_t volume_id):
         Writer(format_id, image_to_save)
         , m_volume_id(volume_id)
-        , m_interleaving_id(interleaving_id)
     {}
-
-    int WriterMFM::sector_raw2logic(int sector)
-    {
-        if (m_interleaving_id == "INTERLEAVING_DOS33") {
-            if (sector < 16)
-                return agat_140_raw2logic[sector];
-            else
-                throw std::runtime_error("DOS33 sector inteleaving index overflow");
-        } else
-        if (m_interleaving_id == "INTERLEAVING_PRODOS") {
-            if (sector < 16)
-                return prodos_raw2logic[sector];
-            else
-                throw std::runtime_error("ProDOS sector inteleaving index overflow");
-        } else
-        if (m_interleaving_id == "INTERLEAVING_OFF")
-            return sector;
-        else
-            throw std::runtime_error("Unknown interleaving type");
-    }
 
     void WriterMFM::write_gcr62_track(BYTES & out, uint8_t track, int track_length)
     {
@@ -47,8 +26,9 @@ WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, c
             out.insert(out.end(), bytes.data(), bytes.data() + bytes.size());   // +3
             // Address
             uint8_t volume = m_volume_id;
-            uint8_t sector_t = sector_raw2logic(sector);
-            BYTES address_field = {volume, track, sector_t, static_cast<uint8_t>(volume ^ track ^ sector_t)};
+            // uint8_t sector_t = sector_raw2logic(sector);
+            uint8_t sector_t = agat_140_raw2logic[sector];
+            BYTES address_field = {volume, track, sector, static_cast<uint8_t>(volume ^ track ^ sector)};
             bytes = code44(address_field);
             out.insert(out.end(), bytes.data(), bytes.data() + bytes.size());   // +8
             // Epilogue
@@ -93,8 +73,9 @@ WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, c
             out.insert(out.end(), bytes.data(), bytes.data() + bytes.size());
             // Address
             uint8_t volume = m_volume_id;
-            uint8_t sector_t = sector_raw2logic(sector);
-            BYTES address_field = {volume, track, sector_t, static_cast<uint8_t>(volume ^ track ^ sector_t)};
+            // uint8_t sector_t = sector_raw2logic(sector);
+            uint8_t sector_t = agat_140_raw2logic[sector];
+            BYTES address_field = {volume, track, sector, static_cast<uint8_t>(volume ^ track ^ sector)};
             bytes = code44(address_field);
             out.insert(out.end(), bytes.data(), bytes.data() + bytes.size());
             // Epilogue
@@ -138,8 +119,7 @@ WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, c
             // VTS
             encode_agat_mfm_array(out, m_volume_id, 1, last_byte); //Volume    // 8-9
             encode_agat_mfm_array(out, track*2 + head, 1, last_byte);   // A-B
-            uint8_t sector_t = sector_raw2logic(sector);
-            encode_agat_mfm_array(out, sector_t, 1, last_byte);
+            encode_agat_mfm_array(out, sector, 1, last_byte);
             // Index end
             encode_agat_mfm_array(out, 0x5A, 1, last_byte);
             // GAP
@@ -153,7 +133,7 @@ WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, c
             encode_agat_mfm_array(out, 0x6A, 1, last_byte);
             encode_agat_mfm_array(out, 0x95, 1, last_byte);
             // Data + crc
-            uint8_t * data = image->get_sector_data(0, track*2 + head, sector_t);
+            uint8_t * data = image->get_sector_data(0, track*2 + head, sector);
             uint8_t crc = encode_agat_mfm_data(out, data, 256, last_byte);
             encode_agat_mfm_array(out, crc, 1, last_byte);
             // Data end

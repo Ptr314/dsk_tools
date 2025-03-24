@@ -30,9 +30,4 @@ namespace dsk_tools {
 
     }
 
-    int Writer::sector_raw2logic(int sector)
-    {
-        return sector;
-    }
-
 }
