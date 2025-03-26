@@ -62,6 +62,32 @@ namespace dsk_tools {
                 catalog[i*entries_in_sector + j] = reinterpret_cast<CPM_DIR_ENTRY*>(sector + j*sizeof(CPM_DIR_ENTRY));
         }
 
+        for (int i = 0; i < catalog_size; i++) {
+            uint8_t ST = catalog[i]->ST;
+            if (ST != 0xE5 && ST != 0x1F) {
+                int extent = catalog[i]->XH*32 + catalog[i]->XL;
+                if (extent == 0) {
+                    fileData file;
+                    file.is_dir = false;
+                    file.is_deleted = false;
+                    file.is_protected = (catalog[i]->E[0] & 0x80) != 0;
+                    std::string ext = trim(std::string(reinterpret_cast<char*>(catalog[i]->E), 3));
+                    file.name = trim(std::string(reinterpret_cast<char*>(catalog[i]->F), 8)) + ((ext.size() > 0)?("."+ext):"");
+                    file.size = catalog[i]->RC * 128;
+
+                    file.metadata.resize(sizeof(CPM_DIR_ENTRY));
+                    std::memcpy(file.metadata.data(), catalog[i], sizeof(CPM_DIR_ENTRY));
+
+                    files->push_back(file);
+                } else {
+                    fileData * f = &(files->at(files->size()-1));
+                    f->size += catalog[i]->RC * 128;
+                    f->metadata.resize(f->metadata.size() + sizeof(CPM_DIR_ENTRY));
+                    std::memcpy(f->metadata.data()-sizeof(CPM_DIR_ENTRY), catalog[i], sizeof(CPM_DIR_ENTRY));
+                }
+            }
+        }
+
         return FDD_OP_OK;
     }
 
