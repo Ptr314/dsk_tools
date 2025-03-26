@@ -9,7 +9,6 @@
 namespace dsk_tools {
 LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id, const std::string &type_id):
         Loader(file_name, format_id, type_id)
-        , msb_first(msb_first)
     {}
 
     int LoaderRAW::load(std::vector<uint8_t> &buffer)
