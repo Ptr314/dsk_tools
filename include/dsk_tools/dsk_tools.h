@@ -2,6 +2,7 @@
 #define DSK_TOOLS_H
 
 #include <string>
+#include <sstream>
 
 #include "definitions.h"
 #include "utils.h"
