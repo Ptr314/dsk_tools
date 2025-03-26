@@ -7,8 +7,6 @@ namespace dsk_tools {
 
     class LoaderRAW:public Loader
     {
-        protected:
-            bool msb_first;
         public:
             LoaderRAW(const std::string & file_name, const std::string & format_id, const std::string & type_id);
             virtual int load(BYTES & buffer) override;

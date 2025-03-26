@@ -60,7 +60,11 @@ namespace dsk_tools {
     };
 
     static const int agat_140_raw2logic[16] = {
-         0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15
+        0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15
+    };
+
+    static const int agat_140_cpm2dos[16] = {
+        0, 3, 6, 9, 12, 15, 2, 5, 8, 11, 14, 1, 4, 7, 10, 13
     };
 
     static const uint16_t agat_MFM_tab[]=

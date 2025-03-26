@@ -85,6 +85,9 @@ namespace dsk_tools {
         } else
         if (filesystem_id == "FILESYSTEM_SPRITE_OS") {
             fs = new dsk_tools::fsSpriteOS(image);
+        } else
+        if (filesystem_id == "FILESYSTEM_CPM") {
+            fs = new dsk_tools::fsCPM(image);
         } else {
             return nullptr;
         }
@@ -245,14 +248,18 @@ namespace dsk_tools {
 
             // filesystem_id
             if (type_id == "TYPE_AGAT_140" || type_id == "TYPE_AGAT_840") {
-                BYTES buffer(32);
+                BYTES buffer(256);
                 file.read (reinterpret_cast<char*>(buffer.data()), buffer.size());
+                std::string ms = "MICROSOFT";
+                std::string _ms(buffer.begin() + 0x74, buffer.begin() + 0x74 + ms.size());
                 if (buffer[0] == 0x01) {
                     if (buffer[2] == 0x58) {
                         filesystem_id = "FILESYSTEM_SPRITE_OS";
-                    } else {
+                    } else
+                    if (type_id == "TYPE_AGAT_140" && _ms == ms) {
+                        filesystem_id = "FILESYSTEM_CPM";
+                    } else
                         filesystem_id = "FILESYSTEM_DOS33";
-                    }
                 } else
                     return FDD_DETECT_ERROR;
             }
@@ -295,8 +302,14 @@ namespace dsk_tools {
                 return FDD_DETECT_ERROR;
 
             if (buffer[0] == 0x01) {
+                std::string ms = "MICROSOFT";
+                std::string _ms(buffer.begin() + 0x74, buffer.begin() + 0x74 + ms.size());
+
                 if (buffer[2] == 0x58) {
                     filesystem_id = "FILESYSTEM_SPRITE_OS";
+                } else
+                if (type_id == "TYPE_AGAT_140" && _ms == ms) {
+                    filesystem_id = "FILESYSTEM_CPM";
                 } else {
                     filesystem_id = "FILESYSTEM_DOS33";
                 }
