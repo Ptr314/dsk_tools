@@ -94,7 +94,6 @@ LoaderGCR::LoaderGCR(const std::string &file_name, const std::string &format_id,
                             errors = true;
                         }
                         if (r_s < 16) {
-                            // int offset = r_s * 256;
                             int t_s = agat_140_raw2logic[r_s];
                             // int t_s = r_s;
                             std::copy(data.begin(), data.end(), buffer.begin() + (track*16 + t_s)*256);

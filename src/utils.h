@@ -6,6 +6,7 @@
 #include <ios>
 #include <string>
 #include <vector>
+#include <sstream>
 
 namespace dsk_tools
 {
