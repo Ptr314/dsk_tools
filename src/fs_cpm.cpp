@@ -15,14 +15,13 @@ namespace dsk_tools {
 
     int fsCPM::get_capabilities()
     {
-        return FILE_PROTECTION | FILE_DELETE;
+        return FILE_PROTECTION | FILE_DELETE | FILE_TYPE;
     }
 
     int fsCPM::open()
     {
         if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;
 
-        std::cout << image->get_type_id() << std::endl;
         if (image->get_type_id() == "TYPE_AGAT_140") {
             // n = 10, BLS = 1024 (2**n)
             DPB = {
@@ -33,7 +32,7 @@ namespace dsk_tools {
                 .DSM = 127,
                 .DRM = 63,
                 .AL0 = 0b11000000,
-                .AL1 = 0,
+                .AL1 = 0b00000000,
                 .CKS = 16,
                 .OFF = 3
             };
@@ -41,7 +40,6 @@ namespace dsk_tools {
             return FDD_OPEN_BAD_FORMAT;
 
         is_open = true;
-        // volume_id = VTOC->volume_id;
         return FDD_OPEN_OK;
     }
 
@@ -78,14 +76,20 @@ namespace dsk_tools {
                     fileData file;
                     file.is_dir = false;
                     file.is_deleted = false;
-                    file.is_protected = (catalog[i]->E[0] & 0x80) != 0;
-                    // std::string ext = trim(std::string(reinterpret_cast<char*>(catalog[i]->E), 3));
-                    file.name = make_file_name(*catalog[i]); //trim(std::string(reinterpret_cast<char*>(catalog[i]->F), 8)) + ((ext.size() > 0)?("."+ext):"");
+                    file.name = make_file_name(*catalog[i]);
                     file.size = catalog[i]->RC * 128;
 
-                    std::set<std::string> txts = {".txt", ".doc", ".pas", ".bas", ".asm"};
+                    file.is_protected = (catalog[i]->E[0] & 0x80) != 0;
+                    file.type_str_short = "";
+                    file.type_str_short += (catalog[i]->E[1] & 0x80)?"S":""; // System (hidden)
+                    file.type_str_short += (catalog[i]->E[2] & 0x80)?"A":""; // Archived
+
+
+                    std::set<std::string> txts = {".txt", ".doc", ".pas", ".asm"};
                     std::string ext = get_file_ext(file.name);
                     file.preferred_type = (txts.find(ext) != txts.end())?PREFERRED_TEXT:PREFERRED_BINARY;
+                    if (ext == ".bas")
+                        file.preferred_type = PREFERRED_MBASIC;
 
                     file.metadata.resize(sizeof(CPM_DIR_ENTRY));
                     std::memcpy(file.metadata.data(), catalog[i], sizeof(CPM_DIR_ENTRY));
@@ -169,7 +173,6 @@ namespace dsk_tools {
                 if (AL != 0 && AL != 0xE5)  {
                     for (int k=0; k<4; k++) {
                         int sector = agat_140_cpm2dos[part*4 + k];
-                        std::cout << track << " " << sector << std::endl;
                         auto p = image->get_sector_data(0, track, sector);
                         out.insert(out.end(), p, p + 256);
                     }

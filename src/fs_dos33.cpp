@@ -76,9 +76,14 @@ namespace dsk_tools {
                 memcpy(&file.original_name, &catalog->files[i].name, 30);
                 file.original_name_length = 30;
                 file.name = trim(agat_to_utf(catalog->files[i].name, 30));
-                file.type_str_short = std::string(agat_file_types[attr_to_type(catalog->files[i].type)]);
-                if (file.type_str_short == "T")
+
+                auto T = attr_to_type(catalog->files[i].type);
+                file.type_str_short = std::string(agat_file_types[T]);
+
+                if (T == 0)
                     file.preferred_type = PREFERRED_TEXT;
+                else if (T == 2)
+                    file.preferred_type = PREFERRED_ABS;
                 else
                     file.preferred_type = PREFERRED_BINARY;
 

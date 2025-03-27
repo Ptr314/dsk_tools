@@ -4,7 +4,7 @@
 #include <string>
 namespace dsk_tools {
 
-    // TODO: http://forum.agatcomp.ru//viewtopic.php?id=378
+    // http://forum.agatcomp.ru//viewtopic.php?id=378
     static const std::string agat_charmap[256] =  {
         " ", "▃", "▅", "▇", "⋁", "╗", "∀", "∃", "←", "╭", "╮", "╯", "╰", "⬐", "↘", "ё",
         "┌", "┬", "┐", "├", "┼", "→", "↗", "↙", "↖", "↑", "↓", "─", "┤", "└", "┴", "┘",
