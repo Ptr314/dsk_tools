@@ -64,7 +64,7 @@ namespace dsk_tools {
     };
 
     static const int agat_140_cpm2dos[16] = {
-        0, 3, 6, 9, 12, 15, 2, 5, 8, 11, 14, 1, 4, 7, 10, 13
+        0,6,12,3,9,15,14,5,11,2,8,7,13,4,10,1
     };
 
     static const uint16_t agat_MFM_tab[]=
