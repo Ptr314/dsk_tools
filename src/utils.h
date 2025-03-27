@@ -24,6 +24,15 @@ namespace dsk_tools
         return stream.str();
     }
 
+    template< typename T >
+    std::string int_to_octal( T i )
+    {
+        std::stringstream stream;
+        stream << std::uppercase;
+        stream << std::oct << static_cast<unsigned int>(i);
+        return stream.str();
+    }
+
     std::string toBCD(uint8_t b);
     std::string toHexList(const std::vector<uint8_t> & data, std::string prefix = "");
     std::string toHexList(const uint8_t *data, int len, std::string prefix = "");

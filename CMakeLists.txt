@@ -34,6 +34,7 @@ add_library(${PROJECT_NAME} STATIC
     src/fs_dos33.h                      src/fs_dos33.cpp
     src/fs_spriteos.h                   src/fs_spriteos.cpp
     src/fs_cpm.h                        src/fs_cpm.cpp
+    src/bas_tokens.h
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC

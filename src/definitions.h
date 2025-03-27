@@ -40,6 +40,8 @@ namespace dsk_tools {
 
     #define PREFERRED_BINARY            0
     #define PREFERRED_TEXT              1
+    #define PREFERRED_ABS               2
+    #define PREFERRED_MBASIC            3
 
     typedef std::vector<uint8_t> BYTES;
 
