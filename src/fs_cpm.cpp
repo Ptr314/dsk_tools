@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <set>
 
 #include "dsk_tools/dsk_tools.h"
 #include "utils.h"
@@ -44,6 +45,13 @@ namespace dsk_tools {
         return FDD_OPEN_OK;
     }
 
+    std::string fsCPM::make_file_name(CPM_DIR_ENTRY & di)
+    {
+        std::string ext = "";
+        for (int i=0; i<3; i++) ext += static_cast<char>(di.E[i] & 0x7F);
+        return trim(std::string(reinterpret_cast<char*>(&di.F), 8)) + ((ext.size() > 0)?("."+ext):"");
+    }
+
     int fsCPM::dir(std::vector<dsk_tools::fileData> * files)
     {
         if (!is_open) return FDD_OP_NOT_OPEN;
@@ -71,9 +79,13 @@ namespace dsk_tools {
                     file.is_dir = false;
                     file.is_deleted = false;
                     file.is_protected = (catalog[i]->E[0] & 0x80) != 0;
-                    std::string ext = trim(std::string(reinterpret_cast<char*>(catalog[i]->E), 3));
-                    file.name = trim(std::string(reinterpret_cast<char*>(catalog[i]->F), 8)) + ((ext.size() > 0)?("."+ext):"");
+                    // std::string ext = trim(std::string(reinterpret_cast<char*>(catalog[i]->E), 3));
+                    file.name = make_file_name(*catalog[i]); //trim(std::string(reinterpret_cast<char*>(catalog[i]->F), 8)) + ((ext.size() > 0)?("."+ext):"");
                     file.size = catalog[i]->RC * 128;
+
+                    std::set<std::string> txts = {".txt", ".doc", ".pas", ".bas", ".asm"};
+                    std::string ext = get_file_ext(file.name);
+                    file.preferred_type = (txts.find(ext) != txts.end())?PREFERRED_TEXT:PREFERRED_BINARY;
 
                     file.metadata.resize(sizeof(CPM_DIR_ENTRY));
                     std::memcpy(file.metadata.data(), catalog[i], sizeof(CPM_DIR_ENTRY));
@@ -83,21 +95,12 @@ namespace dsk_tools {
                     fileData * f = &(files->at(files->size()-1));
                     f->size += catalog[i]->RC * 128;
                     f->metadata.resize(f->metadata.size() + sizeof(CPM_DIR_ENTRY));
-                    std::memcpy(f->metadata.data()-sizeof(CPM_DIR_ENTRY), catalog[i], sizeof(CPM_DIR_ENTRY));
+                    std::memcpy(f->metadata.data() + sizeof(CPM_DIR_ENTRY)*extent, catalog[i], sizeof(CPM_DIR_ENTRY));
                 }
             }
         }
 
         return FDD_OP_OK;
-    }
-
-    BYTES fsCPM::get_file(const fileData & fd)
-    {
-        BYTES data;
-
-        // TODO: get file here
-
-        return data;
     }
 
     void fsCPM::cd(const dsk_tools::fileData & dir)
@@ -106,10 +109,81 @@ namespace dsk_tools {
     std::string fsCPM::file_info(const fileData & fd) {
 
         std::string result = "";
+        std::string attrs = "";
 
-        // TODO: file info here
+        CPM_DIR_ENTRY dir_entry;
+        std::memcpy(&dir_entry, fd.metadata.data(), sizeof(CPM_DIR_ENTRY));
+
+        attrs += (dir_entry.E[0] & 0x80)?"P":"-"; // Read-only
+        attrs += (dir_entry.E[1] & 0x80)?"S":"-"; // System (hidden)
+        attrs += (dir_entry.E[2] & 0x80)?"A":"-"; // Archived
+
+        result += "{$FILE_NAME}: " +  make_file_name(dir_entry) + "\n";
+
+        int file_size = 0;
+        std::string list = "";
+        for (int i=0; i < fd.metadata.size() / sizeof(CPM_DIR_ENTRY); i++) {
+            list += "{$EXTENT}: " +  std::to_string(i) + "\n";
+            std::memcpy(&dir_entry, fd.metadata.data() + i*sizeof(CPM_DIR_ENTRY), sizeof(CPM_DIR_ENTRY));
+            file_size += dir_entry.RC*128;
+            for (int j=0; j<16; j++) {
+                uint8_t AL = dir_entry.AL[j];
+                int track = AL / 4 + DPB.OFF;
+                int part = AL % 4;
+                if (AL != 0 && AL != 0xE5)  {
+                    list += "    Block: " + std::to_string(AL);
+                    list += " Track: " + std::to_string(track);
+                    list += " Part: " + std::to_string(part);
+                    list += " Sectors:" ;
+                    for (int k=0; k<4; k++) {
+                        list += " " + std::to_string(agat_140_cpm2dos[part*4 + k]);
+                    }
+                    list += "\n";
+                }
+            }
+        }
+
+        result += "{$SIZE}: " +  std::to_string(file_size) + " {$BYTES}\n";
+        result += "{$ATTRIBUTES}: " + attrs + " \n";
+
+        result += "\n";
+        result += list;
 
         return result;
+    }
+
+    void fsCPM::load_file(const BYTES * dir_records, int extents, BYTES & out)
+    {
+        out.clear();
+        int file_size = 0;
+        for (int i=0; i<extents; i++) {
+            CPM_DIR_ENTRY dir_entry;
+            std::memcpy(&dir_entry, dir_records + i*sizeof(CPM_DIR_ENTRY), sizeof(CPM_DIR_ENTRY));
+
+            file_size += dir_entry.RC*128;
+
+            for (int j=0; j<16; j++) {
+                uint8_t AL = dir_entry.AL[j];
+                int track = AL / 4 + DPB.OFF;
+                int part = AL % 4;
+                if (AL != 0 && AL != 0xE5)  {
+                    for (int k=0; k<4; k++) {
+                        int sector = agat_140_cpm2dos[part*4 + k];
+                        std::cout << track << " " << sector << std::endl;
+                        auto p = image->get_sector_data(0, track, sector);
+                        out.insert(out.end(), p, p + 256);
+                    }
+                }
+            }
+        }
+        out.resize(file_size);
+    }
+
+    BYTES fsCPM::get_file(const fileData & fd)
+    {
+        BYTES data;
+        load_file(reinterpret_cast<const BYTES*>(fd.metadata.data()), fd.metadata.size() / sizeof(CPM_DIR_ENTRY), data);
+        return data;
     }
 
     std::vector<std::string> fsCPM::get_save_file_formats()

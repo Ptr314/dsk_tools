@@ -42,6 +42,8 @@ namespace dsk_tools {
     {
     protected:
         CPM_DPB DPB;
+        std::string make_file_name(CPM_DIR_ENTRY & di);
+        void load_file(const BYTES *dir_records, int extents, BYTES & out);
     public:
         fsCPM(diskImage * image);
         virtual int open() override;
