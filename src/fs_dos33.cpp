@@ -25,7 +25,7 @@ namespace dsk_tools {
         int sector_size = static_cast<int>(VTOC->bytes_per_sector);
 
         // Also: https://retrocomputing.stackexchange.com/questions/15054/how-can-i-programmatically-determine-whether-an-apple-ii-dsk-disk-image-is-a-do
-        if (VTOC->dos_release < 2 || VTOC->dos_release > 3 || VTOC->sectors_on_track != image->get_sectors() || sector_size != 256) {
+        if (VTOC->dos_release > 3 || VTOC->sectors_on_track != image->get_sectors() || sector_size != 256) {
             return FDD_OPEN_BAD_FORMAT;
         }
 
@@ -55,10 +55,7 @@ namespace dsk_tools {
         int catalog_track = VTOC->catalog_track;
         int catalog_sector = VTOC->catalog_sector;
 
-        std::cout << "VTOC->root/first: " << catalog_track << ":" << catalog_sector << std::endl;
-
         Apple_DOS_Catalog * catalog;
-
 
         do {
             catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_track, catalog_sector));

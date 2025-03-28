@@ -252,22 +252,32 @@ namespace dsk_tools {
                 file.read (reinterpret_cast<char*>(buffer.data()), buffer.size());
                 std::string ms = "MICROSOFT";
                 std::string _ms(buffer.begin() + 0x74, buffer.begin() + 0x74 + ms.size());
-                if (buffer[0] == 0x01) {
-                    if (buffer[2] == 0x58) {
-                        filesystem_id = "FILESYSTEM_SPRITE_OS";
-                    } else
-                    if (type_id == "TYPE_AGAT_140" && _ms == ms) {
-                        if (ext == ".po")
-                            filesystem_id = "FILESYSTEM_CPM_PRODOS";
-                        else
-                            filesystem_id = "FILESYSTEM_CPM_DOS";
-                    } else
-                    if (type_id == "TYPE_AGAT_140" && ext == ".cpm") {
-                        filesystem_id = "FILESYSTEM_CPM_RAW";
-                    } else
-                        filesystem_id = "FILESYSTEM_DOS33";
+
+                uint32_t vtoc_pos;
+                if (type_id == "TYPE_AGAT_140") vtoc_pos=17*16*256;
+                else
+                    if (type_id == "TYPE_AGAT_840") vtoc_pos=17*21*256;
+
+                Agat_VTOC VTOC;
+                file.seekg (vtoc_pos, file.beg);
+                file.read (reinterpret_cast<char*>(&VTOC), sizeof(Agat_VTOC));
+
+                if (buffer[0] == 0x01 && buffer[2] == 0x58) {
+                    filesystem_id = "FILESYSTEM_SPRITE_OS";
                 } else
-                    return FDD_DETECT_ERROR;
+                if (type_id == "TYPE_AGAT_140" && _ms == ms) {
+                    if (ext == ".po")
+                        filesystem_id = "FILESYSTEM_CPM_PRODOS";
+                    else
+                        filesystem_id = "FILESYSTEM_CPM_DOS";
+                } else
+                if (type_id == "TYPE_AGAT_140" && ext == ".cpm") {
+                    filesystem_id = "FILESYSTEM_CPM_RAW";
+                } else
+                    filesystem_id = "FILESYSTEM_DOS33";
+
+                // } else
+                //     return FDD_DETECT_ERROR;
             }
 
         } else
@@ -358,27 +368,29 @@ namespace dsk_tools {
     std::string agat_vtoc_info(const Agat_VTOC & VTOC)
     {
         std::string result = "";
-        if (VTOC.bytes_per_sector == 256 && (VTOC.dos_release == 2 || VTOC.dos_release == 3) ) {
+        if (VTOC.bytes_per_sector == 256 && VTOC.dos_release <= 3 ) {
             result += "{$VTOC_FOUND}\n";
-            result += "    [$00]: $" + int_to_hex(VTOC._not_used_00) + " \n";
-            result += "    {$VTOC_CATALOG_TRACK}: $" + int_to_hex(VTOC.catalog_track) + " (" + std::to_string(VTOC.catalog_track) + ") \n";
-            result += "    {$VTOC_CATALOG_SECTOR}: $" + int_to_hex(VTOC.catalog_sector) + " (" + std::to_string(VTOC.catalog_sector) + ") \n";
-            result += "    {$VTOC_DOS_RELEASE}: $" + int_to_hex(VTOC.dos_release) + " (" + std::to_string(VTOC.dos_release) + ") \n";
-            result += "    [$04-05]: " + toHexList(&(VTOC._not_used_04[0]), 2, "$") + " \n";
-            result += "    {$VTOC_VOLUME_ID}: $" + int_to_hex(VTOC.volume_id) + " (" + std::to_string(VTOC.volume_id) + ") \n";
-            result += "    [$07]: $" + int_to_hex(VTOC._not_used_07) + " \n";
-            result += "    {$VTOC_VOLUME_NAME}: «" + trim(agat_to_utf(VTOC.volume_name, 31)) + "» (" + toHexList(VTOC.volume_name, 31, "$") +")\n";
-            result += "    {$VTOC_PAIRS_ON_SECTOR}: $" + int_to_hex(VTOC.pairs_on_sector) + " (" + std::to_string(VTOC.pairs_on_sector) + ") \n";
-            result += "    [$28-2F]: " + toHexList(&(VTOC._not_used_28[0]), 8, "$") + " \n";
-            result += "    {$VTOC_LAST_TRACK}: $" + int_to_hex(VTOC.last_track) + " (" + std::to_string(VTOC.last_track) + ") \n";
-            result += "    {$VTOC_DIRECTION}: $" + int_to_hex(VTOC.direction) + " (" + std::to_string(VTOC.direction) + ") \n";
-            result += "    [$32-33]: " + toHexList(&(VTOC._not_used_32[0]), 2, "$") + " \n";
-            result += "    {$VTOC_TRACKS_TOTAL}: $" + int_to_hex(VTOC.tracks_total) + " (" + std::to_string(VTOC.tracks_total) + ") \n";
-            result += "    {$VTOC_SECTORS_ON_TRACK}: $" + int_to_hex(VTOC.sectors_on_track) + " (" + std::to_string(VTOC.sectors_on_track) + ") \n";
-            result += "    {$VTOC_BYTES_PER_SECTOR}: $" + int_to_hex(VTOC.bytes_per_sector) + " (" + std::to_string(VTOC.bytes_per_sector) + ") \n";
         } else {
             result += "\n{$VTOC_NOT_FOUND}\n";
         }
+
+        result += "    [$00]: $" + int_to_hex(VTOC._not_used_00) + " \n";
+        result += "    {$VTOC_CATALOG_TRACK}: $" + int_to_hex(VTOC.catalog_track) + " (" + std::to_string(VTOC.catalog_track) + ") \n";
+        result += "    {$VTOC_CATALOG_SECTOR}: $" + int_to_hex(VTOC.catalog_sector) + " (" + std::to_string(VTOC.catalog_sector) + ") \n";
+        result += "    {$VTOC_DOS_RELEASE}: $" + int_to_hex(VTOC.dos_release) + " (" + std::to_string(VTOC.dos_release) + ") \n";
+        result += "    [$04-05]: " + toHexList(&(VTOC._not_used_04[0]), 2, "$") + " \n";
+        result += "    {$VTOC_VOLUME_ID}: $" + int_to_hex(VTOC.volume_id) + " (" + std::to_string(VTOC.volume_id) + ") \n";
+        result += "    [$07]: $" + int_to_hex(VTOC._not_used_07) + " \n";
+        result += "    {$VTOC_VOLUME_NAME}: «" + trim(agat_to_utf(VTOC.volume_name, 31)) + "» (" + toHexList(VTOC.volume_name, 31, "$") +")\n";
+        result += "    {$VTOC_PAIRS_ON_SECTOR}: $" + int_to_hex(VTOC.pairs_on_sector) + " (" + std::to_string(VTOC.pairs_on_sector) + ") \n";
+        result += "    [$28-2F]: " + toHexList(&(VTOC._not_used_28[0]), 8, "$") + " \n";
+        result += "    {$VTOC_LAST_TRACK}: $" + int_to_hex(VTOC.last_track) + " (" + std::to_string(VTOC.last_track) + ") \n";
+        result += "    {$VTOC_DIRECTION}: $" + int_to_hex(VTOC.direction) + " (" + std::to_string(VTOC.direction) + ") \n";
+        result += "    [$32-33]: " + toHexList(&(VTOC._not_used_32[0]), 2, "$") + " \n";
+        result += "    {$VTOC_TRACKS_TOTAL}: $" + int_to_hex(VTOC.tracks_total) + " (" + std::to_string(VTOC.tracks_total) + ") \n";
+        result += "    {$VTOC_SECTORS_ON_TRACK}: $" + int_to_hex(VTOC.sectors_on_track) + " (" + std::to_string(VTOC.sectors_on_track) + ") \n";
+        result += "    {$VTOC_BYTES_PER_SECTOR}: $" + int_to_hex(VTOC.bytes_per_sector) + " (" + std::to_string(VTOC.bytes_per_sector) + ") \n";
+
         return result;
     }
 
