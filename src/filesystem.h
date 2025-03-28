@@ -25,6 +25,7 @@ namespace dsk_tools {
         virtual int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) = 0;
         virtual std::string information() = 0;
         virtual int get_volume_id() {return volume_id;};
+        virtual int translate_sector(int sector) {return sector;};
     };
 
 } // namespace

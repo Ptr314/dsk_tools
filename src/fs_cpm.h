@@ -42,10 +42,11 @@ namespace dsk_tools {
     {
     protected:
         CPM_DPB DPB;
+        std::string m_filesystem_id;
         std::string make_file_name(CPM_DIR_ENTRY & di);
         void load_file(const BYTES *dir_records, int extents, BYTES & out);
     public:
-        fsCPM(diskImage * image);
+        fsCPM(diskImage * image, const std::string & filesystem_id);
         virtual int open() override;
         virtual int get_capabilities() override;
         virtual void cd(const dsk_tools::fileData & dir) override;
@@ -55,6 +56,7 @@ namespace dsk_tools {
         virtual std::vector<std::string> get_save_file_formats() override;
         virtual int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) override;
         virtual std::string information() override;
+        virtual int translate_sector(int sector) override;
     };
 }
 

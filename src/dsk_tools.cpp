@@ -41,7 +41,7 @@ namespace dsk_tools {
     };
 
 
-    dsk_tools::diskImage *  prepare_image(std::string file_name, std::string format_id, std::string type_id)
+    dsk_tools::diskImage * prepare_image(std::string file_name, std::string format_id, std::string type_id)
     {
         std::cout << file_name << std::endl;
         dsk_tools::Loader * loader;
@@ -86,8 +86,8 @@ namespace dsk_tools {
         if (filesystem_id == "FILESYSTEM_SPRITE_OS") {
             fs = new dsk_tools::fsSpriteOS(image);
         } else
-        if (filesystem_id == "FILESYSTEM_CPM") {
-            fs = new dsk_tools::fsCPM(image);
+        if (filesystem_id == "FILESYSTEM_CPM_DOS" || filesystem_id == "FILESYSTEM_CPM_PRODOS"|| filesystem_id == "FILESYSTEM_CPM_RAW") {
+            fs = new dsk_tools::fsCPM(image, filesystem_id);
         } else {
             return nullptr;
         }
@@ -224,7 +224,7 @@ namespace dsk_tools {
         std::string ext = get_file_ext(file_name);
 
         // format_if
-        if (ext == ".dsk") {
+        if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm") {
             format_id = "FILE_RAW_MSB";
 
             std::ifstream file(file_name, std::ios::binary);
@@ -257,7 +257,13 @@ namespace dsk_tools {
                         filesystem_id = "FILESYSTEM_SPRITE_OS";
                     } else
                     if (type_id == "TYPE_AGAT_140" && _ms == ms) {
-                        filesystem_id = "FILESYSTEM_CPM";
+                        if (ext == ".po")
+                            filesystem_id = "FILESYSTEM_CPM_PRODOS";
+                        else
+                            filesystem_id = "FILESYSTEM_CPM_DOS";
+                    } else
+                    if (type_id == "TYPE_AGAT_140" && ext == ".cpm") {
+                        filesystem_id = "FILESYSTEM_CPM_RAW";
                     } else
                         filesystem_id = "FILESYSTEM_DOS33";
                 } else
@@ -309,7 +315,7 @@ namespace dsk_tools {
                     filesystem_id = "FILESYSTEM_SPRITE_OS";
                 } else
                 if (type_id == "TYPE_AGAT_140" && _ms == ms) {
-                    filesystem_id = "FILESYSTEM_CPM";
+                    filesystem_id = "FILESYSTEM_CPM_DOS";
                 } else {
                     filesystem_id = "FILESYSTEM_DOS33";
                 }
