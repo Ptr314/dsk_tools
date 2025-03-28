@@ -9,8 +9,9 @@
 
 namespace dsk_tools {
 
-    fsCPM::fsCPM(diskImage * image):
+fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         fileSystem(image)
+        , m_filesystem_id(filesystem_id)
     {}
 
     int fsCPM::get_capabilities()
@@ -50,6 +51,20 @@ namespace dsk_tools {
         return trim(std::string(reinterpret_cast<char*>(&di.F), 8)) + ((ext.size() > 0)?("."+ext):"");
     }
 
+    int fsCPM::translate_sector(int sector)
+    {
+        if (m_filesystem_id == "FILESYSTEM_CPM_RAW")
+            return sector;
+        else
+        if (m_filesystem_id == "FILESYSTEM_CPM_DOS")
+            return agat_140_cpm2dos[sector];
+        else
+        if (m_filesystem_id == "FILESYSTEM_CPM_PRODOS")
+            return agat_140_cpm2prodos[sector];
+        else
+            throw std::runtime_error("Incorrect filesystem id");
+    }
+
     int fsCPM::dir(std::vector<dsk_tools::fileData> * files)
     {
         if (!is_open) return FDD_OP_NOT_OPEN;
@@ -63,7 +78,7 @@ namespace dsk_tools {
         CPM_DIR_ENTRY * catalog[catalog_size];
 
         for (int i = 0; i < directory_sectors; i++) {
-            uint8_t * sector = image->get_sector_data(0, DPB.OFF, agat_140_cpm2dos[i]);
+            uint8_t * sector = image->get_sector_data(0, DPB.OFF, translate_sector(i));
             for (int j = 0; j < entries_in_sector; j++)
                 catalog[i*entries_in_sector + j] = reinterpret_cast<CPM_DIR_ENTRY*>(sector + j*sizeof(CPM_DIR_ENTRY));
         }
@@ -140,7 +155,7 @@ namespace dsk_tools {
                     list += " Part: " + std::to_string(part);
                     list += " Sectors:" ;
                     for (int k=0; k<4; k++) {
-                        list += " " + std::to_string(agat_140_cpm2dos[part*4 + k]);
+                        list += " " + std::to_string(translate_sector(part*4 + k));
                     }
                     list += "\n";
                 }
@@ -172,7 +187,7 @@ namespace dsk_tools {
                 int part = AL % 4;
                 if (AL != 0 && AL != 0xE5)  {
                     for (int k=0; k<4; k++) {
-                        int sector = agat_140_cpm2dos[part*4 + k];
+                        int sector = translate_sector(part*4 + k);
                         auto p = image->get_sector_data(0, track, sector);
                         out.insert(out.end(), p, p + 256);
                     }

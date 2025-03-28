@@ -69,6 +69,10 @@ namespace dsk_tools {
         0,6,12,3,9,15,14,5,11,2,8,7,13,4,10,1
     };
 
+    static const int agat_140_cpm2prodos[16] = {
+        0,9,3,12,6,15,1,10,4,13,7,8,2,11,5,14
+    };
+
     static const uint16_t agat_MFM_tab[]=
         {
             0x5555, 0x5595, 0x5525, 0x55A5, 0x5549, 0x5589, 0x5529, 0x55A9,
