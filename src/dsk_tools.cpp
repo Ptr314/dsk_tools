@@ -238,7 +238,7 @@ namespace dsk_tools {
             file.seekg (0, file.beg);
 
             // type_id
-            if (fsize == 143360) {
+            if (fsize == 143360 || fsize == 143360+128) {
                 type_id = "TYPE_AGAT_140";
             } else
             if (fsize == 860160 || fsize == 860164) {
@@ -256,7 +256,7 @@ namespace dsk_tools {
                 uint32_t vtoc_pos;
                 if (type_id == "TYPE_AGAT_140") vtoc_pos=17*16*256;
                 else
-                    if (type_id == "TYPE_AGAT_840") vtoc_pos=17*21*256;
+                if (type_id == "TYPE_AGAT_840") vtoc_pos=17*21*256;
 
                 Agat_VTOC VTOC;
                 file.seekg (vtoc_pos, file.beg);
