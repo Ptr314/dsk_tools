@@ -84,6 +84,12 @@ namespace dsk_tools {
         uint8_t     type;
     };
 
+    struct TS_PAIR
+    {
+        uint8_t     track;
+        uint8_t     sector;
+    };
+
     #pragma pack(pop)
 
 
@@ -91,12 +97,15 @@ namespace dsk_tools {
     {
     protected:
         dsk_tools::Agat_VTOC * VTOC;
+        TS_PAIR current_dir;
+        std::vector<TS_PAIR> current_path;
         int attr_to_type(uint8_t a);
     public:
         fsDOS33(diskImage * image);
         virtual int open() override;
         virtual int get_capabilities() override;
         virtual void cd(const dsk_tools::fileData & dir) override;
+        virtual void cd_up() override;
         virtual int dir(std::vector<dsk_tools::fileData> * files) override;
         virtual BYTES get_file(const fileData & fd) override;
         virtual std::string file_info(const fileData & fd) override;

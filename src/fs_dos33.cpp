@@ -29,6 +29,13 @@ namespace dsk_tools {
             return FDD_OPEN_BAD_FORMAT;
         }
 
+        TS_PAIR root_ts = {
+            VTOC->catalog_track,
+            VTOC->catalog_sector
+        };
+
+        current_path.push_back(root_ts);
+
         is_open = true;
         volume_id = VTOC->volume_id;
         return FDD_OPEN_OK;
@@ -52,27 +59,41 @@ namespace dsk_tools {
 
         files->clear();
 
-        int catalog_track = VTOC->catalog_track;
-        int catalog_sector = VTOC->catalog_sector;
+        TS_PAIR catalog_ts = current_path.back();
 
         Apple_DOS_Catalog * catalog;
 
+        // if (current_path.size() > 1) {
+        //     fileData updir;
+        //     updir.name = "..";
+        //     updir.is_dir = true;
+        //     updir.is_deleted = false;
+        //     files->push_back(updir);
+        // }
+
         do {
-            catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_track, catalog_sector));
-            //std::cout << catalog_track << ":" << catalog_sector << std::endl;
+            catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
 
             for (int i=0; i<7; i++) {
                 fileData file;
 
-                //std::cout << "    F: " << (int)catalog->files[i].type << ":" << (int)catalog->files[i].size << ":" << (int)catalog->files[i].tbl_sector << ":" << (int)catalog->files[i].tbl_track  << std::endl;
                 if (catalog->files[i].tbl_track == 0) return FDD_OP_OK;
-                file.is_dir = false;
-                file.is_deleted = (catalog->files[i].type == 0xFF || catalog->files[i].tbl_track == 0xFF);
+                file.is_dir = catalog->files[i].type == 0xFF;
+                file.is_deleted = catalog->files[i].tbl_track == 0xFF;
                 file.is_protected = (catalog->files[i].type & 0x80) != 0;
                 file.attributes = catalog->files[i].type & 0x7F;
                 memcpy(&file.original_name, &catalog->files[i].name, 30);
                 file.original_name_length = 30;
-                file.name = trim(agat_to_utf(catalog->files[i].name, 30));
+
+                bool updir = false;
+                if (current_path.size() > 1 && file.is_dir) {
+                    TS_PAIR parent_ts = current_path[current_path.size()-2];
+                    updir = catalog->files[i].tbl_track == parent_ts.track && catalog->files[i].tbl_sector == parent_ts.sector;
+                }
+                if (updir)
+                    file.name = "..";
+                else
+                    file.name = trim(agat_to_utf(catalog->files[i].name, 30));
 
                 auto T = attr_to_type(catalog->files[i].type);
                 file.type_str_short = std::string(agat_file_types[T]);
@@ -92,11 +113,10 @@ namespace dsk_tools {
                 files->push_back(file);
             }
 
-            catalog_track = catalog->next_track;
-            catalog_sector = catalog->next_sector;
-            //std::cout << "    Next: " << catalog_track << ":" << catalog_sector << std::endl;
+            catalog_ts.track = catalog->next_track;
+            catalog_ts.sector = catalog->next_sector;
 
-        } while (catalog_track != 0);
+        } while (catalog_ts.track != 0);
 
         return FDD_OP_OK;
     }
@@ -134,8 +154,26 @@ namespace dsk_tools {
         return data;
     }
 
+    void fsDOS33::cd_up()
+    {
+        if (current_path.size() > 1) current_path.pop_back();
+    }
+
     void fsDOS33::cd(const dsk_tools::fileData & dir)
-    {}
+    {
+        if (dir.name == "..") {
+            cd_up();
+        } else {
+            Apple_DOS_File f;
+            memcpy(&f, dir.metadata.data(), sizeof(f));
+            current_path.push_back(
+                {
+                    f.tbl_track,
+                    f.tbl_sector
+                }
+            );
+        }
+    }
 
     std::string fsDOS33::file_info(const fileData & fd) {
         const dsk_tools::Apple_DOS_File * dir_entry = reinterpret_cast<const dsk_tools::Apple_DOS_File *>(fd.metadata.data());

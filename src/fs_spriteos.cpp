@@ -129,11 +129,18 @@ namespace dsk_tools {
         return data;
     }
 
+    void fsSpriteOS::cd_up()
+    {
+        if (current_path.size() > 1) {
+            current_path.pop_back();
+            CURRENT_DIR = current_path.back();
+        }
+    }
+
     void fsSpriteOS::cd(const dsk_tools::fileData & dir)
     {
         if (dir.name == "..") {
-            current_path.pop_back();
-            CURRENT_DIR = current_path.back();
+            cd_up();
         } else {
             memcpy(&CURRENT_DIR, dir.metadata.data(), sizeof(CURRENT_DIR));
             current_path.push_back(CURRENT_DIR);
