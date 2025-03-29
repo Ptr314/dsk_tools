@@ -47,6 +47,7 @@ namespace dsk_tools {
         virtual int open() override;
         virtual int get_capabilities() override;
         virtual void cd(const dsk_tools::fileData & dir) override;
+        virtual void cd_up() override;
         virtual int dir(std::vector<dsk_tools::fileData> * files) override;
         virtual BYTES get_file(const fileData & fd) override;
         virtual std::string file_info(const fileData & fd) override;

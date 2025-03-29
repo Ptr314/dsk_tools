@@ -122,6 +122,9 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return FDD_OP_OK;
     }
 
+    void fsCPM::cd_up()
+    {}
+
     void fsCPM::cd(const dsk_tools::fileData & dir)
     {}
 
