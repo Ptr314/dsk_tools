@@ -42,6 +42,11 @@ namespace dsk_tools {
         SPRITE_OS_DIR_ENTRY CURRENT_DIR;
         std::vector<SPRITE_OS_DIR_ENTRY> current_path;
         void load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out);
+
+        virtual bool sector_is_free(int track, int sector) override;
+        virtual void sector_free(int track, int sector) override;
+        virtual bool sector_occupy(int track, int sector) override;
+
     public:
         fsSpriteOS(diskImage * image);
         virtual int open() override;

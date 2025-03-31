@@ -16,7 +16,7 @@ namespace dsk_tools {
 
     int fsSpriteOS::get_capabilities()
     {
-        return FILE_PROTECTION | FILE_DELETE | FILE_DIRS;
+        return FILE_PROTECTION | FILE_DIRS;
     }
 
     int fsSpriteOS::open()
@@ -210,5 +210,21 @@ namespace dsk_tools {
     {
         return agat_sos_info(DPB);
     }
+
+    bool fsSpriteOS::sector_is_free(int track, int sector)
+    {
+        return false;
+    }
+
+    void fsSpriteOS::sector_free(int track, int sector)
+    {
+
+    }
+
+    bool fsSpriteOS::sector_occupy(int track, int sector)
+    {
+        return false;
+    }
+
 
 }

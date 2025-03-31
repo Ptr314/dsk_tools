@@ -45,6 +45,10 @@ namespace dsk_tools {
         std::string m_filesystem_id;
         std::string make_file_name(CPM_DIR_ENTRY & di);
         void load_file(const BYTES *dir_records, int extents, BYTES & out);
+
+        virtual bool sector_is_free(int track, int sector) override;
+        virtual void sector_free(int track, int sector) override;
+        virtual bool sector_occupy(int track, int sector) override;
     public:
         fsCPM(diskImage * image, const std::string & filesystem_id);
         virtual int open() override;

@@ -14,7 +14,7 @@ namespace dsk_tools {
 
     int fsDOS33::get_capabilities()
     {
-        return FILE_PROTECTION | FILE_TYPE | FILE_DELETE;
+        return FILE_PROTECTION | FILE_TYPE | FILE_DELETE | FILE_ADD;
     }
 
     int fsDOS33::open()
@@ -292,8 +292,56 @@ namespace dsk_tools {
 
     std::string fsDOS33::information()
     {
-        return agat_vtoc_info(*VTOC);
+        std::string result;
+        result += agat_vtoc_info(*VTOC);
+        result += "\n";
+
+        result += "{$FREE_SECTORS}: "  + std::to_string(free_sectors()) + "\n";
+        result += "{$FREE_BYTES}: "  + std::to_string(free_sectors()*256) + "\n";
+
+        return result;
     }
+
+    uint32_t * fsDOS33::track_map(int track)
+    {
+        Agat_VTOC_Ex * VTOCEx;
+        if (track < 0x32)
+            return &(VTOC->free_sectors[track]);
+        else
+        if (track < 0x72 && image->get_tracks() > 35) {
+            VTOCEx = reinterpret_cast<dsk_tools::Agat_VTOC_Ex *>(image->get_sector_data(0, 0x32, 0));
+            return &(VTOCEx->free_sectors[track-0x32]);
+        } else
+        if (track < 0xB2 && image->get_tracks() > 35) {
+            VTOCEx = reinterpret_cast<dsk_tools::Agat_VTOC_Ex *>(image->get_sector_data(0, 0x72, 0));
+            return &(VTOCEx->free_sectors[track-0x72]);
+        } else
+            throw std::runtime_error("Incorrect track");
+    }
+
+    bool fsDOS33::sector_is_free(int track, int sector)
+    {
+        if (image->get_sectors() == 16)
+            return *track_map(track) & VTOCMask140[sector];
+        else
+        if (image->get_sectors() == 21)
+            return *track_map(track) & VTOCMask840[sector];
+        else
+            throw std::runtime_error("Incorrect disk type");
+    }
+
+    void fsDOS33::sector_free(int track, int sector)
+    {
+        *track_map(track) |= (image->get_sectors()==16)?VTOCMask140[sector]:VTOCMask840[sector];
+    }
+
+    bool fsDOS33::sector_occupy(int track, int sector)
+    {
+        if (!sector_is_free(track, sector)) return false;
+        *track_map(track) &= ~((image->get_sectors()==16)?VTOCMask140[sector]:VTOCMask840[sector]);
+        return true;
+    }
+
 
 
 }
