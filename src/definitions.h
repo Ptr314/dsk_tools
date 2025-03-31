@@ -27,6 +27,7 @@ namespace dsk_tools {
     #define FILE_TYPE                   2
     #define FILE_DELETE                 4
     #define FILE_DIRS                   8
+    #define FILE_ADD                   16
 
     #define FDD_WRITE_OK                0
     #define FDD_WRITE_ERROR             1

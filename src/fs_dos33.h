@@ -48,6 +48,11 @@ namespace dsk_tools {
         uint32_t    free_sectors[50];    // 38-FF
     };
 
+    struct Agat_VTOC_Ex
+    {
+        uint32_t    free_sectors[64];
+    };
+
     struct Apple_DOS_File
     {
         uint8_t     tbl_track;      // 00
@@ -90,6 +95,20 @@ namespace dsk_tools {
         uint8_t     sector;
     };
 
+    constexpr uint32_t VTOCMask140[32] = {
+        0x00000100, 0x00000200, 0x00000400, 0x00000800, 0x00001000, 0x00002000, 0x00004000, 0x00008000, // 0..7
+        0x00000001, 0x00000002, 0x00000004, 0x00000008, 0x00000010, 0x00000020, 0x00000040, 0x00000080, // 8..F
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+    };
+
+    constexpr uint32_t VTOCMask840[32] = {
+         0x00080000, 0x00100000, 0x00200000, 0x00400000, 0x00800000, 0x00000100, 0x00000200, 0x00000400, // 00..07
+         0x00000800, 0x00001000, 0x00002000, 0x00004000, 0x00008000, 0x00000001, 0x00000002, 0x00000004, // 08..0F
+         0x00000008, 0x00000010, 0x00000020, 0x00000040, 0x00000080, 0x00000000, 0x00000000, 0x00000000, // 10..14
+         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+    };
+
     #pragma pack(pop)
 
 
@@ -100,6 +119,11 @@ namespace dsk_tools {
         TS_PAIR current_dir;
         std::vector<TS_PAIR> current_path;
         int attr_to_type(uint8_t a);
+        virtual bool sector_is_free(int track, int sector) override;
+        virtual void sector_free(int track, int sector) override;
+        virtual bool sector_occupy(int track, int sector) override;
+        virtual uint32_t * track_map(int track);
+
     public:
         fsDOS33(diskImage * image);
         virtual int open() override;

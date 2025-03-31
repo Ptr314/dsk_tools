@@ -16,7 +16,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
 
     int fsCPM::get_capabilities()
     {
-        return FILE_PROTECTION | FILE_DELETE | FILE_TYPE;
+        return FILE_PROTECTION | FILE_TYPE;
     }
 
     int fsCPM::open()
@@ -237,5 +237,18 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return "";
     }
 
+    bool fsCPM::sector_is_free(int track, int sector)
+    {
+        return false;
+    }
+
+    void fsCPM::sector_free(int track, int sector)
+    {
+    }
+
+    bool fsCPM::sector_occupy(int track, int sector)
+    {
+        return false;
+    }
 
 }

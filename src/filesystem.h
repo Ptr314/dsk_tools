@@ -11,6 +11,11 @@ namespace dsk_tools {
         bool is_open = false;
         int volume_id = -1;
 
+        virtual bool sector_is_free(int track, int sector) = 0;
+        virtual void sector_free(int track, int sector) = 0;
+        virtual bool sector_occupy(int track, int sector) = 0;
+        virtual int free_sectors();
+
     public:
         fileSystem(diskImage * image);
         virtual ~fileSystem() {};
