@@ -43,9 +43,9 @@ namespace dsk_tools {
         std::vector<SPRITE_OS_DIR_ENTRY> current_path;
         void load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out);
 
-        virtual bool sector_is_free(int track, int sector) override;
-        virtual void sector_free(int track, int sector) override;
-        virtual bool sector_occupy(int track, int sector) override;
+        virtual bool sector_is_free(int head, int track, int sector) override;
+        virtual void sector_free(int head, int track, int sector) override;
+        virtual bool sector_occupy(int head, int track, int sector) override;
 
     public:
         fsSpriteOS(diskImage * image);
@@ -53,9 +53,10 @@ namespace dsk_tools {
         virtual int get_capabilities() override;
         virtual void cd(const dsk_tools::fileData & dir) override;
         virtual void cd_up() override;
-        virtual int dir(std::vector<dsk_tools::fileData> * files) override;
+        virtual int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) override;
         virtual BYTES get_file(const fileData & fd) override;
         virtual std::string file_info(const fileData & fd) override;
+        virtual bool file_delete(const fileData & fd) override;
         virtual std::vector<std::string> get_save_file_formats() override;
         virtual int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) override;
         virtual std::string information() override;

@@ -53,7 +53,7 @@ namespace dsk_tools {
         return 0;
     }
 
-    int fsDOS33::dir(std::vector<dsk_tools::fileData> * files)
+    int fsDOS33::dir(std::vector<dsk_tools::fileData> * files, bool show_deleted)
     {
         if (!is_open) return FDD_OP_NOT_OPEN;
 
@@ -63,54 +63,53 @@ namespace dsk_tools {
 
         Apple_DOS_Catalog * catalog;
 
-        // if (current_path.size() > 1) {
-        //     fileData updir;
-        //     updir.name = "..";
-        //     updir.is_dir = true;
-        //     updir.is_deleted = false;
-        //     files->push_back(updir);
-        // }
-
         do {
             catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
 
             for (int i=0; i<7; i++) {
-                fileData file;
+                bool is_deleted = catalog->files[i].tbl_track == 0xFF;
+                if (!is_deleted || show_deleted) {
+                    fileData file;
 
-                if (catalog->files[i].tbl_track == 0) return FDD_OP_OK;
-                file.is_dir = catalog->files[i].type == 0xFF;
-                file.is_deleted = catalog->files[i].tbl_track == 0xFF;
-                file.is_protected = (catalog->files[i].type & 0x80) != 0;
-                file.attributes = catalog->files[i].type & 0x7F;
-                memcpy(&file.original_name, &catalog->files[i].name, 30);
-                file.original_name_length = 30;
+                    if (catalog->files[i].tbl_track == 0) return FDD_OP_OK;
+                    file.is_dir = catalog->files[i].type == 0xFF;
+                    file.is_deleted = is_deleted;
+                    file.is_protected = (catalog->files[i].type & 0x80) != 0;
+                    file.attributes = catalog->files[i].type & 0x7F;
+                    memcpy(&file.original_name, &catalog->files[i].name, 30);
+                    file.original_name_length = 30;
 
-                bool updir = false;
-                if (current_path.size() > 1 && file.is_dir) {
-                    TS_PAIR parent_ts = current_path[current_path.size()-2];
-                    updir = catalog->files[i].tbl_track == parent_ts.track && catalog->files[i].tbl_sector == parent_ts.sector;
-                }
-                if (updir)
-                    file.name = "..";
-                else
-                    file.name = trim(agat_to_utf(catalog->files[i].name, 30));
+                    bool updir = false;
+                    if (current_path.size() > 1 && file.is_dir) {
+                        TS_PAIR parent_ts = current_path[current_path.size()-2];
+                        updir = catalog->files[i].tbl_track == parent_ts.track && catalog->files[i].tbl_sector == parent_ts.sector;
+                    }
+                    if (updir)
+                        file.name = "..";
+                    else
+                        file.name = trim(agat_to_utf(catalog->files[i].name, 30));
 
-                auto T = attr_to_type(catalog->files[i].type);
-                file.type_str_short = std::string(agat_file_types[T]);
+                    auto T = attr_to_type(catalog->files[i].type);
+                    file.type_str_short = std::string(agat_file_types[T]);
 
-                if (T == 0)
-                    file.preferred_type = PREFERRED_TEXT;
-                else if (T == 2)
-                    file.preferred_type = PREFERRED_ABS;
-                else
-                    file.preferred_type = PREFERRED_BINARY;
+                    if (T == 0)
+                        file.preferred_type = PREFERRED_TEXT;
+                    else if (T == 2)
+                        file.preferred_type = PREFERRED_AGATBASIC;
+                    else
+                        file.preferred_type = PREFERRED_BINARY;
 
-                file.size = catalog->files[i].size * 256;
+                    file.size = catalog->files[i].size * 256;
 
-                file.metadata.resize(sizeof(catalog->files[i]));
-                memcpy(file.metadata.data(), &(catalog->files[i]), sizeof(catalog->files[i]));
+                    file.metadata.resize(sizeof(catalog->files[i]));
+                    memcpy(file.metadata.data(), &(catalog->files[i]), sizeof(catalog->files[i]));
 
-                files->push_back(file);
+                    file.position.push_back(catalog_ts.track);
+                    file.position.push_back(catalog_ts.sector);
+                    file.position.push_back(i);
+
+                    files->push_back(file);
+                } //show deleted
             }
 
             catalog_ts.track = catalog->next_track;
@@ -208,7 +207,7 @@ namespace dsk_tools {
 
         do {
             result += "T/S "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
-            if (list_track < (image->get_tracks()*image->get_heads()) && image->get_sectors()) {
+            if (list_track < (image->get_tracks()*image->get_heads()) && list_sector < image->get_sectors()) {
                 ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
 
 
@@ -305,21 +304,31 @@ namespace dsk_tools {
     uint32_t * fsDOS33::track_map(int track)
     {
         Agat_VTOC_Ex * VTOCEx;
+        int tracks_count = image->get_tracks()*image->get_heads();
         if (track < 0x32)
             return &(VTOC->free_sectors[track]);
         else
-        if (track < 0x72 && image->get_tracks() > 35) {
+        if (track < 0x72 && tracks_count > 0x32) {
             VTOCEx = reinterpret_cast<dsk_tools::Agat_VTOC_Ex *>(image->get_sector_data(0, 0x32, 0));
             return &(VTOCEx->free_sectors[track-0x32]);
         } else
-        if (track < 0xB2 && image->get_tracks() > 35) {
+        if (track < 0xB2 && tracks_count > 0x72) {
             VTOCEx = reinterpret_cast<dsk_tools::Agat_VTOC_Ex *>(image->get_sector_data(0, 0x72, 0));
             return &(VTOCEx->free_sectors[track-0x72]);
         } else
             throw std::runtime_error("Incorrect track");
     }
 
-    bool fsDOS33::sector_is_free(int track, int sector)
+    int fsDOS33::free_sectors()
+    {
+        int free_sectors = 0;
+        for (int track=0; track < image->get_tracks()*image->get_heads(); track ++)
+            for (int sector=0; sector<image->get_sectors(); sector++)
+                free_sectors += sector_is_free(0, track, sector);
+        return free_sectors;
+    }
+
+    bool fsDOS33::sector_is_free(int head, int track, int sector)
     {
         if (image->get_sectors() == 16)
             return *track_map(track) & VTOCMask140[sector];
@@ -330,18 +339,55 @@ namespace dsk_tools {
             throw std::runtime_error("Incorrect disk type");
     }
 
-    void fsDOS33::sector_free(int track, int sector)
+    void fsDOS33::sector_free(int head, int track, int sector)
     {
         *track_map(track) |= (image->get_sectors()==16)?VTOCMask140[sector]:VTOCMask840[sector];
+        // std::cout << "FREE " << track << " " << sector << std::endl;
     }
 
-    bool fsDOS33::sector_occupy(int track, int sector)
+    bool fsDOS33::sector_occupy(int head, int track, int sector)
     {
-        if (!sector_is_free(track, sector)) return false;
+        if (!sector_is_free(0, track, sector)) return false;
         *track_map(track) &= ~((image->get_sectors()==16)?VTOCMask140[sector]:VTOCMask840[sector]);
         return true;
     }
 
+    bool fsDOS33::file_delete(const fileData & fd)
+    {
+        Apple_DOS_Catalog * catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, fd.position[0], fd.position[1]));
+        dsk_tools::Apple_DOS_File * dir_entry = reinterpret_cast<dsk_tools::Apple_DOS_File *>(&(catalog->files[fd.position[2]]));
 
+        int list_track = dir_entry->tbl_track;
+        int list_sector = dir_entry->tbl_sector;
+
+        if (list_track == 0xFF) return true;
+
+        Apple_DOS_TS_List * ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+
+        do {
+            if (list_track < (image->get_tracks()*image->get_heads()) && list_sector < image->get_sectors()) {
+                ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+                for (int i = 0; i < VTOC->pairs_on_sector; i++){
+                    int file_track = ts_list->ts[i][0];
+                    int file_sector = ts_list->ts[i][1];
+                    if (file_track == 0 && file_sector == 0) break;
+                    sector_free(0, file_track, file_sector);
+                }
+                sector_free(0, list_track, list_sector);
+                list_track = ts_list->next_track;
+                list_sector = ts_list->next_sector;
+            } else {
+                return false;
+            }
+
+        } while (list_track != 0);
+
+        dir_entry->name[29] = dir_entry->tbl_track;
+        dir_entry->tbl_track = 0xFF;
+
+        is_changed = true;
+
+        return true;
+    }
 
 }

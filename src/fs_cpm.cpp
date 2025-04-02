@@ -65,7 +65,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
             throw std::runtime_error("Incorrect filesystem id");
     }
 
-    int fsCPM::dir(std::vector<dsk_tools::fileData> * files)
+    int fsCPM::dir(std::vector<dsk_tools::fileData> * files, bool show_deleted)
     {
         if (!is_open) return FDD_OP_NOT_OPEN;
 
@@ -237,18 +237,23 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return "";
     }
 
-    bool fsCPM::sector_is_free(int track, int sector)
+    bool fsCPM::sector_is_free(int head, int track, int sector)
     {
         return false;
     }
 
-    void fsCPM::sector_free(int track, int sector)
+    void fsCPM::sector_free(int head, int track, int sector)
     {
     }
 
-    bool fsCPM::sector_occupy(int track, int sector)
+    bool fsCPM::sector_occupy(int head, int track, int sector)
     {
         return false;
+    }
+
+    bool fsCPM::file_delete(const fileData & fd)
+    {
+        return true;
     }
 
 }
