@@ -41,8 +41,9 @@ namespace dsk_tools {
 
     #define PREFERRED_BINARY            0
     #define PREFERRED_TEXT              1
-    #define PREFERRED_ABS               2
-    #define PREFERRED_MBASIC            3
+    #define PREFERRED_AGATBASIC         2
+    #define PREFERRED_ABS               3
+    #define PREFERRED_MBASIC            4
 
     typedef std::vector<uint8_t> BYTES;
 
@@ -60,6 +61,7 @@ namespace dsk_tools {
         uint32_t                size;
         int                     preferred_type;
         std::vector<uint8_t>    metadata;
+        std::vector<uint32_t>   position;
     };
 
     static const int agat_140_raw2logic[16] = {
