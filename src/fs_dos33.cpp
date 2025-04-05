@@ -242,6 +242,11 @@ namespace dsk_tools {
         return {"FILE_FIL", "FILE_BINARY"};
     }
 
+    std::vector<std::string> fsDOS33::get_add_file_formats()
+    {
+        return {"FILE_FIL"};
+    }
+
     int fsDOS33::save_file(const std::string & format_id, const std::string & file_name, const fileData &fd)
     {
         const Apple_DOS_File * dir_entry = reinterpret_cast<const Apple_DOS_File *>(fd.metadata.data());
@@ -354,40 +359,50 @@ namespace dsk_tools {
 
     bool fsDOS33::file_delete(const fileData & fd)
     {
-        Apple_DOS_Catalog * catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, fd.position[0], fd.position[1]));
-        dsk_tools::Apple_DOS_File * dir_entry = reinterpret_cast<dsk_tools::Apple_DOS_File *>(&(catalog->files[fd.position[2]]));
+        if (!fd.is_dir) {
+            Apple_DOS_Catalog * catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, fd.position[0], fd.position[1]));
+            dsk_tools::Apple_DOS_File * dir_entry = reinterpret_cast<dsk_tools::Apple_DOS_File *>(&(catalog->files[fd.position[2]]));
 
-        int list_track = dir_entry->tbl_track;
-        int list_sector = dir_entry->tbl_sector;
+            int list_track = dir_entry->tbl_track;
+            int list_sector = dir_entry->tbl_sector;
 
-        if (list_track == 0xFF) return true;
+            if (list_track == 0xFF) return true;
 
-        Apple_DOS_TS_List * ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+            Apple_DOS_TS_List * ts_list;
 
-        do {
-            if (list_track < (image->get_tracks()*image->get_heads()) && list_sector < image->get_sectors()) {
-                ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
-                for (int i = 0; i < VTOC->pairs_on_sector; i++){
-                    int file_track = ts_list->ts[i][0];
-                    int file_sector = ts_list->ts[i][1];
-                    if (file_track == 0 && file_sector == 0) break;
-                    sector_free(0, file_track, file_sector);
+            do {
+                if (list_track < (image->get_tracks()*image->get_heads()) && list_sector < image->get_sectors()) {
+                    ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+                    for (int i = 0; i < VTOC->pairs_on_sector; i++){
+                        int file_track = ts_list->ts[i][0];
+                        int file_sector = ts_list->ts[i][1];
+                        if (file_track == 0 && file_sector == 0) break;
+                        sector_free(0, file_track, file_sector);
+                    }
+                    sector_free(0, list_track, list_sector);
+                    list_track = ts_list->next_track;
+                    list_sector = ts_list->next_sector;
+                } else {
+                    return false;
                 }
-                sector_free(0, list_track, list_sector);
-                list_track = ts_list->next_track;
-                list_sector = ts_list->next_sector;
-            } else {
-                return false;
-            }
 
-        } while (list_track != 0);
+            } while (list_track != 0);
 
-        dir_entry->name[29] = dir_entry->tbl_track;
-        dir_entry->tbl_track = 0xFF;
+            dir_entry->name[29] = dir_entry->tbl_track;
+            dir_entry->tbl_track = 0xFF;
 
-        is_changed = true;
+            is_changed = true;
 
-        return true;
+            return true;
+        } else {
+            // TODO: deleting directories
+            return false;
+        }
+    }
+
+    int fsDOS33::file_add(const std::string & file_name, const std::string & format_id)
+    {
+        return FILE_ADD_ERROR_SPACE;
     }
 
 }

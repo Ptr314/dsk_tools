@@ -182,6 +182,11 @@ namespace dsk_tools {
         return {"FILE_SOS", "FILE_BINARY"};
     }
 
+    std::vector<std::string> fsSpriteOS::get_add_file_formats()
+    {
+        return {"FILE_SOS", "FILE_BINARY"};
+    }
+
     int fsSpriteOS::save_file(const std::string & format_id, const std::string & file_name, const fileData &fd)
     {
         BYTES buffer = get_file(fd);
@@ -228,7 +233,12 @@ namespace dsk_tools {
 
     bool fsSpriteOS::file_delete(const fileData & fd)
     {
-        return true;
+        return false;
+    }
+
+    int fsSpriteOS::file_add(const std::string & file_name, const std::string & format_id)
+    {
+        return false;
     }
 
 }

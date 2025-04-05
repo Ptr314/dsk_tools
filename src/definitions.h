@@ -36,6 +36,9 @@ namespace dsk_tools {
     #define FDD_WRITE_INCORECT_TEMPLATE 4
     #define FDD_WRITE_INCORECT_SOURCE   5
 
+    #define FILE_ADD_OK                 0
+    #define FILE_ADD_ERROR_SPACE        1
+
     #define FDD_DETECT_OK               0
     #define FDD_DETECT_ERROR            1
 
