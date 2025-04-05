@@ -212,6 +212,11 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return {"FILE_BINARY"};
     }
 
+    std::vector<std::string> fsCPM::get_add_file_formats()
+    {
+        return {"FILE_BINARY"};
+    }
+
     int fsCPM::save_file(const std::string & format_id, const std::string & file_name, const fileData &fd)
     {
         BYTES buffer = get_file(fd);
@@ -253,7 +258,13 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
 
     bool fsCPM::file_delete(const fileData & fd)
     {
-        return true;
+        return false;
     }
+
+    int fsCPM::file_add(const std::string & file_name, const std::string & format_id)
+    {
+        return false;
+    }
+
 
 }
