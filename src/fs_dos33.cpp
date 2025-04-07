@@ -15,7 +15,7 @@ namespace dsk_tools {
 
     int fsDOS33::get_capabilities()
     {
-        return FILE_PROTECTION | FILE_TYPE | FILE_DELETE | FILE_ADD;
+        return FILE_PROTECTION | FILE_TYPE | FILE_DELETE | FILE_ADD | FILE_DIRECTORIES;
     }
 
     int fsDOS33::open()
