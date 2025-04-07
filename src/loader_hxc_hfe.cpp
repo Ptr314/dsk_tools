@@ -60,6 +60,7 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
 
         for (int track=0; track<hdr->number_of_track; track++) {
             int in_base = ti[track]->offset*HXC_HFE_BLOCK_SIZE;
+            // TODO: remove float operations, use (a + b - 1) / b
             int mixed_track_len = std::ceil(static_cast<double>(ti[track]->track_len) / HXC_HFE_BLOCK_SIZE) * HXC_HFE_BLOCK_SIZE;
 
             BYTES track_mixed(in.begin() + in_base, in.begin() + in_base + mixed_track_len);
