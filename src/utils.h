@@ -11,8 +11,10 @@
 namespace dsk_tools
 {
     std::string agat_to_utf(const uint8_t in[], int len);
+    std::string ascii_to_agat(const std::string & in);
     std::string trim(const std::string& str, const std::string& whitespace = " \t");
     std::string get_file_ext(const std::string &file_name);
+    std::string get_filename(const std::string& path);
 
     template< typename T >
     std::string int_to_hex( T i, bool fill = true )

@@ -22,6 +22,16 @@ namespace dsk_tools
         return out;
     }
 
+    std::string ascii_to_agat(const std::string & in)
+    {
+        std::string out;
+        for (int i=0; i < in.size(); i ++) {
+            out.push_back(static_cast<char>(in[i] | 0x80));
+        }
+        return out;
+
+    }
+
     std::string trim(const std::string& str, const std::string& whitespace)
     {
         const auto strBegin = str.find_first_not_of(whitespace);
@@ -42,6 +52,13 @@ namespace dsk_tools
         std::string ext = file_name.substr(dot_pos);
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         return ext;
+    }
+
+    std::string get_filename(const std::string& path) {
+        size_t pos = path.find_last_of("/\\");
+        if (pos == std::string::npos)
+            return path;
+        return path.substr(pos + 1);
     }
 
     std::string toBCD(uint8_t byte) {

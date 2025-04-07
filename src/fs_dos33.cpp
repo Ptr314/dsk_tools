@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -65,6 +66,8 @@ namespace dsk_tools {
 
         do {
             catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
+
+            std::cout << "CATALOG: " << (int)catalog_ts.track << ":" << (int)catalog_ts.sector << std::endl;
 
             for (int i=0; i<7; i++) {
                 bool is_deleted = catalog->files[i].tbl_track == 0xFF;
@@ -335,6 +338,8 @@ namespace dsk_tools {
 
     bool fsDOS33::sector_is_free(int head, int track, int sector)
     {
+        // std::cout << "? " << track << ":" << sector << std::endl;
+
         if (image->get_sectors() == 16)
             return *track_map(track) & VTOCMask140[sector];
         else
@@ -400,9 +405,226 @@ namespace dsk_tools {
         }
     }
 
+    bool fsDOS33::find_empty_sector(uint8_t start_track, TS_PAIR &ts, bool go_forward)
+    {
+        std::cout << "?? " << (int)start_track << " ";
+
+        int track = start_track;
+        int sector;
+
+        do {
+            int inc;
+            if (go_forward) {
+                sector = 0;
+                inc = 1;
+            } else {
+                sector = image->get_sectors()-1;
+                inc = -1;
+            }
+
+            while (sector>=0 && sector<image->get_sectors() && !sector_is_free(0, track, sector)) sector += inc;
+
+            if (sector >=0 && sector < image->get_sectors()) {
+                ts.track = track;
+                ts.sector = sector;
+
+                std::cout << "! " << track << ":" << sector << std::endl;
+
+                return true;
+            } else {
+                track += (track >= start_track)?1:-1;
+                if (track < 0 || track >= image->get_tracks())
+                    return false;
+            }
+        } while (true);
+    }
+
+    bool fsDOS33::find_epmty_dir_entry(Apple_DOS_File *& dir_entry, bool just_check, bool & extra_sector)
+    {
+
+        TS_PAIR catalog_ts = current_path.back();
+        Apple_DOS_Catalog * catalog;
+        TS_PAIR last_ts;
+
+        do {
+            catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
+
+            for (int i=0; i<7; i++) {
+                uint8_t tbl_track = catalog->files[i].tbl_track;
+                if (tbl_track == 0xFF || tbl_track == 0x00) {
+                    dir_entry = &(catalog->files[i]);
+                    extra_sector = false;
+                    return true;
+                }
+            }
+
+            last_ts = catalog_ts;
+            catalog_ts.track = catalog->next_track;
+            catalog_ts.sector = catalog->next_sector;
+        } while (catalog_ts.track != 0);
+        extra_sector = true;
+        if (!just_check) {
+            // Occupy a new directory sector
+            TS_PAIR new_ts;
+            bool res = find_empty_sector(last_ts.track, new_ts, true);
+            if (res) {
+                sector_occupy(0, new_ts.track, new_ts.sector);
+                catalog->next_track = new_ts.track;
+                catalog->next_sector = new_ts.sector;
+
+                Apple_DOS_Catalog * new_catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, new_ts.track, new_ts.sector));
+                std::memset(new_catalog, 0, sizeof(Apple_DOS_Catalog));
+                dir_entry = &(new_catalog->files[0]);
+                return true;
+            } else
+                return false;
+        }
+        return true;
+    }
+
     int fsDOS33::file_add(const std::string & file_name, const std::string & format_id)
     {
-        return FILE_ADD_ERROR_SPACE;
+        std::ifstream file(file_name, std::ios::binary);
+
+        if (!file.good()) {
+            return FDD_ADD_ERROR_IO;
+        }
+
+        file.seekg (0, file.end);
+        int fsize = file.tellg();
+        file.seekg (0, file.beg);
+
+        BYTES buffer;
+
+        uint8_t type;
+        uint8_t name[30];
+        uint8_t tsl[9];
+
+        // --------------- Preparing metadata
+        int body_size;
+        if (format_id == "FILE_FIL") {
+            FIL_header header;
+            file.read (reinterpret_cast<char*>(&header), sizeof(FIL_header));
+            type = header.type;
+            std::memcpy(name, header.name, sizeof(name));
+            std::memcpy(tsl, header.tsl, 9);
+            body_size = fsize - sizeof(FIL_header);
+        } else {
+            type = 0;
+
+            std::memset(name, 0xA0, sizeof(name));
+            std::string name_str = ascii_to_agat(get_filename(file_name));
+            int len = name_str.size();
+            std::memcpy(name, name_str.data(), (len <= sizeof(name))?len:sizeof(name));
+
+            std::memset(tsl, 0, sizeof(tsl));
+
+            body_size = fsize;
+        }
+
+        buffer.resize(body_size);
+        file.read (reinterpret_cast<char*>(buffer.data()), body_size);
+
+
+        // --------------- Checking for sufficient space
+
+        int sectors_body = (body_size+255)/256;                                                   // File body
+        int ts_pairs = sectors_body + 1;                                                          // We need an extra 0:0 pair to finish the list;
+        int ts_lists = (ts_pairs + VTOC->pairs_on_sector - 1) / VTOC->pairs_on_sector;    // T/S lists, 122 sectors each.
+
+        // Check if we need a new sector for catalog
+        Apple_DOS_File * dir_entry;
+        bool extra_sector;
+        if (!find_epmty_dir_entry(dir_entry, true, extra_sector))
+            return FDD_ADD_ERROR;
+        int sectors_catalog = (extra_sector)?1:0;
+
+        int sectors_total = sectors_body + ts_lists + sectors_catalog;
+
+        if (sectors_total > free_sectors())
+            return FILE_ADD_ERROR_SPACE;
+
+
+        // ----------------   Main process
+
+        // Create a directory entry
+        if (!find_epmty_dir_entry(dir_entry, false, extra_sector))
+            return FDD_ADD_ERROR;
+
+        std::memset(dir_entry, 0, sizeof(Apple_DOS_File));
+        dir_entry->type = type;
+        dir_entry->size = sectors_body + ts_lists;
+        std::memcpy(dir_entry->name, name, sizeof(name));
+
+        Apple_DOS_TS_List * last_ts_list;
+
+        // Filling T/S lists
+        for (int i=0; i < ts_lists; i++) {
+
+            std::cout << "TS List: " << i << std::endl;
+
+            TS_PAIR catalog_ts = current_path.back();
+            TS_PAIR ts;
+            bool res = find_empty_sector(catalog_ts.track, ts, false);
+            if (!res)
+                return FDD_ADD_ERROR;
+
+            std::cout << ">" << (int)ts.track << ":" << (int)ts.sector << std::endl;
+
+            sector_occupy(0, ts.track, ts.sector);
+            Apple_DOS_TS_List * ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, ts.track, ts.sector));
+            std::memset(ts_list, 0, sizeof(Apple_DOS_TS_List));
+            if (i==0) {
+                // Store first T/S to a catalog entry
+                std::cout << "First, store to dir" << std::endl;
+
+                dir_entry->tbl_track = ts.track;
+                dir_entry->tbl_sector = ts.sector;
+
+                // Set TSL for the first T/S list
+                void * to_ptr = &(ts_list->_not_used_03);
+                std::memcpy(to_ptr, tsl, 9);
+
+            } else {
+                // Secondary T/S lists make a chain
+                std::cout << "Subsequent, store to previous" << std::endl;
+                ts_list->offset = i * VTOC->pairs_on_sector;
+                last_ts_list->next_track = ts.track;
+                last_ts_list->next_sector = ts.sector;
+            }
+            uint8_t start_track = ts.track;
+            for (int j=0; j < VTOC->pairs_on_sector; j++) {
+                int ts_pair = i*VTOC->pairs_on_sector + j;
+                if (ts_pair < ts_pairs-1) {
+                    // File part
+                    TS_PAIR file_ts;
+                    res = find_empty_sector(start_track, file_ts, false);
+                    if (!res)
+                        return FDD_ADD_ERROR;
+
+                    std::cout << (int)file_ts.track << ":" << (int)file_ts.sector << std::endl;
+
+                    sector_occupy(0, file_ts.track, file_ts.sector);
+                    ts_list->ts[j][0] = file_ts.track;
+                    ts_list->ts[j][1] = file_ts.sector;
+
+                    uint8_t * data = image->get_sector_data(0, file_ts.track, file_ts.sector);
+                    std::memcpy(data, buffer.data() + ts_pair * image->get_sector_size(), image->get_sector_size());
+
+                    start_track = file_ts.track;
+                } else {
+                    // List end mark 0:0
+                    ts_list->ts[j][0] = 0;
+                    ts_list->ts[j][1] = 0;
+                    break;
+                }
+            }
+            last_ts_list = ts_list;
+        }
+
+
+        return FILE_ADD_OK;
+
     }
 
 }
