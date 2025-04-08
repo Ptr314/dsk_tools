@@ -97,12 +97,13 @@ namespace dsk_tools {
 
         for (int i=0; i < buffer.size() / sizeof(SPRITE_OS_DIR_ENTRY); i++) {
             SPRITE_OS_DIR_ENTRY * dir_entry = reinterpret_cast<SPRITE_OS_DIR_ENTRY*>(buffer.data() + i*sizeof(SPRITE_OS_DIR_ENTRY));
-            if (dir_entry->NAME[0] != 0) {
+            bool is_deleted = dir_entry->NAME[0] == 0xFF;
+            if (dir_entry->NAME[0] != 0 && (!is_deleted || show_deleted)) {
                 fileData file;
                 file.name = trim(agat_to_utf(dir_entry->NAME, 15));
                 file.size = dir_entry->FILELEN[0] + (dir_entry->FILELEN[1] << 8) + (dir_entry->FILELEN[2] << 16);
                 file.is_dir = (dir_entry->STATUS & 0x01) != 0;
-                file.is_deleted = dir_entry->NAME[0] == 0xFF;
+                file.is_deleted = is_deleted;
 
                 std::set<std::string> txts = {".txt", ".doc", ".pas", ".cmd", ".def", ".hlp", ".gid"};
                 std::string ext = get_file_ext(file.name);
@@ -240,5 +241,33 @@ namespace dsk_tools {
     {
         return false;
     }
+
+    int fsSpriteOS::mkdir(const std::string & dir_name)
+    {
+        return FDD_DIR_ERROR;
+    }
+
+    int fsSpriteOS::file_rename(const fileData & fd, const std::string & new_name)
+    {
+        return FILE_RENAME_OK;
+    }
+
+    bool fsSpriteOS::is_root()
+    {
+        return current_path.size() == 1;
+    }
+
+    std::vector<ParameterDescription> fsSpriteOS::file_get_metadata(const fileData &fd)
+    {
+        std::vector<ParameterDescription> params = {};
+
+        return params;
+    }
+
+    int fsSpriteOS::file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata)
+    {
+        return FILE_METADATA_OK;
+    }
+
 
 }

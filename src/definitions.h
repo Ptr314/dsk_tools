@@ -29,6 +29,7 @@ namespace dsk_tools {
     #define FILE_DIRS                   8
     #define FILE_ADD                   16
     #define FILE_DIRECTORIES           32
+    #define FILE_RENAME                64
 
     #define FDD_WRITE_OK                0
     #define FDD_WRITE_ERROR             1
@@ -37,10 +38,19 @@ namespace dsk_tools {
     #define FDD_WRITE_INCORECT_TEMPLATE 4
     #define FDD_WRITE_INCORECT_SOURCE   5
 
+    #define FDD_DIR_OK                  0
+    #define FDD_DIR_ERROR               1
+    #define FDD_DIR_ERROR_SPACE        2
+
     #define FILE_ADD_OK                 0
-    #define FDD_ADD_ERROR               1
-    #define FDD_ADD_ERROR_IO            2
+    #define FILE_ADD_ERROR              1
+    #define FILE_ADD_ERROR_IO           2
     #define FILE_ADD_ERROR_SPACE        3
+
+    #define FILE_RENAME_OK              0
+
+    #define FILE_METADATA_OK            0
+    #define FILE_METADATA_ERROR         1
 
     #define FDD_DETECT_OK               0
     #define FDD_DETECT_ERROR            1
