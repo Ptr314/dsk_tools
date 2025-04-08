@@ -43,7 +43,7 @@ namespace dsk_tools {
 
     dsk_tools::diskImage * prepare_image(std::string file_name, std::string format_id, std::string type_id)
     {
-        std::cout << file_name << std::endl;
+        // std::cout << file_name << std::endl;
         dsk_tools::Loader * loader;
         if (format_id == "FILE_RAW_MSB") {
             loader = new dsk_tools::LoaderRAW(file_name, format_id, type_id);

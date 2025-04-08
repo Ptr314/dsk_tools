@@ -62,7 +62,7 @@ namespace dsk_tools {
 
         TS_PAIR catalog_ts = current_path.back();
 
-        std::cout << "DIR: " << (int)catalog_ts.track << ":" << (int)catalog_ts.sector << std::endl;
+        // std::cout << "DIR: " << (int)catalog_ts.track << ":" << (int)catalog_ts.sector << std::endl;
 
         Apple_DOS_Catalog * catalog;
 
