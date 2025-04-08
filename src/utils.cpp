@@ -22,14 +22,50 @@ namespace dsk_tools
         return out;
     }
 
-    std::string ascii_to_agat(const std::string & in)
-    {
-        std::string out;
-        for (int i=0; i < in.size(); i ++) {
-            out.push_back(static_cast<char>(in[i] | 0x80));
-        }
-        return out;
+    // std::string ascii_to_agat(const std::string & in)
+    // {
+    //     std::string out;
+    //     for (int i=0; i < in.size(); i ++) {
+    //         out.push_back(static_cast<char>(in[i] | 0x80));
+    //     }
+    //     return out;
 
+    // }
+
+    std::vector<std::string> split_utf8_chars(const std::string& str) {
+        std::vector<std::string> result;
+        for (size_t i = 0; i < str.size();) {
+            unsigned char c = str[i];
+            size_t len = 1;
+            if ((c & 0x80) == 0x00) len = 1;        // 1-byte character
+            else if ((c & 0xE0) == 0xC0) len = 2;   // 2-byte character
+            else if ((c & 0xF0) == 0xE0) len = 3;   // 3-byte character
+            else if ((c & 0xF8) == 0xF0) len = 4;   // 4-byte character
+
+            result.push_back(str.substr(i, len));
+            i += len;
+        }
+        return result;
+    }
+
+    std::vector<uint8_t> utf_to_agat(const std::string& input) {
+        auto& map = get_reverse_agat_charmap();
+
+        std::vector<uint8_t> output;
+
+        std::vector<std::string> chars = split_utf8_chars(input);
+
+        for (const auto& ch : chars) {
+            auto it = map.find(ch);
+            if (it != map.end()) {
+                output.push_back(static_cast<uint8_t>(it->second));
+            } else {
+                // Код символа "?" (в agat_charmap это символ с кодом 175)
+                output.push_back(175);  // '?'
+            }
+        }
+
+        return output;
     }
 
     std::string trim(const std::string& str, const std::string& whitespace)

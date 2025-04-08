@@ -65,6 +65,11 @@ namespace dsk_tools {
         virtual int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) override;
         virtual std::string information() override;
         virtual int translate_sector(int sector) override;
+        virtual int mkdir(const std::string & dir_name) override;
+        virtual int file_rename(const fileData & fd, const std::string & new_name) override;
+        virtual bool is_root() override;
+        virtual std::vector<ParameterDescription> file_get_metadata(const fileData & fd) override;
+        virtual int file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata) override;
     };
 }
 

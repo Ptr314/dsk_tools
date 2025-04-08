@@ -266,5 +266,32 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return false;
     }
 
+    int fsCPM::mkdir(const std::string & dir_name)
+    {
+        return FDD_DIR_ERROR;
+    }
+
+    int fsCPM::file_rename(const fileData & fd, const std::string & new_name)
+    {
+        return FILE_RENAME_OK;
+    }
+
+    bool fsCPM::is_root()
+    {
+        return true;
+    }
+
+    std::vector<ParameterDescription> fsCPM::file_get_metadata(const fileData &fd)
+    {
+        std::vector<ParameterDescription> params = {};
+
+        return params;
+    }
+
+    int fsCPM::file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata)
+    {
+        return FILE_METADATA_OK;
+    }
+
 
 }
