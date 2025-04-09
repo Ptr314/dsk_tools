@@ -63,7 +63,7 @@ namespace dsk_tools {
         // Files
         virtual BYTES get_file(const fileData & fd) = 0;
         virtual std::string file_info(const fileData & fd) = 0;
-        virtual bool file_delete(const fileData & fd) = 0;
+        virtual int file_delete(const fileData & fd) = 0;
         virtual int file_add(const std::string & file_name, const std::string & format_id) = 0;
         virtual int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) = 0;
         virtual int file_rename(const fileData & fd, const std::string & new_name) = 0;

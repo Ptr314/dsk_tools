@@ -232,7 +232,7 @@ namespace dsk_tools {
         return false;
     }
 
-    bool fsSpriteOS::file_delete(const fileData & fd)
+    int fsSpriteOS::file_delete(const fileData & fd)
     {
         return false;
     }

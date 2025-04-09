@@ -58,7 +58,7 @@ namespace dsk_tools {
         virtual int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) override;
         virtual BYTES get_file(const fileData & fd) override;
         virtual std::string file_info(const fileData & fd) override;
-        virtual bool file_delete(const fileData & fd) override;
+        virtual int file_delete(const fileData & fd) override;
         virtual int file_add(const std::string & file_name, const std::string & format_id) override;
         virtual std::vector<std::string> get_save_file_formats() override;
         virtual std::vector<std::string> get_add_file_formats() override;

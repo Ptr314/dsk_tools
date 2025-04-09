@@ -40,7 +40,10 @@ namespace dsk_tools {
 
     #define FDD_DIR_OK                  0
     #define FDD_DIR_ERROR               1
-    #define FDD_DIR_ERROR_SPACE        2
+    #define FDD_DIR_ERROR_SPACE         2
+    #define FDD_DIR_NOT_EMPTY           3
+
+    #define FILE_DELETE_OK               0
 
     #define FILE_ADD_OK                 0
     #define FILE_ADD_ERROR              1
