@@ -367,16 +367,17 @@ namespace dsk_tools {
         return true;
     }
 
-    bool fsDOS33::file_delete(const fileData & fd)
+    int fsDOS33::file_delete(const fileData & fd)
     {
         if (!fd.is_dir) {
+            // ----- File
             Apple_DOS_Catalog * catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, fd.position[0], fd.position[1]));
             dsk_tools::Apple_DOS_File * dir_entry = reinterpret_cast<dsk_tools::Apple_DOS_File *>(&(catalog->files[fd.position[2]]));
 
             int list_track = dir_entry->tbl_track;
             int list_sector = dir_entry->tbl_sector;
 
-            if (list_track == 0xFF) return true;
+            if (list_track == 0xFF) return FILE_DELETE_OK;
 
             Apple_DOS_TS_List * ts_list;
 
@@ -403,10 +404,62 @@ namespace dsk_tools {
 
             is_changed = true;
 
-            return true;
+            return FILE_DELETE_OK;
         } else {
-            // TODO: deleting directories
-            return false;
+            // ----- Directory
+
+            // Checking if it is empty
+            Apple_DOS_Catalog * catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, fd.position[0], fd.position[1]));
+            dsk_tools::Apple_DOS_File * dir_entry = reinterpret_cast<dsk_tools::Apple_DOS_File *>(&(catalog->files[fd.position[2]]));
+
+            TS_PAIR catalog_ts, parent_ts;
+
+            catalog_ts.track = dir_entry->tbl_track;
+            catalog_ts.sector = dir_entry->tbl_sector;
+
+            parent_ts = current_path[current_path.size()-2];
+
+            int files_count = 0;
+            bool first_part = true;
+
+            do {
+                catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
+
+                for (int i=0; i<7; i++) {
+                    uint8_t t = catalog->files[i].tbl_track;
+                    bool updir = (first_part && i==0 && catalog->files[i].type==0xFF);
+                    if (!updir) {
+                        if (t == 0) break;
+                        if (t < 0xFF) files_count++;
+                    }
+                }
+
+                catalog_ts.track = catalog->next_track;
+                catalog_ts.sector = catalog->next_sector;
+                first_part = false;
+
+            } while (catalog_ts.track != 0);
+
+            // std::cout << "CNT: " << files_count <<std::endl;
+
+            if (files_count == 0) {
+                // Do the deletion!
+                catalog_ts.track = dir_entry->tbl_track;
+                catalog_ts.sector = dir_entry->tbl_sector;
+                do {
+                    catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
+                    sector_free(0, catalog_ts.track, catalog_ts.sector);
+                    catalog_ts.track = catalog->next_track;
+                    catalog_ts.sector = catalog->next_sector;
+                } while (catalog_ts.track != 0);
+
+                dir_entry->name[29] = dir_entry->tbl_track;
+                dir_entry->tbl_track = 0xFF;
+                is_changed = true;
+            } else
+                return FDD_DIR_NOT_EMPTY;
+
+            return FILE_DELETE_OK;
         }
     }
 
@@ -626,6 +679,8 @@ namespace dsk_tools {
             }
             last_ts_list = ts_list;
         }
+
+        is_changed = true;
         return FILE_ADD_OK;
     }
 
@@ -685,6 +740,7 @@ namespace dsk_tools {
         std::memset(new_catalog->files[0].name, 0xA0, sizeof(dir_entry->name));
         std::memcpy(new_catalog->files[0].name, name_str.data(), (len <= sizeof(dir_entry->name))?len:sizeof(dir_entry->name));
 
+        is_changed = true;
         return FDD_DIR_OK;
     }
 
@@ -698,6 +754,7 @@ namespace dsk_tools {
         std::memset(dir_entry->name, 0xA0, sizeof(dir_entry->name));
         std::memcpy(dir_entry->name, name_str.data(), (len <= sizeof(dir_entry->name))?len:sizeof(dir_entry->name));
 
+        is_changed = true;
         return FILE_RENAME_OK;
     }
 
@@ -792,6 +849,7 @@ namespace dsk_tools {
         void * copy_to = &(ts_list->_not_used_03);
         std::memcpy(copy_to, ts_custom.data(), ts_custom.size());
 
+        is_changed = true;
         return FILE_METADATA_OK;
     }
 

@@ -256,7 +256,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return false;
     }
 
-    bool fsCPM::file_delete(const fileData & fd)
+    int fsCPM::file_delete(const fileData & fd)
     {
         return false;
     }
