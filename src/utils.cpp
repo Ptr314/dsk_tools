@@ -206,4 +206,16 @@ namespace dsk_tools
         return true;
     }
 
+    int agat_attr_to_type(uint8_t a)
+    {
+        uint8_t v = a & 0x7F;
+        int n = 0;
+        do {
+            if (v == 0) return n;
+            v >>= 1;
+            n++;
+        } while (n < 8);
+        return 0;
+    }
+
 } // namespace

@@ -31,9 +31,9 @@ namespace dsk_tools {
         int volume_id = -1;
         bool is_changed = false;
 
-        virtual bool sector_is_free(int head, int track, int sector) = 0;
-        virtual void sector_free(int head, int track, int sector) = 0;
-        virtual bool sector_occupy(int head, int track, int sector) = 0;
+        virtual bool sector_is_free(int head, int track, int sector) { return false;};
+        virtual void sector_free(int head, int track, int sector) {};
+        virtual bool sector_occupy(int head, int track, int sector) {return false;};
         virtual int free_sectors() {return 0;};
 
     public:
@@ -45,7 +45,7 @@ namespace dsk_tools {
         virtual int get_capabilities() = 0;
         virtual std::string get_delimiter();
         virtual std::vector<std::string> get_save_file_formats() = 0;
-        virtual std::vector<std::string> get_add_file_formats() = 0;
+        virtual std::vector<std::string> get_add_file_formats() {return {};} ;
 
         // Disk functions
         virtual std::string information() = 0;
@@ -55,18 +55,18 @@ namespace dsk_tools {
 
         // Directories
         virtual int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) = 0;
-        virtual void cd(const dsk_tools::fileData & dir) = 0;
-        virtual void cd_up() = 0;
-        virtual int mkdir(const std::string & dir_name) = 0;
-        virtual bool is_root() = 0;
+        virtual void cd(const dsk_tools::fileData & dir) {};
+        virtual void cd_up() {};
+        virtual int mkdir(const std::string & dir_name) {return FDD_DIR_ERROR;};
+        virtual bool is_root() {return true;};
 
         // Files
         virtual BYTES get_file(const fileData & fd) = 0;
         virtual std::string file_info(const fileData & fd) = 0;
-        virtual int file_delete(const fileData & fd) = 0;
-        virtual int file_add(const std::string & file_name, const std::string & format_id) = 0;
+        virtual int file_delete(const fileData & fd) {return FILE_DELETE_ERROR;};
+        virtual int file_add(const std::string & file_name, const std::string & format_id) {return FILE_ADD_ERROR;};
         virtual int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) = 0;
-        virtual int file_rename(const fileData & fd, const std::string & new_name) = 0;
+        virtual int file_rename(const fileData & fd, const std::string & new_name) {return FILE_RENAME_ERROR;};
         virtual std::vector<dsk_tools::ParameterDescription> file_get_metadata(const fileData & fd) = 0;
         virtual int file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata) = 0;
     };

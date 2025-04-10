@@ -45,7 +45,8 @@ namespace dsk_tools {
     #define FDD_DIR_ERROR_SPACE         2
     #define FDD_DIR_NOT_EMPTY           3
 
-    #define FILE_DELETE_OK               0
+    #define FILE_DELETE_OK              0
+    #define FILE_DELETE_ERROR           1
 
     #define FILE_ADD_OK                 0
     #define FILE_ADD_ERROR              1
@@ -53,6 +54,7 @@ namespace dsk_tools {
     #define FILE_ADD_ERROR_SPACE        3
 
     #define FILE_RENAME_OK              0
+    #define FILE_RENAME_ERROR           1
 
     #define FILE_METADATA_OK            0
     #define FILE_METADATA_ERROR         1
