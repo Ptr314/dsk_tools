@@ -18,7 +18,7 @@ namespace dsk_tools {
         int result = loader->load(buffer);
         if (result == FDD_LOAD_OK) {
             int buffer_size = buffer.size();
-            if (buffer_size >= expected_size && buffer_size <= expected_size + 4) {
+            if (expected_size == 0 || (buffer_size >= expected_size && buffer_size <= expected_size + 4)) {
                 is_loaded = true;
                 return FDD_LOAD_OK;
             } else {

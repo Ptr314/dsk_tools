@@ -63,6 +63,9 @@ namespace dsk_tools {
         if (format_id == "FILE_HXC_HFE") {
             loader = new dsk_tools::LoaderHXC_HFE(file_name, format_id, type_id);
         } else
+        if (format_id == "FILE_FIL") {
+            loader = new dsk_tools::LoaderFIL(file_name, format_id, type_id);
+        } else
             return nullptr;
 
         if (type_id == "TYPE_AGAT_140") {
@@ -71,6 +74,10 @@ namespace dsk_tools {
         } else
         if (type_id == "TYPE_AGAT_840") {
             dsk_tools::imageAgat840 * disk_image = new dsk_tools::imageAgat840(loader);
+            return disk_image;
+        } else
+        if (type_id == "TYPE_FIL") {
+            dsk_tools::imageFIL * disk_image = new dsk_tools::imageFIL(loader);
             return disk_image;
         }
 
@@ -88,6 +95,9 @@ namespace dsk_tools {
         } else
         if (filesystem_id == "FILESYSTEM_CPM_DOS" || filesystem_id == "FILESYSTEM_CPM_PRODOS"|| filesystem_id == "FILESYSTEM_CPM_RAW") {
             fs = new dsk_tools::fsCPM(image, filesystem_id);
+        } else
+        if (filesystem_id == "FILESYSTEM_FIL") {
+            fs = new dsk_tools::fsFIL(image);
         } else {
             return nullptr;
         }

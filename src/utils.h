@@ -45,5 +45,7 @@ namespace dsk_tools
     std::vector<uint8_t> base64_decode(const std::string& encoded);
     bool iterate_until(const std::vector<uint8_t> & in, int & p, const uint8_t v);
 
+    int agat_attr_to_type(uint8_t a);
+
 }
 #endif // UTILS_H

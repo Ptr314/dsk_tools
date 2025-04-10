@@ -10,6 +10,7 @@
 #include "disk_image.h"
 #include "image_agat140.h"
 #include "image_agat840.h"
+#include "image_fil.h"
 
 #include "loader.h"
 #include "loader_raw.h"
@@ -19,6 +20,7 @@
 #include "loader_gcr_nic.h"
 #include "loader_gcr_mfm.h"
 #include "loader_hxc_hfe.h"
+#include "loader_fil.h"
 
 #include "writer.h"
 #include "writer_raw.h"
@@ -30,10 +32,11 @@
 #include "fs_dos33.h"
 #include "fs_spriteos.h"
 #include "fs_cpm.h"
+#include "fs_fil.h"
 
 namespace dsk_tools {
 
-int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id);
+    int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id);
     dsk_tools::diskImage * prepare_image(std::string file_name, std::string format_id, std::string type_id);
     dsk_tools::fileSystem * prepare_filesystem(dsk_tools::diskImage * image, std::string filesystem_id);
     BYTES code44(const BYTES & buffer);

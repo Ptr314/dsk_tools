@@ -9,6 +9,7 @@ add_library(${PROJECT_NAME} STATIC
     include/dsk_tools/dsk_tools.h       src/dsk_tools.cpp
     src/definitions.h
     src/charmaps.h
+    src/bas_tokens.h
     src/utils.h                         src/utils.cpp
 
     src/loader.h                        src/loader.cpp
@@ -19,6 +20,7 @@ add_library(${PROJECT_NAME} STATIC
     src/loader_gcr_nib.h                src/loader_gcr_nib.cpp
     src/loader_gcr_mfm.h                src/loader_gcr_mfm.cpp
     src/loader_hxc_hfe.h                src/loader_hxc_hfe.cpp
+    src/loader_fil.h                    src/loader_fil.cpp
 
     src/disk_image.h                    src/disk_image.cpp
     src/image_agat140.h                 src/image_agat140.cpp
@@ -34,7 +36,8 @@ add_library(${PROJECT_NAME} STATIC
     src/fs_dos33.h                      src/fs_dos33.cpp
     src/fs_spriteos.h                   src/fs_spriteos.cpp
     src/fs_cpm.h                        src/fs_cpm.cpp
-    src/bas_tokens.h
+    src/image_fil.h                     src/image_fil.cpp
+    src/fs_fil.h                        src/fs_fil.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
