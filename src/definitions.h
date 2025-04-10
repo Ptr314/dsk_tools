@@ -21,7 +21,9 @@ namespace dsk_tools {
     #define FDD_OPEN_BAD_FORMAT         2
 
     #define FDD_OP_OK                   0
-    #define FDD_OP_NOT_OPEN             1
+    #define FDD_OP_ERROR                1
+    #define FDD_OP_NOT_OPEN             2
+
 
     #define FILE_PROTECTION             1
     #define FILE_TYPE                   2
