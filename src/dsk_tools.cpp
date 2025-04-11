@@ -229,13 +229,19 @@ namespace dsk_tools {
     }
 
 
-    int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id)
+    int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only)
     {
         std::string ext = get_file_ext(file_name);
 
         // format_if
         if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm") {
             format_id = "FILE_RAW_MSB";
+
+            if (format_only) {
+                type_id = "";
+                filesystem_id = "";
+                return FDD_DETECT_OK;
+            }
 
             std::ifstream file(file_name, std::ios::binary);
 
@@ -293,7 +299,14 @@ namespace dsk_tools {
         } else
         if (ext == ".aim") {
             format_id = "FILE_AIM";
+
             type_id = "TYPE_AGAT_840";
+
+            if (format_only) {
+                filesystem_id = "";
+                return FDD_DETECT_OK;
+            }
+
             dsk_tools::LoaderAIM loader(file_name, format_id, type_id);
             BYTES buffer;
             loader.load(buffer);
@@ -327,6 +340,11 @@ namespace dsk_tools {
             } else
                 return FDD_DETECT_ERROR;
 
+            if (format_only) {
+                filesystem_id = "";
+                return FDD_DETECT_OK;
+            }
+
             if (buffer[0] == 0x01) {
                 std::string ms = "MICROSOFT";
                 std::string _ms(buffer.begin() + 0x74, buffer.begin() + 0x74 + ms.size());
@@ -344,6 +362,12 @@ namespace dsk_tools {
         } else
         if (ext == ".hfe") {
             format_id = "FILE_HXC_HFE";
+
+            if (format_only) {
+                type_id = "";
+                filesystem_id = "";
+                return FDD_DETECT_OK;
+            }
 
             std::ifstream file(file_name, std::ios::binary);
 
@@ -369,6 +393,11 @@ namespace dsk_tools {
                 } else
                     return FDD_DETECT_ERROR;
             }
+        } else
+        if (ext == ".fil") {
+            format_id = "FILE_FIL";
+            type_id = "TYPE_FIL";
+            filesystem_id = "FILESYSTEM_FIL";
         } else
             return FDD_DETECT_ERROR;
 

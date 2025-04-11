@@ -11,6 +11,7 @@ namespace dsk_tools {
 
     public:
         imageFIL(Loader * loader);
+        virtual int load() override;
         virtual int check() override;
     };
 }

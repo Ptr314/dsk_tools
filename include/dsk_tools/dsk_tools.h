@@ -36,7 +36,7 @@
 
 namespace dsk_tools {
 
-    int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id);
+int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only = false);
     dsk_tools::diskImage * prepare_image(std::string file_name, std::string format_id, std::string type_id);
     dsk_tools::fileSystem * prepare_filesystem(dsk_tools::diskImage * image, std::string filesystem_id);
     BYTES code44(const BYTES & buffer);
