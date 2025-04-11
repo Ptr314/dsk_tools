@@ -46,6 +46,7 @@ namespace dsk_tools
     bool iterate_until(const std::vector<uint8_t> & in, int & p, const uint8_t v);
 
     int agat_attr_to_type(uint8_t a);
+    int agat_preferred_file_type(int t);
 
 }
 #endif // UTILS_H

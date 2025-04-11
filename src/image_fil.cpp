@@ -5,9 +5,9 @@ namespace dsk_tools {
     imageFIL::imageFIL(Loader * loader):
         diskImage(loader)
     {
-        format_heads = 0;
-        format_tracks = 0;
-        format_sectors = 0;
+        format_heads = 1;
+        format_tracks = 1;
+        format_sectors = 1;
         format_sector_size = 256;
         expected_size = 0;
         format_bitrate = 250;
@@ -19,6 +19,14 @@ namespace dsk_tools {
     int imageFIL::check()
     {
         return FDD_LOAD_OK;
+    }
+
+    int imageFIL::load()
+    {
+        int res = diskImage::load();
+        if (res == FDD_LOAD_OK)
+            expected_size = buffer.size();
+        return res;
     }
 
 }

@@ -22,7 +22,9 @@ namespace dsk_tools {
         auto fsize = file.tellg();
         file.seekg (0, file.beg);
 
-        buffer.resize(fsize);
+        image_size = fsize;
+
+        buffer.resize(image_size);
         file.read (reinterpret_cast<char*>(buffer.data()), image_size);
 
         loaded = true;

@@ -96,14 +96,7 @@ namespace dsk_tools {
 
                     auto T = attr_to_type(catalog->files[i].type);
                     file.type_str_short = std::string(agat_file_types[T]);
-
-                    if (T == 0)
-                        file.preferred_type = PREFERRED_TEXT;
-                    else if (T == 2)
-                        file.preferred_type = PREFERRED_AGATBASIC;
-                    else
-                        file.preferred_type = PREFERRED_BINARY;
-
+                    file.preferred_type = agat_preferred_file_type(T);
                     file.size = catalog->files[i].size * 256;
 
                     file.metadata.resize(sizeof(catalog->files[i]));
