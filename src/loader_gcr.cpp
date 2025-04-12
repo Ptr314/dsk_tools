@@ -127,6 +127,8 @@ LoaderGCR::LoaderGCR(const std::string &file_name, const std::string &format_id,
         result += "{$FILE_NAME}: " + file_short + "\n";
         result += "{$SIZE}: " + std::to_string(fsize) + " {$BYTES}\n";
 
+        result += "\n";
+
         BYTES in(fsize);
         file.read (reinterpret_cast<char*>(in.data()), fsize);
 
@@ -249,6 +251,7 @@ LoaderGCR::LoaderGCR(const std::string &file_name, const std::string &format_id,
                     }
                 }
             }
+            result += "\n";
         }
 
         if (errors) {

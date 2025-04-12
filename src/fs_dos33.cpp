@@ -76,37 +76,41 @@ namespace dsk_tools {
                 if (!is_deleted || show_deleted) {
                     fileData file;
 
-                    if (catalog->files[i].tbl_track == 0) return FDD_OP_OK;
-                    file.is_dir = catalog->files[i].type == 0xFF;
-                    file.is_deleted = is_deleted;
-                    file.is_protected = (catalog->files[i].type & 0x80) != 0;
-                    file.attributes = catalog->files[i].type & 0x7F;
-                    memcpy(&file.original_name, &catalog->files[i].name, 30);
-                    file.original_name_length = 30;
+                    if (catalog->files[i].tbl_track == 0) {
+                        // Means end of the list
+                        return FDD_OP_OK;
+                    } else {
+                        file.is_dir = catalog->files[i].type == 0xFF;
+                        file.is_deleted = is_deleted;
+                        file.is_protected = (catalog->files[i].type & 0x80) != 0;
+                        file.attributes = catalog->files[i].type & 0x7F;
+                        memcpy(&file.original_name, &catalog->files[i].name, 30);
+                        file.original_name_length = 30;
 
-                    bool updir = false;
-                    if (current_path.size() > 1 && file.is_dir) {
-                        TS_PAIR parent_ts = current_path[current_path.size()-2];
-                        updir = catalog->files[i].tbl_track == parent_ts.track && catalog->files[i].tbl_sector == parent_ts.sector;
+                        bool updir = false;
+                        if (current_path.size() > 1 && file.is_dir) {
+                            TS_PAIR parent_ts = current_path[current_path.size()-2];
+                            updir = catalog->files[i].tbl_track == parent_ts.track && catalog->files[i].tbl_sector == parent_ts.sector;
+                        }
+                        if (updir)
+                            file.name = "..";
+                        else
+                            file.name = trim(agat_to_utf(catalog->files[i].name, 30));
+
+                        auto T = attr_to_type(catalog->files[i].type);
+                        file.type_str_short = std::string(agat_file_types[T]);
+                        file.preferred_type = agat_preferred_file_type(T);
+                        file.size = catalog->files[i].size * 256;
+
+                        file.metadata.resize(sizeof(catalog->files[i]));
+                        memcpy(file.metadata.data(), &(catalog->files[i]), sizeof(catalog->files[i]));
+
+                        file.position.push_back(catalog_ts.track);
+                        file.position.push_back(catalog_ts.sector);
+                        file.position.push_back(i);
+
+                        files->push_back(file);
                     }
-                    if (updir)
-                        file.name = "..";
-                    else
-                        file.name = trim(agat_to_utf(catalog->files[i].name, 30));
-
-                    auto T = attr_to_type(catalog->files[i].type);
-                    file.type_str_short = std::string(agat_file_types[T]);
-                    file.preferred_type = agat_preferred_file_type(T);
-                    file.size = catalog->files[i].size * 256;
-
-                    file.metadata.resize(sizeof(catalog->files[i]));
-                    memcpy(file.metadata.data(), &(catalog->files[i]), sizeof(catalog->files[i]));
-
-                    file.position.push_back(catalog_ts.track);
-                    file.position.push_back(catalog_ts.sector);
-                    file.position.push_back(i);
-
-                    files->push_back(file);
                 } //show deleted
             }
 
