@@ -160,7 +160,8 @@ namespace dsk_tools {
 
         for (int i=0; i<86; i++) {
             uint8_t x = (crc^m_read_translate_table[data_in[i]]) & 0x3f;
-            data_out[i+172] = FlipBit1[(x>>4) & 3];
+            if (i+172 < 256)
+                data_out[i+172] = FlipBit1[(x>>4) & 3];
             data_out[i+86] =  FlipBit1[(x>>2) & 3];
             data_out[i] =     FlipBit1[ x     & 3];
             crc = x;

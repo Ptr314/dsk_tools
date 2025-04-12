@@ -219,27 +219,31 @@ LoaderGCR::LoaderGCR(const std::string &file_name, const std::string &format_id,
                         // Data
                         result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p-3)) + " {$DATA_MARK} ($D5 $AA $AD)\n";
                         result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p)) + " {$DATA_FIELD} (342+1)";
-                        BYTES encoded_sector(in.begin()+ in_p, in.begin()+ in_p + 343);
-                        in_p += 343;
-                        BYTES data(256);
-                        bool crc_ok = decode_gcr62(encoded_sector.data(), data.data());
-                        if (crc_ok) {
-                            result += ", {$SECTOR_CRC_OK}";
-                        } else {
-                            errors = true;
-                            result += ", {$SECTOR_CRC_ERROR}";
-                        }
-                        e1 = in.at(in_p++);
-                        e2 = in.at(in_p++);
-                        e3 = in.at(in_p++);
-                        if (e1 == 0xDE && e2 == 0xAA && e3 == 0xEB) {
-                            result += ", {$DATA_EPILOGUE_OK}";
-                        } else {
-                            errors = true;
-                            result += ", {$DATA_EPILOGUE_ERROR}";
-                        }
+                        if (in_p + 343 + 3 <= in.size()) {
+                            BYTES encoded_sector(in.begin()+ in_p, in.begin()+ in_p + 343);
+                            in_p += 343;
+                            BYTES data(256);
+                            bool crc_ok = decode_gcr62(encoded_sector.data(), data.data());
+                            if (crc_ok) {
+                                result += ", {$SECTOR_CRC_OK}";
+                            } else {
+                                errors = true;
+                                result += ", {$SECTOR_CRC_ERROR}";
+                            }
+                            e1 = in.at(in_p++);
+                            e2 = in.at(in_p++);
+                            e3 = in.at(in_p++);
+                            if (e1 == 0xDE && e2 == 0xAA && e3 == 0xEB) {
+                                result += ", {$DATA_EPILOGUE_OK}";
+                            } else {
+                                errors = true;
+                                result += ", {$DATA_EPILOGUE_ERROR}";
+                            }
 
-                        result += "\n    " + dsk_tools::toHexList(data.data(), 16) + " ...";
+                            result += "\n    " + dsk_tools::toHexList(data.data(), 16) + " ...";
+                        } else {
+                            errors = true;
+                        }
 
                         result += "\n\n";
                     }
