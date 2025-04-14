@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
+// Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
+// Description: Service functions
+
 #ifndef UTILS_H
 #define UTILS_H
 
@@ -11,7 +16,6 @@
 namespace dsk_tools
 {
     std::string agat_to_utf(const uint8_t in[], int len);
-    // std::string ascii_to_agat(const std::string & in);
     std::string trim(const std::string& str, const std::string& whitespace = " \t");
     std::string get_file_ext(const std::string &file_name);
     std::string get_filename(const std::string& path);

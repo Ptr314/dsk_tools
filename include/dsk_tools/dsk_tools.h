@@ -1,5 +1,12 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
+// Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
+// Description: Main header file
+
 #ifndef DSK_TOOLS_H
 #define DSK_TOOLS_H
+
+
 
 #include <string>
 #include <sstream>
@@ -35,7 +42,7 @@
 
 namespace dsk_tools {
 
-int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only = false);
+    int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only = false);
     dsk_tools::diskImage * prepare_image(std::string file_name, std::string format_id, std::string type_id);
     dsk_tools::fileSystem * prepare_filesystem(dsk_tools::diskImage * image, std::string filesystem_id);
     BYTES code44(const BYTES & buffer);
