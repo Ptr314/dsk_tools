@@ -52,13 +52,13 @@ namespace dsk_tools {
             loader = new dsk_tools::LoaderAIM(file_name, format_id, type_id);
         } else
         if (format_id == "FILE_MFM_NIC") {
-            loader = new dsk_tools::LoaderGCR_NIC(file_name, format_id, type_id);
+            loader = new dsk_tools::LoaderNIC(file_name, format_id, type_id);
         } else
         if (format_id == "FILE_MFM_NIB") {
-            loader = new dsk_tools::LoaderGCR_NIB(file_name, format_id, type_id);
+            loader = new dsk_tools::LoaderNIB(file_name, format_id, type_id);
         } else
         if (format_id == "FILE_HXC_MFM") {
-            loader = new dsk_tools::LoaderGCR_MFM(file_name, format_id, type_id);
+            loader = new dsk_tools::LoaderHXC_MFM(file_name, format_id, type_id);
         } else
         if (format_id == "FILE_HXC_HFE") {
             loader = new dsk_tools::LoaderHXC_HFE(file_name, format_id, type_id);
@@ -234,6 +234,16 @@ namespace dsk_tools {
     {
         std::string ext = get_file_ext(file_name);
 
+        std::ifstream file(file_name, std::ios::binary);
+
+        if (!file.good()) {
+            return FDD_LOAD_ERROR;
+        }
+
+        file.seekg (0, file.end);
+        auto fsize = file.tellg();
+        file.seekg (0, file.beg);
+
         // format_if
         if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm") {
             format_id = "FILE_RAW_MSB";
@@ -243,16 +253,6 @@ namespace dsk_tools {
                 filesystem_id = "";
                 return FDD_DETECT_OK;
             }
-
-            std::ifstream file(file_name, std::ios::binary);
-
-            if (!file.good()) {
-                return FDD_LOAD_ERROR;
-            }
-
-            file.seekg (0, file.end);
-            auto fsize = file.tellg();
-            file.seekg (0, file.beg);
 
             // type_id
             if (fsize == 143360 || fsize == 143360+128) {
@@ -321,22 +321,31 @@ namespace dsk_tools {
                 return FDD_DETECT_ERROR;
         } else
         if (ext == ".nic" || ext == ".nib" || ext == ".mfm") {
-            type_id = "TYPE_AGAT_140";
+            if (ext == ".nib") {
+                if (fsize == 232960)
+                    type_id = "TYPE_AGAT_140";
+                else
+                if (fsize == 947520)
+                    type_id = "TYPE_AGAT_840";
+                else
+                    return FDD_DETECT_ERROR;
+            } else
+                type_id = "TYPE_AGAT_140";
 
             BYTES buffer;
             if (ext == ".nic") {
                 format_id = "FILE_MFM_NIC";
-                dsk_tools::LoaderGCR_NIC loader(file_name, format_id, type_id);
+                dsk_tools::LoaderNIC loader(file_name, format_id, type_id);
                 loader.load(buffer);
             } else
             if (ext == ".nib") {
                 format_id = "FILE_MFM_NIB";
-                dsk_tools::LoaderGCR_NIB loader(file_name, format_id, type_id);
+                dsk_tools::LoaderNIB loader(file_name, format_id, type_id);
                 loader.load(buffer);
             } else
             if (ext == ".mfm") {
                 format_id = "FILE_HXC_MFM";
-                dsk_tools::LoaderGCR_MFM loader(file_name, format_id, type_id);
+                dsk_tools::LoaderHXC_MFM loader(file_name, format_id, type_id);
                 loader.load(buffer);
             } else
                 return FDD_DETECT_ERROR;
