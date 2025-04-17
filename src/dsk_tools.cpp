@@ -462,5 +462,13 @@ namespace dsk_tools {
         return result;
     }
 
+    void register_all_viewers() {
+        dsk_tools::ViewerBinary viewer_binary;
+        dsk_tools::ViewerText viewer_text;
+        dsk_tools::ViewerBASIC_Agat viewer_basic_agat;
+        dsk_tools::ViewerBASIC_Apple viewer_basic_apple;
+        dsk_tools::ViewerBASIC_MBASIC viewer_basic_mbasic;
+    }
+
 
 } // namespace

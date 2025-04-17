@@ -40,6 +40,14 @@
 #include "fs_cpm.h"
 #include "fs_fil.h"
 
+#include "viewers/viewer.h"
+#include "viewers/viewer_binary.h"
+#include "viewers/viewer_text.h"
+#include "viewers/viewer_basic_agat.h"
+#include "viewers/viewer_basic_apple.h"
+#include "viewers/viewer_basic_mbasic.h"
+
+
 namespace dsk_tools {
 
     int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only = false);
@@ -56,6 +64,8 @@ namespace dsk_tools {
     void decode_agat_mfm_data(BYTES &out, const BYTES & in);
     std::string agat_vtoc_info(const Agat_VTOC & VTOC);
     std::string agat_sos_info(const SPRITE_OS_DPB_DISK & DPB);
+
+    void register_all_viewers();
 
 } // namespace
 
