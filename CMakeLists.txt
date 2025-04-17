@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(dsk_tools VERSION 0.1.0 LANGUAGES CXX)
+project(dsk_tools VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,37 +12,41 @@ add_library(${PROJECT_NAME} STATIC
     src/bas_tokens.h
     src/utils.h                         src/utils.cpp
 
-    src/loader.h                        src/loader.cpp
-    src/loader_raw.h                    src/loader_raw.cpp
-    src/loader_aim.h                    src/loader_aim.cpp
-    src/loader_hxc_hfe.h                src/loader_hxc_hfe.cpp
-    src/loader_fil.h                    src/loader_fil.cpp
-    src/loader_nib.h                    src/loader_nib.cpp
-    src/loader_mfm.h                    src/loader_mfm.cpp
-    src/loader_nic.h                    src/loader_nic.cpp
-    src/loader_hxc_mfm.h                src/loader_hxc_mfm.cpp
+    src/loaders/loader.h                src/loaders/loader.cpp
+    src/loaders/loader_raw.h            src/loaders/loader_raw.cpp
+    src/loaders/loader_aim.h            src/loaders/loader_aim.cpp
+    src/loaders/loader_hxc_hfe.h        src/loaders/loader_hxc_hfe.cpp
+    src/loaders/loader_fil.h            src/loaders/loader_fil.cpp
+    src/loaders/loader_nib.h            src/loaders/loader_nib.cpp
+    src/loaders/loader_mfm.h            src/loaders/loader_mfm.cpp
+    src/loaders/loader_nic.h            src/loaders/loader_nic.cpp
+    src/loaders/loader_hxc_mfm.h        src/loaders/loader_hxc_mfm.cpp
 
-    src/disk_image.h                    src/disk_image.cpp
-    src/image_agat140.h                 src/image_agat140.cpp
-    src/image_agat840.h                 src/image_agat840.cpp
-    src/image_fil.h                     src/image_fil.cpp
+    src/images/disk_image.h             src/images/disk_image.cpp
+    src/images/image_agat140.h          src/images/image_agat140.cpp
+    src/images/image_agat840.h          src/images/image_agat840.cpp
+    src/images/image_fil.h              src/images/image_fil.cpp
 
-    src/writer.h                        src/writer.cpp
-    src/writer_hxc_hfe.h                src/writer_hxc_hfe.cpp
-    src/writer_mfm.h                    src/writer_mfm.cpp
-    src/writer_hxc_mfm.h                src/writer_hxc_mfm.cpp
-    src/writer_raw.h                    src/writer_raw.cpp
+    src/writers/writer.h                src/writers/writer.cpp
+    src/writers/writer_hxc_hfe.h        src/writers/writer_hxc_hfe.cpp
+    src/writers/writer_mfm.h            src/writers/writer_mfm.cpp
+    src/writers/writer_hxc_mfm.h        src/writers/writer_hxc_mfm.cpp
+    src/writers/writer_raw.h            src/writers/writer_raw.cpp
 
-    src/filesystem.h                    src/filesystem.cpp
-    src/fs_dos33.h                      src/fs_dos33.cpp
-    src/fs_spriteos.h                   src/fs_spriteos.cpp
-    src/fs_cpm.h                        src/fs_cpm.cpp
-    src/fs_fil.h                        src/fs_fil.cpp
+    src/filesystems/filesystem.h        src/filesystems/filesystem.cpp
+    src/filesystems/fs_dos33.h          src/filesystems/fs_dos33.cpp
+    src/filesystems/fs_spriteos.h       src/filesystems/fs_spriteos.cpp
+    src/filesystems/fs_cpm.h            src/filesystems/fs_cpm.cpp
+    src/filesystems/fs_fil.h            src/filesystems/fs_fil.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/loaders/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/images/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/writers/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/filesystems/
 )
 
 set_source_files_properties(include/dsk_tools/dsk_tools.h PROPERTIES COMPILE_FLAGS "-Wno-unused-include")
