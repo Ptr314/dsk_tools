@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
+// Part of the DISK Commander project: https://github.com/Ptr314/dsk_commander
+// Description: Base classes for file viewers
+
 #pragma once
 
 #include <memory>
@@ -17,7 +22,7 @@ namespace dsk_tools {
     public:
         virtual ~Viewer() {}
         virtual std::string process_as_text(const BYTES & data, const std::string & cm_name) {return "";};
-        virtual int get_output_type() const = 0;
+        virtual int get_output_type() const {return VIEWER_OUTPUT_TEXT;};
         virtual std::string get_type() const = 0;
         virtual std::string get_subtype() const = 0;
     };
