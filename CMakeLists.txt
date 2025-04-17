@@ -38,6 +38,17 @@ add_library(${PROJECT_NAME} STATIC
     src/filesystems/fs_spriteos.h       src/filesystems/fs_spriteos.cpp
     src/filesystems/fs_cpm.h            src/filesystems/fs_cpm.cpp
     src/filesystems/fs_fil.h            src/filesystems/fs_fil.cpp
+    src/viewers/viewer.h
+    src/viewers/viewer_binary.h         src/viewers/viewer_binary.cpp
+    src/viewers/viewer_text.h           src/viewers/viewer_text.cpp
+    src/viewers/viewer_basic_agat.h
+    src/viewers/viewer_basic_agat.cpp
+    src/viewers/viewer_basic_apple.h
+    src/viewers/viewer_basic_apple.cpp
+    src/viewers/viewer_basic_mbasic.h
+    src/viewers/viewer_basic_mbasic.cpp
+
+
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
