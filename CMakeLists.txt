@@ -47,6 +47,10 @@ add_library(${PROJECT_NAME} STATIC
     src/viewers/viewer_basic_apple.cpp
     src/viewers/viewer_basic_mbasic.h
     src/viewers/viewer_basic_mbasic.cpp
+    src/viewers/viewer_pics_agat.h
+    src/viewers/viewer_pics_agat.cpp
+    src/viewers/viewer_pics.h
+    src/viewers/viewer_pics.cpp
 
 
 )

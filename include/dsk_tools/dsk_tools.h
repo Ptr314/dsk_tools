@@ -46,6 +46,7 @@
 #include "viewers/viewer_basic_agat.h"
 #include "viewers/viewer_basic_apple.h"
 #include "viewers/viewer_basic_mbasic.h"
+#include "viewers/viewer_pics_agat.h"
 
 
 namespace dsk_tools {
@@ -64,6 +65,7 @@ namespace dsk_tools {
     void decode_agat_mfm_data(BYTES &out, const BYTES & in);
     std::string agat_vtoc_info(const Agat_VTOC & VTOC);
     std::string agat_sos_info(const SPRITE_OS_DPB_DISK & DPB);
+    std::pair<std::string, std::string> suggest_file_type(const BYTES & data);
 
     void register_all_viewers();
 
