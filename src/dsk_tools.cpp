@@ -462,12 +462,40 @@ namespace dsk_tools {
         return result;
     }
 
+    std::pair<std::string, std::string> suggest_file_type(const BYTES & data)
+    {
+        if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
+            const AGAT_EXIF_SECTOR * exif = reinterpret_cast<const AGAT_EXIF_SECTOR *>(data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR));
+            if (exif->SIGNATURE[0] == 0xD6 && exif->SIGNATURE[1] == 0xD2) {
+                // Agat images with an EXIF tail
+                int mode_lo = exif->MODE & 0xF;
+                int mode_hi = exif->MODE >> 4;
+                if (mode_lo == 0) {
+                    // Agat graphic modes
+                    std::string type = "PICTURE_AGAT";
+                    if (mode_hi == 1) return {type, "256x256x1"};
+                    if (mode_hi == 4) return {type, "64x64x16"};
+                    if (mode_hi == 5) return {type, "128x128x16"};
+                    if (mode_hi == 6) return {type, "256x256x4"};
+                    if (mode_hi == 7) return {type, "512x256x1"};
+                }
+            }
+        }
+        return {"BINARY", ""};
+    }
+
+
     void register_all_viewers() {
         dsk_tools::ViewerBinary viewer_binary;
         dsk_tools::ViewerText viewer_text;
         dsk_tools::ViewerBASIC_Agat viewer_basic_agat;
         dsk_tools::ViewerBASIC_Apple viewer_basic_apple;
         dsk_tools::ViewerBASIC_MBASIC viewer_basic_mbasic;
+        dsk_tools::ViewerPicAgat_256x256x1 viewer_pic_agat_256x256x1;
+        dsk_tools::ViewerPicAgat_512x256x1 viewer_pic_agat_512x256x1;
+        dsk_tools::ViewerPicAgat_64x64x16 viewer_pic_agat_64x64x16;
+        dsk_tools::ViewerPicAgat_128x128x16 viewer_pic_agat_128x128x16;
+        dsk_tools::ViewerPicAgat_256x256x4 viewer_pic_agat_256x256x4;
     }
 
 

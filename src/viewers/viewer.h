@@ -25,6 +25,7 @@ namespace dsk_tools {
         virtual int get_output_type() const {return VIEWER_OUTPUT_TEXT;};
         virtual std::string get_type() const = 0;
         virtual std::string get_subtype() const = 0;
+        virtual std::string get_subtype_text() const = 0;
     };
 
     class ViewerManager {
@@ -36,8 +37,8 @@ namespace dsk_tools {
             return inst;
         }
 
-        void register_viewer(const std::string& id_type, const std::string& id_subtype, Creator creator) {
-            creators.emplace_back(id_type, id_subtype, creator);
+        void register_viewer(const std::string& id_type, const std::string& id_subtype, const std::string& subtype_text, Creator creator) {
+            creators.emplace_back(id_type, id_subtype, subtype_text, creator);
         }
 
         std::unique_ptr<Viewer> create(const std::string& id_type, const std::string& id_subtype) const {
@@ -57,11 +58,11 @@ namespace dsk_tools {
             return std::vector<std::string>(unique_types.begin(), unique_types.end());
         }
 
-        std::vector<std::string> list_subtypes(const std::string& match_id_type) const {
-            std::vector<std::string> results;
+        std::vector<std::pair<std::string, std::string>> list_subtypes(const std::string& match_id_type) const {
+            std::vector<std::pair<std::string, std::string>> results;
             for (const auto& entry : creators) {
                 if (entry.id_type == match_id_type) {
-                    results.emplace_back(entry.id_subtype);
+                    results.emplace_back(entry.id_subtype, entry.subtype_text);
                 }
             }
             return results;
@@ -71,10 +72,11 @@ namespace dsk_tools {
         struct Entry {
             std::string id_type;
             std::string id_subtype;
+            std::string subtype_text;
             Creator creator;
 
-            Entry(const std::string& t, const std::string& s, Creator c)
-                : id_type(t), id_subtype(s), creator(c) {}
+            Entry(const std::string& t, const std::string& s, const std::string& st, Creator c)
+                : id_type(t), id_subtype(s), subtype_text(st), creator(c) {}
         };
 
         std::vector<Entry> creators;
@@ -85,7 +87,7 @@ namespace dsk_tools {
     public:
         ViewerRegistrar() {
             T temp;
-            ViewerManager::instance().register_viewer(temp.get_type(), temp.get_subtype(), []() -> std::unique_ptr<Viewer> {
+            ViewerManager::instance().register_viewer(temp.get_type(), temp.get_subtype(), temp.get_subtype_text(), []() -> std::unique_ptr<Viewer> {
                 return std::unique_ptr<Viewer>(new T());
             });
         }

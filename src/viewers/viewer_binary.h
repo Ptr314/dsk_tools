@@ -15,6 +15,7 @@ namespace dsk_tools {
 
         std::string get_type() const override {return "BINARY";}
         std::string get_subtype() const override {return "";}
+        std::string get_subtype_text() const override {return "";}
         std::string process_as_text(const BYTES & data, const std::string & cm_name) override;
     };
 
