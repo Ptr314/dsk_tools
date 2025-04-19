@@ -4,6 +4,8 @@
 // Description: Viewers for Agat pictures
 
 #include <cstring>
+#include <iostream>
+#include <ostream>
 #include "definitions.h"
 #include "viewer_pics_agat.h"
 
@@ -125,10 +127,156 @@ namespace dsk_tools {
         return res;
     }
 
+    PicOptions ViewerPicAgat_280x192HiRes::get_options()
+    {
+        return {
+            {0, "{$NTSC_AGAT_IMPROVED}"},
+            {1, "{$NTSC_APPLE_IMPROVED}"},
+            {2, "{$NTSC_APPLE_ORIGINAL}"}
+        };
+
+    }
+
+    void ViewerPicAgatApple::start(const BYTES & data, const int opt)
+    {
+        current_line = -1;
+        ViewerPicAgat::start(data, opt);
+    }
+
+    uint32_t ViewerPicAgatApple::get_pixel(int x, int y)
+    {
+        int bytesPerSuperblock = 1024;
+        int bytesPerBlock = 128;
+        int bytesPerLine = 40;
+
+        int superblock = y & 7;
+        int block = (y >> 3) & 7;
+        int lineInBlock = (y >> 6) & 3;
+        int line_offset = bytesPerSuperblock * superblock + bytesPerBlock * block + bytesPerLine * lineInBlock;
+
+        if (current_line != y) {
+            process_line(line_offset);
+            current_line = y;
+        }
+        return line_data[x];
+    }
+
+    void ViewerPicAgat_280x192HiRes::process_line(int line_offset, int y)
+    {
+        int file_offset = 4;
+        uint32_t black = 0xFF000000;
+        uint32_t white = 0xFFFFFFFF;
+
+        bool prev_on = false;
+        for (int x=0; x < m_sx; x++) {
+            uint32_t color;
+
+            int byte_offset = x / 7;
+            int bit_offset = x % 7; // 6 - (x % 7);
+            uint8_t b = m_data->at(line_offset + byte_offset + file_offset);
+            int hi = (b >> 7) & 1;
+            int is_on = (b >> bit_offset) & 1;
+            int is_odd = x & 1;
+            if (is_on != 0) {
+                if (!prev_on) {
+                    if (m_opt == 0)
+                        color = agat_apple_colors[is_odd][hi];
+                    else
+                        color = agat_apple_colors_NTSC[is_odd][hi];
+                } else {
+                    color = white;
+                    line_data[x-1] = white;
+                }
+                prev_on = true;
+            } else {
+                color = black;
+                prev_on = false;
+            }
+            line_data[x] = color;
+        }
+        if (m_opt == 0 || m_opt == 1)
+            for (int x=1; x < m_sx-1; x++) {
+                if (line_data[x] == black && line_data[x-1] == line_data[x+1]) line_data[x] = line_data[x-1];
+            }
+    }
+
+    PicOptions ViewerPicAgat_140x192DblHiRes::get_options()
+    {
+        return {};
+
+    }
+
+    void ViewerPicAgat_140x192DblHiRes::process_line(int line_offset, int y)
+    {
+        int file_offset = 4 + line_offset;
+
+        for (int i = 0; i < (m_sx / 7); i++) {
+            int offset = file_offset + i*2;
+            uint32_t dword = (m_data->at(offset) & 0x7F) | ((m_data->at(offset + 8192) & 0x7F) << 7) | ((m_data->at(offset + 1) & 0x7F) << 14) | ((m_data->at(offset + 8193) & 0x7F) << 21);
+            for (int pi = 0; pi < 7; pi++) {
+                int c = (dword >> (pi*4)) & 0xF;
+                line_data[i*7+pi] = agat_apple_hires_colors[c];
+            }
+        }
+    }
+
+    PicOptions ViewerPicAgat_40x48LoRes::get_options()
+    {
+        return {};
+
+    }
+
+    uint32_t ViewerPicAgat_40x48LoRes::get_pixel(int x, int y)
+    {
+        int bytesPerBlock = 128;
+        int bytesPerLine = 40;
+
+        int block = (y >> 1) & 7;
+        int lineInBlock = (y >> 4) & 3;
+        int line_offset = bytesPerBlock * block + bytesPerLine * lineInBlock;
+
+        if (current_line != y) {
+            process_line(line_offset, y);
+            current_line = y;
+        }
+        return line_data[x];
+    }
+
+    void ViewerPicAgat_40x48LoRes::process_line(int line_offset, int y)
+    {
+        int file_offset = 4 + line_offset;
+        for (int x=0; x<40; x++) {
+            uint8_t b = m_data->at(file_offset + x);
+            int c = (y&1)?b>>4:b&0xF;
+            line_data[x] = agat_apple_lores_colors[c];
+        }
+    }
+
+    void ViewerPicAgat_80x48DblLoRes::process_line(int line_offset, int y)
+    {
+        int file_offset = 4 + line_offset;
+        for (int x=0; x<40; x++) {
+            uint8_t b1 = m_data->at(file_offset + x);
+            int c1 = (y&1)?b1>>4:b1&0xF;
+            line_data[x*2+1] = agat_apple_lores_colors[c1];
+
+            uint8_t b2 = m_data->at(file_offset + x + 1024);
+            int c2 = (y&1)?b2>>4:b2&0xF;
+            line_data[x*2] = agat_apple_lores_colors[c2];
+
+        }
+
+    }
+
     ViewerRegistrar<ViewerPicAgat_64x64x16> ViewerPicAgat_64x64x16::registrar;
     ViewerRegistrar<ViewerPicAgat_128x128x16> ViewerPicAgat_128x128x16::registrar;
     ViewerRegistrar<ViewerPicAgat_256x256x4> ViewerPicAgat_256x256x4::registrar;
     ViewerRegistrar<ViewerPicAgat_256x256x1> ViewerPicAgat_256x256x1::registrar;
     ViewerRegistrar<ViewerPicAgat_512x256x1> ViewerPicAgat_512x256x1::registrar;
+
+    ViewerRegistrar<ViewerPicAgat_280x192HiRes> ViewerPicAgat_280x192HiRes::registrar;
+    ViewerRegistrar<ViewerPicAgat_140x192DblHiRes> ViewerPicAgat_140x192DblHiRes::registrar;
+    ViewerRegistrar<ViewerPicAgat_80x48DblLoRes> ViewerPicAgat_80x48DblLoRes::registrar;
+    ViewerRegistrar<ViewerPicAgat_40x48LoRes> ViewerPicAgat_40x48LoRes::registrar;
 
 }
