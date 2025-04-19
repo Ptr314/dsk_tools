@@ -34,30 +34,43 @@ namespace dsk_tools {
         };
     }
 
-    uint32_t ViewerPicAgat::convert_color(const int colors, const int palette, const int c)
+    uint32_t ViewerPicAgat::convert_color(const int colors, const int palette_id, const int c)
     {
-        int res = 0xFF000000;
-        uint8_t rgb[3];
+        int res = 0xFF000000; // ABGR (little-endian RGBA in memory)
 
-        if (colors == 2) {
-            std::memcpy(&rgb, Agat_2_palette[palette & 0x3][c], 3);
-        } else
-        if (colors == 4) {
-            std::memcpy(&rgb, Agat_4_palette[m_palette & 0x3][c], 3);
-        } else
-            std::memcpy(&rgb, Agat_16_palette[c], 3);
+        // https://agatcomp.ru/agat/Hardware/useful/ColorSet.shtml
+        // https://agatcomp.ru/agat/PCutils/EXIF.shtml
+        // 0-3: standard palette
+        // 8-B: grayscale pallette
+        //   F: custom palette from EXIF
 
-        if (palette < 4) {
-            std::memcpy(&res, rgb, 3);
-        } else
-        if (m_palette >= 8 && m_palette <= 0xB) {
-            uint8_t bw_res = (((uint32_t)rgb[0]*299 + (uint32_t)rgb[1]*587 + (uint32_t)rgb[2]*114) / 1000) & 0xFF;
-            res |= (bw_res << 16) | (bw_res << 8) | bw_res;
-        } else
-        if (m_palette == 0xF) {
-            int n = c / 2;
-            int shft = (~(c & 1) & 1) * 4;
-            uint8_t R = ((exif.R[n] >> shft) & 0xF) * 17;
+        // Firstly we choose from standard palettes
+        const uint8_t (*palette)[16][3] = &Agat_16_color;
+        if (palette_id >=0x8 && palette_id <= 0xB)
+            palette = &Agat_16_gray;
+
+        // Each color maps to a 16-color palette (color, grayscale or custom)
+        int c16 = c;
+        if (palette_id < 0xF) {
+            // Standard palettes
+            if (colors == 2)
+                c16 = Agat_2_index[palette_id & 0x3][c];
+            else
+            if (colors == 4)
+                c16 = Agat_4_index[palette_id & 0x3][c];
+            std::memcpy(&res, (*palette)[c16], 3);
+        } else {
+            // Custom palette from EXIF
+            if (colors == 2)
+                c16 = Agat_2_index[0][c];
+            else
+            if (colors == 4)
+                c16 = Agat_4_index[0][c];
+
+            // Each palette byte stores two 4-bit values
+            int n = c16 / 2;                                // Position in the custom palette
+            int shft = (~(c16 & 1) & 1) * 4;                // 0 or 4
+            uint8_t R = ((exif.R[n] >> shft) & 0xF) * 17;   // Map 0-F to 00-FF
             uint8_t G = ((exif.G[n] >> shft) & 0xF) * 17;
             uint8_t B = ((exif.B[n] >> shft) & 0xF) * 17;
             res |= (B << 16) | (G << 8) | R;

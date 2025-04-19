@@ -29,28 +29,35 @@ namespace dsk_tools {
 
     #pragma pack(pop)
 
-    static const uint8_t Agat_16_palette[16][3]  = {
+    // https://agatcomp.ru/agat/Hardware/useful/ColorSet.shtml
+    static const uint8_t Agat_16_color[16][3]  = {
         {  0,   0,   0}, {217,   0,   0}, {  0, 217,   0}, {217, 217,   0},
         {  0,   0, 217}, {217,   0, 217}, {  0, 217, 217}, {217, 217, 217},
         { 38,  38, 	38}, {255,  38,  38}, { 38, 255,  38}, {255, 255,  38},
         { 38,  38, 255}, {255,  38, 255}, { 38, 255, 255}, {255, 255, 255}
     };
 
-    static const uint8_t Agat_4_palette[4][4][3]  = {
-        //    00                01                10               11
-        {{  0,   0,   0}, {255,   0,   0}, {  0, 255,   0}, {  0,   0, 255}},    // Palette 1
-        {{255, 255, 255}, {255,   0,   0}, {  0, 255,   0}, {  0,   0, 255}},    // Palette 2
-        {{  0,   0,   0}, {  0,   0,   0}, {  0, 255,   0}, {  0,   0, 255}},    // Palette 3
-        {{  0,   0,   0}, {255,   0,   0}, {  0,   0,   0}, {  0,   0, 255}}     // Palette 4
+    static const uint8_t Agat_16_gray[16][3]  = {
+        {  0,   0,   0}, {130, 130, 130}, { 89,  89,  89}, {221, 221, 221},
+        { 65,  65,  65}, {194, 194, 194}, {151, 151, 151}, {241, 241, 241},
+        { 39,  39, 	39}, {185, 185, 185}, {148, 148, 148}, {244, 244, 244},
+        {108, 108, 108}, {229, 229, 229}, {197, 197, 197}, {255, 255, 255}
     };
 
+    static const uint8_t Agat_4_index[4][4]  = {
+      // 0    1   2   3
+        { 0,  1,  2,  4},    // Palette 1
+        {15,  1,  2,  4},    // Palette 2
+        { 0,  0,  2,  4},    // Palette 3
+        { 0,  1,  0,  4}     // Palette 4
+    };
 
-    static const uint8_t Agat_2_palette[4][2][3] =  {
-        //       0               1
-        {{  0,   0,   0}, {255, 255, 255}},     // Palette 1
-        {{255, 255, 255}, {  0,   0,   0}},     // Palette 2
-        {{  0,   0,   0}, {  0, 255,   0}},     // Palette 3
-        {{  0, 255,   0}, {  0,   0,   0}}      // Palette 4
+    static const uint8_t Agat_2_index[4][2] =  {
+      //  0   1
+        { 0, 15},     // Palette 1
+        {15,  0},     // Palette 2
+        { 0,  2},     // Palette 3
+        { 2,  0}      // Palette 4
     };
 
     class ViewerPicAgat : public ViewerPic {
@@ -60,7 +67,7 @@ namespace dsk_tools {
         bool exif_found = false;
         AGAT_EXIF_SECTOR exif;
         int m_palette = 0;
-        uint32_t convert_color(const int colors, const int palette, const int c);
+        uint32_t convert_color(const int colors, const int palette_id, const int c);
         virtual void start(const BYTES & data, const int opt) override;
     };
 
