@@ -60,6 +60,33 @@ namespace dsk_tools {
         { 2,  0}      // Palette 4
     };
 
+    // ABGR (little-endian RGBA in memory)
+    static const uint32_t agat_apple_colors[2][2] = {
+        // Hi  0           1
+        {0xFF00FF00, 0xFFFF0000},   // Even
+        {0xFFFF00FF, 0xFF0000FF}    // Odd
+    };
+
+    static const uint32_t agat_apple_colors_NTSC[2][2] = {
+        // Hi   0           1
+        {0xFF16C265, 0xFFEFA943},   // Even
+        {0xFFFF63C0, 0xFF367CE2}    // Odd
+    };
+
+    static const uint32_t agat_apple_hires_colors[16] = {
+        0xFF000000, 0xFFC14843, 0xFF447715, 0xFFEFA943,
+        0xFF006065, 0xFF929292, 0xFF16C265, 0xFFBAEE8C,
+        0xFF643193, 0xFFFF63C0, 0xFF929292, 0xFFFFBEB9,
+        0xFF367CE2, 0xFFDBA7FF, 0xFF5ED7DC, 0xFFFFFFFF
+    };
+
+    static const uint32_t agat_apple_lores_colors[16] = {
+        0xFF000000, 0xFF643193, 0xFFC14843, 0xFFFF63C0,
+        0xFF447715, 0xFF929292, 0xFFEFA943, 0xFFFFBEB9,
+        0xFF006065, 0xFF367CE2, 0xFF929292, 0xFFDBA7FF,
+        0xFF16C265, 0xFF5ED7DC, 0xFFBAEE8C, 0xFFFFFFFF
+    };
+
     class ViewerPicAgat : public ViewerPic {
     public:
         PicOptions get_options() override;
@@ -140,6 +167,75 @@ namespace dsk_tools {
         std::string get_subtype() const override {return "512x256x1";}
         std::string get_subtype_text() const override {return "512х256 МГДП";}
     };
+
+    class ViewerPicAgatApple : public ViewerPicAgat {
+    protected:
+        uint32_t line_data[560];
+        int current_line = -1;
+        virtual void start(const BYTES & data, const int opt) override;
+        virtual void process_line(int line_offset, int y = 0) = 0;
+    public:
+        uint32_t get_pixel(int x, int y) override;
+    };
+
+    class ViewerPicAgat_280x192HiRes : public ViewerPicAgatApple {
+    protected:
+        void process_line(int line_offset, int y = 0) override;
+    public:
+        static ViewerRegistrar<ViewerPicAgat_280x192HiRes> registrar;
+
+        ViewerPicAgat_280x192HiRes() {m_sx = 280; m_sy = 192;};
+
+        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_subtype() const override {return "280x192HiRes";}
+        std::string get_subtype_text() const override {return "Apple ][ 280x192 HiRes";}
+
+        PicOptions get_options() override;
+    };
+
+    class ViewerPicAgat_140x192DblHiRes : public ViewerPicAgatApple {
+    protected:
+        void process_line(int line_offset, int y = 0) override;
+    public:
+        static ViewerRegistrar<ViewerPicAgat_140x192DblHiRes> registrar;
+
+        ViewerPicAgat_140x192DblHiRes() {m_sx = 140; m_sy = 192;};
+
+        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_subtype() const override {return "140x192DblHiRes";}
+        std::string get_subtype_text() const override {return "Apple ][ 140x192 Dbl HiRes";}
+        PicOptions get_options() override;
+    };
+
+    class ViewerPicAgat_40x48LoRes : public ViewerPicAgatApple {
+    protected:
+        void process_line(int line_offset, int y = 0) override;
+    public:
+        static ViewerRegistrar<ViewerPicAgat_40x48LoRes> registrar;
+
+        ViewerPicAgat_40x48LoRes() {m_sx = 40; m_sy = 48;};
+
+        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_subtype() const override {return "40x48LoRes";}
+        std::string get_subtype_text() const override {return "Apple ][ 40x48 LoRes";}
+        PicOptions get_options() override;
+        uint32_t get_pixel(int x, int y) override;
+
+    };
+
+    class ViewerPicAgat_80x48DblLoRes : public ViewerPicAgat_40x48LoRes {
+    protected:
+        void process_line(int line_offset, int y = 0) override;
+    public:
+        static ViewerRegistrar<ViewerPicAgat_80x48DblLoRes> registrar;
+
+        ViewerPicAgat_80x48DblLoRes() {m_sx = 80; m_sy = 48;};
+
+        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_subtype() const override {return "80x48DblLoRes";}
+        std::string get_subtype_text() const override {return "Apple ][ 80x48 Dbl LoRes";}
+    };
+
 
 
 }

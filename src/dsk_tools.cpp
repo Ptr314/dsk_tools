@@ -478,6 +478,14 @@ namespace dsk_tools {
                     if (mode_hi == 5) return {type, "128x128x16"};
                     if (mode_hi == 6) return {type, "256x256x4"};
                     if (mode_hi == 7) return {type, "512x256x1"};
+                } else
+                if (mode_lo == 0xA) {
+                    // Apple ][ graphic modes
+                    std::string type = "PICTURE_AGAT";
+                    if (mode_hi ==   9) return {type, "280x192HiRes"};
+                    if (mode_hi == 0xC) return {type, "40x48LoRes"};
+                    if (mode_hi == 0xD) return {type, "80x48DblLoRes"};
+                    if (mode_hi == 0xE) return {type, "140x192DblHiRes"};
                 }
             }
         }
@@ -496,6 +504,12 @@ namespace dsk_tools {
         dsk_tools::ViewerPicAgat_64x64x16 viewer_pic_agat_64x64x16;
         dsk_tools::ViewerPicAgat_128x128x16 viewer_pic_agat_128x128x16;
         dsk_tools::ViewerPicAgat_256x256x4 viewer_pic_agat_256x256x4;
+
+        dsk_tools::ViewerPicAgat_280x192HiRes viewer_pic_agat_280x192HiRes;
+        dsk_tools::ViewerPicAgat_140x192DblHiRes viewer_pic_agat_140x192DblHiRes;
+        dsk_tools::ViewerPicAgat_80x48DblLoRes viewer_pic_agat_80x48DblLoRes;
+        dsk_tools::ViewerPicAgat_40x48LoRes viewer_pic_agat_40x48LoRes;
+
     }
 
 
