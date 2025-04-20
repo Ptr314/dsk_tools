@@ -188,7 +188,7 @@ namespace dsk_tools {
 
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "280x192HiRes";}
-        std::string get_subtype_text() const override {return "Apple ][ 280x192 HiRes";}
+        std::string get_subtype_text() const override {return "280x192 HiRes";}
 
         PicOptions get_options() override;
     };
@@ -203,7 +203,7 @@ namespace dsk_tools {
 
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "140x192DblHiRes";}
-        std::string get_subtype_text() const override {return "Apple ][ 140x192 Dbl HiRes";}
+        std::string get_subtype_text() const override {return "140x192 Dbl HiRes";}
         PicOptions get_options() override;
     };
 
@@ -217,7 +217,7 @@ namespace dsk_tools {
 
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "40x48LoRes";}
-        std::string get_subtype_text() const override {return "Apple ][ 40x48 LoRes";}
+        std::string get_subtype_text() const override {return "40x48 LoRes";}
         PicOptions get_options() override;
         uint32_t get_pixel(int x, int y) override;
 
@@ -233,7 +233,7 @@ namespace dsk_tools {
 
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "80x48DblLoRes";}
-        std::string get_subtype_text() const override {return "Apple ][ 80x48 Dbl LoRes";}
+        std::string get_subtype_text() const override {return "80x48 Dbl LoRes";}
     };
 
 
