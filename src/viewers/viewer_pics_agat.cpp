@@ -127,6 +127,25 @@ namespace dsk_tools {
         return res;
     }
 
+    uint32_t ViewerPicAgat_128x256x16::get_pixel(int x, int y)
+    {
+        uint32_t res = 0xFF000000;
+        int offset = 4;
+        int i;
+        if ((y&1) == 0)
+            i = (y>>1) * (m_sx/2) + x/2 + offset;
+        else
+            i = (y>>1) * (m_sx/2) + x/2 + offset + 8192;
+
+        if (i < m_data->size()) {
+            uint8_t b = m_data->at(i);
+            uint8_t c = (x&1)?(b&0xF):(b>>4);
+            res = convert_color(16, m_palette, c);
+        }
+        return res;
+
+    }
+
     PicOptions ViewerPicAgat_280x192HiRes::get_options()
     {
         return {
@@ -307,6 +326,7 @@ namespace dsk_tools {
     ViewerRegistrar<ViewerPicAgat_256x256x4> ViewerPicAgat_256x256x4::registrar;
     ViewerRegistrar<ViewerPicAgat_256x256x1> ViewerPicAgat_256x256x1::registrar;
     ViewerRegistrar<ViewerPicAgat_512x256x1> ViewerPicAgat_512x256x1::registrar;
+    ViewerRegistrar<ViewerPicAgat_128x256x16> ViewerPicAgat_128x256x16::registrar;
 
     ViewerRegistrar<ViewerPicAgat_280x192HiRes> ViewerPicAgat_280x192HiRes::registrar;
     ViewerRegistrar<ViewerPicAgat_140x192DblHiRes> ViewerPicAgat_140x192DblHiRes::registrar;

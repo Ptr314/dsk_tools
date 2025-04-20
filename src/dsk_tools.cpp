@@ -478,6 +478,7 @@ namespace dsk_tools {
                     if (mode_hi == 5) return {type, "128x128x16"};
                     if (mode_hi == 6) return {type, "256x256x4"};
                     if (mode_hi == 7) return {type, "512x256x1"};
+                    if (mode_hi == 8) return {type, "128x256x16"};
                 } else
                 if (mode_lo == 0xA) {
                     // Apple ][ graphic modes
@@ -504,6 +505,7 @@ namespace dsk_tools {
         dsk_tools::ViewerPicAgat_64x64x16 viewer_pic_agat_64x64x16;
         dsk_tools::ViewerPicAgat_128x128x16 viewer_pic_agat_128x128x16;
         dsk_tools::ViewerPicAgat_256x256x4 viewer_pic_agat_256x256x4;
+        dsk_tools::ViewerPicAgat_128x256x16 viewer_pic_agat_128x256x16;
 
         dsk_tools::ViewerPicAgat_280x192HiRes viewer_pic_agat_280x192HiRes;
         dsk_tools::ViewerPicAgat_140x192DblHiRes viewer_pic_agat_140x192DblHiRes;

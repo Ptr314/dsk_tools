@@ -125,6 +125,19 @@ namespace dsk_tools {
         std::string get_subtype_text() const override {return "128x128 ЦГСР";}
     };
 
+    class ViewerPicAgat_128x256x16 : public ViewerPicAgat16 {
+    public:
+        static ViewerRegistrar<ViewerPicAgat_128x256x16> registrar;
+
+        ViewerPicAgat_128x256x16() {m_sx = 128; m_sy = 256;};
+
+        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_subtype() const override {return "128x256x16";}
+        std::string get_subtype_text() const override {return "128x256 16 цветов";}
+    protected:
+        uint32_t get_pixel(int x, int y) override;
+    };
+
     class ViewerPicAgat4 : public ViewerPicAgat {
     protected:
         uint32_t get_pixel(int x, int y) override;
