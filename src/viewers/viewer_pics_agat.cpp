@@ -255,11 +255,42 @@ namespace dsk_tools {
         }
     }
 
+    PicOptions ViewerPicAgat_560x192DblHiResBW::get_options()
+    {
+        return {};
+
+    }
+
+    void ViewerPicAgat_560x192DblHiResBW::process_line(int line_offset, int y)
+    {
+        int file_offset = 4 + line_offset;
+
+        for (int i = 0; i < (m_sx / 28); i++) {
+            int offset = file_offset + i*2;
+            uint32_t dword = 0;
+
+            if (offset < m_data->size())
+                dword |= (m_data->at(offset) & 0x7F);
+            if (offset + 8192 < m_data->size())
+                dword |= ((m_data->at(offset + 8192) & 0x7F) << 7);
+            if (offset + 1 < m_data->size())
+                dword |= ((m_data->at(offset + 1) & 0x7F) << 14);
+            if (offset + 8193 < m_data->size())
+                dword |= ((m_data->at(offset + 8193) & 0x7F) << 21);
+
+            for (int pi = 0; pi < 28; pi++) {
+                int c = (dword >> pi) & 1;
+                line_data[i*28+pi] = agat_apple_hires_bw[c];
+            }
+        }
+    }
+
     PicOptions ViewerPicAgat_40x48LoRes::get_options()
     {
         return {};
 
     }
+
 
     uint32_t ViewerPicAgat_40x48LoRes::get_pixel(int x, int y)
     {
@@ -330,6 +361,7 @@ namespace dsk_tools {
 
     ViewerRegistrar<ViewerPicAgat_280x192HiRes> ViewerPicAgat_280x192HiRes::registrar;
     ViewerRegistrar<ViewerPicAgat_140x192DblHiRes> ViewerPicAgat_140x192DblHiRes::registrar;
+    ViewerRegistrar<ViewerPicAgat_560x192DblHiResBW> ViewerPicAgat_560x192DblHiResBW::registrar;
     ViewerRegistrar<ViewerPicAgat_80x48DblLoRes> ViewerPicAgat_80x48DblLoRes::registrar;
     ViewerRegistrar<ViewerPicAgat_40x48LoRes> ViewerPicAgat_40x48LoRes::registrar;
 

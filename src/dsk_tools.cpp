@@ -487,6 +487,7 @@ namespace dsk_tools {
                     if (mode_hi == 0xC) return {type, "40x48LoRes"};
                     if (mode_hi == 0xD) return {type, "80x48DblLoRes"};
                     if (mode_hi == 0xE) return {type, "140x192DblHiRes"};
+                    if (mode_hi == 0xF) return {type, "560x192DblHiResBW"};
                 }
             }
         }
@@ -509,6 +510,7 @@ namespace dsk_tools {
 
         dsk_tools::ViewerPicAgat_280x192HiRes viewer_pic_agat_280x192HiRes;
         dsk_tools::ViewerPicAgat_140x192DblHiRes viewer_pic_agat_140x192DblHiRes;
+        dsk_tools::ViewerPicAgat_560x192DblHiResBW viewer_pic_agat_560x192DblHiResBW;
         dsk_tools::ViewerPicAgat_80x48DblLoRes viewer_pic_agat_80x48DblLoRes;
         dsk_tools::ViewerPicAgat_40x48LoRes viewer_pic_agat_40x48LoRes;
 
