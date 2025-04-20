@@ -6,6 +6,7 @@
 #include <cstring>
 #include <iostream>
 #include <ostream>
+#include <algorithm>
 #include "definitions.h"
 #include "viewer_pics_agat.h"
 
@@ -34,6 +35,14 @@ namespace dsk_tools {
                     m_palette = exif.PALETTE & 0xF;
             }
         };
+    }
+
+    bool ViewerPicAgat::fits(const BYTES & data)
+    {
+        if (m_sizes_to_fit.size() != 0)
+            return std::find(m_sizes_to_fit.begin(), m_sizes_to_fit.end(), data.size()) != m_sizes_to_fit.end();
+        else
+            return true;
     }
 
     uint32_t ViewerPicAgat::convert_color(const int colors, const int palette_id, const int c)
