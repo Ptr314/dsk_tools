@@ -98,8 +98,10 @@ namespace dsk_tools {
         bool exif_found = false;
         AGAT_EXIF_SECTOR exif;
         int m_palette = 0;
+        std::vector<int> m_sizes_to_fit;
         uint32_t convert_color(const int colors, const int palette_id, const int c);
         virtual void start(const BYTES & data, const int opt) override;
+        virtual bool fits(const BYTES & data) override;
     };
 
     class ViewerPicAgat16 : public ViewerPicAgat {
@@ -111,7 +113,7 @@ namespace dsk_tools {
     public:
         static ViewerRegistrar<ViewerPicAgat_64x64x16> registrar;
 
-        ViewerPicAgat_64x64x16() {m_sx = 64; m_sy = 64;};
+        ViewerPicAgat_64x64x16() {m_sx = 64; m_sy = 64; m_sizes_to_fit = {2048, 2048+256};};
 
         std::string get_type() const override {return "PICTURE_AGAT";}
         std::string get_subtype() const override {return "64x64x16";}
@@ -122,7 +124,7 @@ namespace dsk_tools {
     public:
         static ViewerRegistrar<ViewerPicAgat_128x128x16> registrar;
 
-        ViewerPicAgat_128x128x16() {m_sx = 128; m_sy = 128;};
+        ViewerPicAgat_128x128x16() {m_sx = 128; m_sy = 128; m_sizes_to_fit = {8192, 8192+256};};
 
         std::string get_type() const override {return "PICTURE_AGAT";}
         std::string get_subtype() const override {return "128x128x16";}
@@ -133,7 +135,7 @@ namespace dsk_tools {
     public:
         static ViewerRegistrar<ViewerPicAgat_128x256x16> registrar;
 
-        ViewerPicAgat_128x256x16() {m_sx = 128; m_sy = 256;};
+        ViewerPicAgat_128x256x16() {m_sx = 128; m_sy = 256; m_sizes_to_fit = {16384, 16384+256};};
 
         std::string get_type() const override {return "PICTURE_AGAT";}
         std::string get_subtype() const override {return "128x256x16";}
@@ -151,7 +153,7 @@ namespace dsk_tools {
     public:
         static ViewerRegistrar<ViewerPicAgat_256x256x4> registrar;
 
-        ViewerPicAgat_256x256x4() {m_sx = 256; m_sy = 256;};
+        ViewerPicAgat_256x256x4() {m_sx = 256; m_sy = 256; m_sizes_to_fit = {16384, 16384+256};};
 
         std::string get_type() const override {return "PICTURE_AGAT";}
         std::string get_subtype() const override {return "256x256x4";}
@@ -167,7 +169,7 @@ namespace dsk_tools {
     public:
         static ViewerRegistrar<ViewerPicAgat_256x256x1> registrar;
 
-        ViewerPicAgat_256x256x1() {m_sx = 256; m_sy = 256;};
+        ViewerPicAgat_256x256x1() {m_sx = 256; m_sy = 256; m_sizes_to_fit = {8192, 8192+256};};
 
         std::string get_type() const override {return "PICTURE_AGAT";}
         std::string get_subtype() const override {return "256x256x1";}
@@ -178,7 +180,7 @@ namespace dsk_tools {
     public:
         static ViewerRegistrar<ViewerPicAgat_512x256x1> registrar;
 
-        ViewerPicAgat_512x256x1() {m_sx = 512; m_sy = 256;};
+        ViewerPicAgat_512x256x1() {m_sx = 512; m_sy = 256; m_sizes_to_fit = {16384, 16384+256};};
 
         std::string get_type() const override {return "PICTURE_AGAT";}
         std::string get_subtype() const override {return "512x256x1";}
@@ -201,7 +203,7 @@ namespace dsk_tools {
     public:
         static ViewerRegistrar<ViewerPicAgat_280x192HiRes> registrar;
 
-        ViewerPicAgat_280x192HiRes() {m_sx = 280; m_sy = 192;};
+        ViewerPicAgat_280x192HiRes() {m_sx = 280; m_sy = 192; m_sizes_to_fit = {8192, 8192+256};};
 
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "280x192HiRes";}
@@ -216,7 +218,7 @@ namespace dsk_tools {
     public:
         static ViewerRegistrar<ViewerPicAgat_140x192DblHiRes> registrar;
 
-        ViewerPicAgat_140x192DblHiRes() {m_sx = 140; m_sy = 192;};
+        ViewerPicAgat_140x192DblHiRes() {m_sx = 140; m_sy = 192; m_sizes_to_fit = {16384, 16384+256};};
 
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "140x192DblHiRes";}
@@ -230,7 +232,7 @@ namespace dsk_tools {
     public:
         static ViewerRegistrar<ViewerPicAgat_560x192DblHiResBW> registrar;
 
-        ViewerPicAgat_560x192DblHiResBW() {m_sx = 560; m_sy = 192;};
+        ViewerPicAgat_560x192DblHiResBW() {m_sx = 560; m_sy = 192; m_sizes_to_fit = {16384, 16384+256};};
 
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "560x192DblHiResBW";}
@@ -244,7 +246,7 @@ namespace dsk_tools {
     public:
         static ViewerRegistrar<ViewerPicAgat_40x48LoRes> registrar;
 
-        ViewerPicAgat_40x48LoRes() {m_sx = 40; m_sy = 48;};
+        ViewerPicAgat_40x48LoRes() {m_sx = 40; m_sy = 48; m_sizes_to_fit = {1280, 1280+256};};
 
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "40x48LoRes";}
@@ -260,7 +262,7 @@ namespace dsk_tools {
     public:
         static ViewerRegistrar<ViewerPicAgat_80x48DblLoRes> registrar;
 
-        ViewerPicAgat_80x48DblLoRes() {m_sx = 80; m_sy = 48;};
+        ViewerPicAgat_80x48DblLoRes() {m_sx = 80; m_sy = 48; m_sizes_to_fit = {2048, 2048+256};};
 
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "80x48DblLoRes";}
