@@ -57,7 +57,7 @@ namespace dsk_tools {
 
         file.preferred_type = agat_preferred_file_type(T);
 
-        file.size = image->get_size();
+        file.size = image->get_size()-40;
 
         files->push_back(file);
 
@@ -70,7 +70,7 @@ namespace dsk_tools {
 
         uint8_t * raw_data = reinterpret_cast<uint8_t *>(image->get_sector_data(0,0,0));
 
-        data.insert(data.end(), raw_data + sizeof(FIL_header), raw_data + image->get_size() - sizeof(FIL_header));
+        data.insert(data.end(), raw_data + sizeof(FIL_header), raw_data + image->get_size());
 
         return data;
     }
