@@ -80,6 +80,10 @@ namespace dsk_tools {
         0xFF367CE2, 0xFFDBA7FF, 0xFF5ED7DC, 0xFFFFFFFF
     };
 
+    static const uint32_t agat_apple_hires_bw[2] = {
+        0xFF000000, 0xFFFFFFFF
+    };
+
     static const uint32_t agat_apple_lores_colors[16] = {
         0xFF000000, 0xFF643193, 0xFFC14843, 0xFFFF63C0,
         0xFF447715, 0xFF929292, 0xFFEFA943, 0xFFFFBEB9,
@@ -216,7 +220,21 @@ namespace dsk_tools {
 
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "140x192DblHiRes";}
-        std::string get_subtype_text() const override {return "140x192 Dbl HiRes";}
+        std::string get_subtype_text() const override {return "140x192 Dbl HiRes Color";}
+        PicOptions get_options() override;
+    };
+
+    class ViewerPicAgat_560x192DblHiResBW : public ViewerPicAgatApple {
+    protected:
+        void process_line(int line_offset, int y = 0) override;
+    public:
+        static ViewerRegistrar<ViewerPicAgat_560x192DblHiResBW> registrar;
+
+        ViewerPicAgat_560x192DblHiResBW() {m_sx = 560; m_sy = 192;};
+
+        std::string get_type() const override {return "PICTURE_APPLE";}
+        std::string get_subtype() const override {return "560x192DblHiResBW";}
+        std::string get_subtype_text() const override {return "560x192 Dbl HiRes B/W";}
         PicOptions get_options() override;
     };
 
