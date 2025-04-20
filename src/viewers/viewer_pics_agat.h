@@ -186,7 +186,7 @@ namespace dsk_tools {
 
         ViewerPicAgat_280x192HiRes() {m_sx = 280; m_sy = 192;};
 
-        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "280x192HiRes";}
         std::string get_subtype_text() const override {return "Apple ][ 280x192 HiRes";}
 
@@ -201,7 +201,7 @@ namespace dsk_tools {
 
         ViewerPicAgat_140x192DblHiRes() {m_sx = 140; m_sy = 192;};
 
-        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "140x192DblHiRes";}
         std::string get_subtype_text() const override {return "Apple ][ 140x192 Dbl HiRes";}
         PicOptions get_options() override;
@@ -215,7 +215,7 @@ namespace dsk_tools {
 
         ViewerPicAgat_40x48LoRes() {m_sx = 40; m_sy = 48;};
 
-        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "40x48LoRes";}
         std::string get_subtype_text() const override {return "Apple ][ 40x48 LoRes";}
         PicOptions get_options() override;
@@ -231,7 +231,7 @@ namespace dsk_tools {
 
         ViewerPicAgat_80x48DblLoRes() {m_sx = 80; m_sy = 48;};
 
-        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "80x48DblLoRes";}
         std::string get_subtype_text() const override {return "Apple ][ 80x48 Dbl LoRes";}
     };
