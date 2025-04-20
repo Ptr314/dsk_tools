@@ -164,8 +164,8 @@ namespace dsk_tools {
     void ViewerPicAgat_280x192HiRes::process_line(int line_offset, int y)
     {
         int file_offset = 4;
-        uint32_t black = 0xFF000000;
-        uint32_t white = 0xFFFFFFFF;
+        static uint32_t black = 0xFF000000;
+        static uint32_t white = 0xFFFFFFFF;
 
         bool prev_on = false;
         for (int x=0; x < m_sx; x++) {
@@ -173,21 +173,27 @@ namespace dsk_tools {
 
             int byte_offset = x / 7;
             int bit_offset = x % 7; // 6 - (x % 7);
-            uint8_t b = m_data->at(line_offset + byte_offset + file_offset);
-            int hi = (b >> 7) & 1;
-            int is_on = (b >> bit_offset) & 1;
-            int is_odd = x & 1;
-            if (is_on != 0) {
-                if (!prev_on) {
-                    if (m_opt == 0)
-                        color = agat_apple_colors[is_odd][hi];
-                    else
-                        color = agat_apple_colors_NTSC[is_odd][hi];
+            int data_offset = line_offset + byte_offset + file_offset;
+            if (data_offset < m_data->size()) {
+                uint8_t b = m_data->at(data_offset);
+                int hi = (b >> 7) & 1;
+                int is_on = (b >> bit_offset) & 1;
+                int is_odd = x & 1;
+                if (is_on != 0) {
+                    if (!prev_on) {
+                        if (m_opt == 0)
+                            color = agat_apple_colors[is_odd][hi];
+                        else
+                            color = agat_apple_colors_NTSC[is_odd][hi];
+                    } else {
+                        color = white;
+                        line_data[x-1] = white;
+                    }
+                    prev_on = true;
                 } else {
-                    color = white;
-                    line_data[x-1] = white;
+                    color = black;
+                    prev_on = false;
                 }
-                prev_on = true;
             } else {
                 color = black;
                 prev_on = false;
@@ -212,7 +218,17 @@ namespace dsk_tools {
 
         for (int i = 0; i < (m_sx / 7); i++) {
             int offset = file_offset + i*2;
-            uint32_t dword = (m_data->at(offset) & 0x7F) | ((m_data->at(offset + 8192) & 0x7F) << 7) | ((m_data->at(offset + 1) & 0x7F) << 14) | ((m_data->at(offset + 8193) & 0x7F) << 21);
+            uint32_t dword = 0;
+
+            if (offset < m_data->size())
+                dword |= (m_data->at(offset) & 0x7F);
+            if (offset + 8192 < m_data->size())
+                dword |= ((m_data->at(offset + 8192) & 0x7F) << 7);
+            if (offset + 1 < m_data->size())
+                dword |= ((m_data->at(offset + 1) & 0x7F) << 14);
+            if (offset + 8193 < m_data->size())
+                dword |= ((m_data->at(offset + 8193) & 0x7F) << 21);
+
             for (int pi = 0; pi < 7; pi++) {
                 int c = (dword >> (pi*4)) & 0xF;
                 line_data[i*7+pi] = agat_apple_hires_colors[c];
@@ -244,26 +260,44 @@ namespace dsk_tools {
 
     void ViewerPicAgat_40x48LoRes::process_line(int line_offset, int y)
     {
+        static uint32_t black = 0xFF000000;
+
         int file_offset = 4 + line_offset;
         for (int x=0; x<40; x++) {
-            uint8_t b = m_data->at(file_offset + x);
-            int c = (y&1)?b>>4:b&0xF;
-            line_data[x] = agat_apple_lores_colors[c];
+            int data_offset = file_offset + x;
+            if (data_offset < m_data->size()) {
+                uint8_t b = m_data->at(data_offset);
+                int c = (y&1)?b>>4:b&0xF;
+                line_data[x] = agat_apple_lores_colors[c];
+            } else {
+                line_data[x] = black;
+            }
         }
     }
 
     void ViewerPicAgat_80x48DblLoRes::process_line(int line_offset, int y)
     {
+        static uint32_t black = 0xFF000000;
+
         int file_offset = 4 + line_offset;
         for (int x=0; x<40; x++) {
-            uint8_t b1 = m_data->at(file_offset + x);
-            int c1 = (y&1)?b1>>4:b1&0xF;
-            line_data[x*2+1] = agat_apple_lores_colors[c1];
+            int data_offset_1 = file_offset + x;
+            if (data_offset_1 < m_data->size()) {
+                uint8_t b1 = m_data->at(data_offset_1);
+                int c1 = (y&1)?b1>>4:b1&0xF;
+                line_data[x*2+1] = agat_apple_lores_colors[c1];
+            } else {
+                line_data[x*2+1] = black;
+            }
 
-            uint8_t b2 = m_data->at(file_offset + x + 1024);
-            int c2 = (y&1)?b2>>4:b2&0xF;
-            line_data[x*2] = agat_apple_lores_colors[c2];
-
+            int data_offset_2 = file_offset + x + 1024;
+            if (data_offset_2 < m_data->size()) {
+                uint8_t b2 = m_data->at(data_offset_2);
+                int c2 = (y&1)?b2>>4:b2&0xF;
+                line_data[x*2] = agat_apple_lores_colors[c2];
+            } else {
+                line_data[x*2] = black;
+            }
         }
 
     }
