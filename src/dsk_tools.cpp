@@ -481,7 +481,7 @@ namespace dsk_tools {
                 } else
                 if (mode_lo == 0xA) {
                     // Apple ][ graphic modes
-                    std::string type = "PICTURE_AGAT";
+                    std::string type = "PICTURE_APPLE";
                     if (mode_hi ==   9) return {type, "280x192HiRes"};
                     if (mode_hi == 0xC) return {type, "40x48LoRes"};
                     if (mode_hi == 0xD) return {type, "80x48DblLoRes"};
