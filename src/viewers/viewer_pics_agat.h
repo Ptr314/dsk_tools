@@ -22,7 +22,7 @@ namespace dsk_tools {
         uint8_t     G[8];                   // Palette R
         uint8_t     _NOT_USED_2[8];
         uint8_t     B[8];                   // Palette B
-        uint8_t     CHARSET_NAME[15];       // Charset id (if FONT==$Fx below)
+        uint8_t     FONT_NAME[15];          // Font id (if FONT==$Fx below)
         uint8_t     FONT;                   // Font id ($Fx for charset above)
         uint8_t     COMMENT[12*16];
     };
@@ -100,8 +100,8 @@ namespace dsk_tools {
         int m_palette = 0;
         std::vector<int> m_sizes_to_fit;
         uint32_t convert_color(const int colors, const int palette_id, const int c);
-        virtual void start(const BYTES & data, const int opt) override;
-        virtual bool fits(const BYTES & data) override;
+        void start(const BYTES & data, const int opt, const int frame ) override;
+        bool fits(const BYTES & data) override;
     };
 
     class ViewerPicAgat16 : public ViewerPicAgat {
@@ -191,7 +191,7 @@ namespace dsk_tools {
     protected:
         uint32_t line_data[560];
         int current_line = -1;
-        virtual void start(const BYTES & data, const int opt) override;
+        virtual void start(const BYTES & data, const int opt, const int frame = 0) override;
         virtual void process_line(int line_offset, int y = 0) = 0;
     public:
         uint32_t get_pixel(int x, int y) override;
@@ -269,6 +269,49 @@ namespace dsk_tools {
         std::string get_subtype_text() const override {return "80x48 Dbl LoRes";}
     };
 
+    // Agat T32 color & T64 bw superclass
+    class ViewerPicAgatText : public ViewerPicAgat {
+    protected:
+        uint32_t line_data[512];
+        int current_line = -1;
+        const uint8_t (*m_font)[2048];
+        bool m_font_reverse = false;
+        uint8_t m_custom_font[2048];
+        bool m_custom_reverse;
+        virtual void start(const BYTES & data, const int opt, const int frame = 0) override;
+        virtual void process_line(int y = 0) = 0;
+        virtual bool load_custom_font();
+    public:
+        uint32_t get_pixel(int x, int y) override;
+        PicOptions get_options() override;
+        int suggest_option(const BYTES & data) override;
+        void prepare_data(const BYTES & data, diskImage &image, fileSystem &filesystem) override;
+    };
 
+    class ViewerPicAgatTextT32 : public ViewerPicAgatText {
+    protected:
+        void process_line(int y = 0) override;
+    public:
+        static ViewerRegistrar<ViewerPicAgatTextT32> registrar;
 
+        ViewerPicAgatTextT32() {m_sx = 256; m_sy = 256; m_sizes_to_fit = {2048, 2048+256};};
+        int get_frame_delay() const override {return 1000;};
+
+        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_subtype() const override {return "T32";}
+        std::string get_subtype_text() const override {return "T32";}
+    };
+
+    class ViewerPicAgatTextT64 : public ViewerPicAgatText {
+    protected:
+        void process_line(int y = 0) override;
+    public:
+        static ViewerRegistrar<ViewerPicAgatTextT64> registrar;
+
+        ViewerPicAgatTextT64() {m_sx = 512; m_sy = 256; m_sizes_to_fit = {2048, 2048+256};};
+
+        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_subtype() const override {return "T64";}
+        std::string get_subtype_text() const override {return "T64";}
+    };
 }

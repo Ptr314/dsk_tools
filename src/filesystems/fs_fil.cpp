@@ -221,4 +221,10 @@ namespace dsk_tools {
         return FILE_METADATA_OK;
     }
 
+    bool fsFIL::file_find(const std::string & file_name, fileData & fd)
+    {
+        return false;
+    }
+
+
 }

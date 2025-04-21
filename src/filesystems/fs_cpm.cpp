@@ -298,5 +298,8 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return FILE_METADATA_OK;
     }
 
-
+    bool fsCPM::file_find(const std::string & file_name, fileData & fd)
+    {
+        return false;
+    }
 }

@@ -75,6 +75,7 @@ namespace dsk_tools {
         virtual bool is_root() override;
         virtual std::vector<ParameterDescription> file_get_metadata(const fileData & fd) override;
         virtual int file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata) override;
+        bool file_find(const std::string & file_name, fileData &fd) override;
     };
 }
 

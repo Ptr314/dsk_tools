@@ -7,9 +7,9 @@
 #include "viewer_pics.h"
 
 namespace dsk_tools {
-BYTES ViewerPic::process_picture(const BYTES & data, int & sx, int & sy, const int opt)
+BYTES ViewerPic::process_picture(const BYTES & data, int & sx, int & sy, const int opt, int frame)
     {
-        start(data, opt);
+        start(data, opt, frame);
         sx = get_sx();
         sy = get_sy();
 

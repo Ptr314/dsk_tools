@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "disk_image.h"
+#include "filesystem.h"
 #include "viewer.h"
 
 namespace dsk_tools {
@@ -16,15 +18,24 @@ namespace dsk_tools {
         int m_sx;
         int m_sy;
         int m_opt = 0;
+        int m_frame = 0;
         const BYTES * m_data;
-        virtual void start(const BYTES & data, int opt) {m_data = &data; m_opt = opt;};
+        const dsk_tools::diskImage * m_disk_image;
+        const dsk_tools::fileSystem * m_filesystem;
+        virtual void start(const BYTES & data, int opt, const int frame = 0) {m_data = &data; m_opt = opt; m_frame = frame;};
         virtual uint32_t get_pixel(int x, int y) = 0;
     public:
         int get_output_type() const override {return VIEWER_OUTPUT_PICTURE;};
+        virtual int get_frame_delay() const {return 0;};
         virtual int get_sx() const {return m_sx;};
         virtual int get_sy() const {return m_sy;};
         virtual PicOptions get_options() {return {};};
-        virtual BYTES process_picture(const BYTES & data, int & sx, int & sy, const int opt);
+        virtual void prepare_data(const BYTES & data, dsk_tools::diskImage & image, dsk_tools::fileSystem & filesystem)
+        {
+            m_data = &data; m_disk_image = &image; m_filesystem = &filesystem;
+        };
+        virtual int suggest_option(const BYTES & data) {return -1;};
+        virtual BYTES process_picture(const BYTES & data, int & sx, int & sy, const int opt, int frame = 0);
     };
 
 }
