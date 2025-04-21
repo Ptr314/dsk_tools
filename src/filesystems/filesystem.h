@@ -74,6 +74,7 @@ namespace dsk_tools {
         virtual int file_rename(const fileData & fd, const std::string & new_name) {return FILE_RENAME_ERROR;};
         virtual std::vector<dsk_tools::ParameterDescription> file_get_metadata(const fileData & fd) = 0;
         virtual int file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata) = 0;
+        virtual bool file_find(const std::string & file_name, fileData & fd) = 0;
     };
 
 } // namespace

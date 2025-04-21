@@ -102,6 +102,13 @@ namespace dsk_tools
         return path.substr(pos + 1);
     }
 
+    std::string get_file_path(const std::string& path) {
+        size_t pos = path.find_last_of("/\\");
+        if (pos == std::string::npos)
+            return path;
+        return path.substr(0, pos+1);
+    }
+
     std::string toBCD(uint8_t byte) {
         return std::to_string(byte >> 4) + std::to_string(byte & 0xF);
     }
@@ -232,6 +239,17 @@ namespace dsk_tools
             return PREFERRED_AGATBASIC;
         else
             return PREFERRED_BINARY;
+    }
+
+    std::string to_upper(std::string s) {
+        std::transform(s.begin(), s.end(), s.begin(),
+                       [](unsigned char c) { return std::toupper(c); });
+        return s;
+    }
+
+    bool file_exists(const std::string& filename) {
+        std::ifstream file(filename);
+        return file.good();
     }
 
 } // namespace

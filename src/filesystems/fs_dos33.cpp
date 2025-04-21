@@ -855,4 +855,17 @@ namespace dsk_tools {
         return FILE_METADATA_OK;
     }
 
+    bool fsDOS33::file_find(const std::string & file_name, fileData & fd)
+    {
+        std::vector<fileData> files;
+        dir(&files);
+        for (const dsk_tools::fileData& f : files) {
+            if (to_upper(f.name) == file_name) {
+                fd = f;
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

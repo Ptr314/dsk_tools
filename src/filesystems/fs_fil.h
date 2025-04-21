@@ -27,6 +27,7 @@ namespace dsk_tools {
         virtual int file_rename(const fileData & fd, const std::string & new_name) override;
         virtual std::vector<ParameterDescription> file_get_metadata(const fileData & fd) override;
         virtual int file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata) override;
+        bool file_find(const std::string & file_name, fileData &fd) override;
     };
 }
 
