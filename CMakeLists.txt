@@ -51,6 +51,7 @@ add_library(${PROJECT_NAME} STATIC
     src/viewers/viewer_pics_agat.cpp
     src/viewers/viewer_pics.h
     src/viewers/viewer_pics.cpp
+    src/viewers/agat_fonts.h
 
 
 )
