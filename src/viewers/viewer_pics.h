@@ -13,6 +13,9 @@ namespace dsk_tools {
 
     typedef std::vector<std::pair<int, std::string>> PicOptions;
 
+    #define PREPARE_PIC_OK      0
+    #define PREPARE_PIC_ERROR   1
+
     class ViewerPic : public Viewer {
     protected:
         int m_sx;
@@ -30,9 +33,10 @@ namespace dsk_tools {
         virtual int get_sx() const {return m_sx;};
         virtual int get_sy() const {return m_sy;};
         virtual PicOptions get_options() {return {};};
-        virtual void prepare_data(const BYTES & data, dsk_tools::diskImage & image, dsk_tools::fileSystem & filesystem)
+        virtual int prepare_data(const BYTES & data, dsk_tools::diskImage & image, dsk_tools::fileSystem & filesystem, std::string & error_msg)
         {
             m_data = &data; m_disk_image = &image; m_filesystem = &filesystem;
+            error_msg = ""; return PREPARE_PIC_OK;
         };
         virtual int suggest_option(const BYTES & data) {return -1;};
         virtual BYTES process_picture(const BYTES & data, int & sx, int & sy, const int opt, int frame = 0);

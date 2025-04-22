@@ -19,9 +19,27 @@ namespace dsk_tools {
     PicOptions ViewerPicAgat::get_options()
     {
         return {
-            {0, "{$MAIN_PALETTE}"},
-            {1, "{$ALT_PALETTE}"}
+            {0,  "{$PALETTE} #1"},
+            {1,  "{$PALETTE} #2"},
+            {2,  "{$PALETTE} #3"},
+            {3,  "{$PALETTE} #4"},
+            {8,  "{$PALETTE} #1 {$BW}"},
+            {9,  "{$PALETTE} #2 {$BW}"},
+            {10, "{$PALETTE} #3 {$BW}"},
+            {11, "{$PALETTE} #4 {$BW}"},
+            {15, "{$CUSTOM_PALETTE}"},
         };
+    }
+
+    int ViewerPicAgat::suggest_option(const BYTES & data)
+    {
+        if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
+            std::memcpy(&exif, data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR), sizeof(AGAT_EXIF_SECTOR));
+            if (exif.SIGNATURE[0] == 0xD6 && exif.SIGNATURE[1] == 0xD2) {
+                return exif.PALETTE >> 4;
+            }
+        }
+        return -1;
     }
 
     void ViewerPicAgat::start(const BYTES & data, const int opt, const int frame)
@@ -33,10 +51,7 @@ namespace dsk_tools {
             std::memcpy(&exif, data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR), sizeof(AGAT_EXIF_SECTOR));
             if (exif.SIGNATURE[0] == 0xD6 && exif.SIGNATURE[1] == 0xD2) {
                 exif_found = true;
-                if (opt == 0)
-                    m_palette = exif.PALETTE >> 4;
-                else
-                    m_palette = exif.PALETTE & 0xF;
+                m_palette = opt;
             }
         };
     }
@@ -423,11 +438,14 @@ namespace dsk_tools {
 
     }
 
-    void ViewerPicAgatText::prepare_data(const BYTES & data, dsk_tools::diskImage & image, dsk_tools::fileSystem & filesystem)
+    int ViewerPicAgatText::prepare_data(const BYTES & data, dsk_tools::diskImage & image, dsk_tools::fileSystem & filesystem, std::string & error_msg)
     {
+        error_msg = "";
         std::memset(&m_custom_font, 0xAA, sizeof(m_custom_font));
 
-        ViewerPicAgat::prepare_data(data, image, filesystem);
+        int res = ViewerPicAgat::prepare_data(data, image, filesystem, error_msg);
+        if (res != PREPARE_PIC_OK) return res;
+
         if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
             std::memcpy(&exif, data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR), sizeof(AGAT_EXIF_SECTOR));
             if (exif.SIGNATURE[0] == 0xD6 && exif.SIGNATURE[1] == 0xD2) {
@@ -446,14 +464,14 @@ namespace dsk_tools {
                         buffer = filesystem.get_file(fd);
                         m_custom_reverse = true;
                         std::memcpy(&m_custom_font, buffer.data()+4, 2048);
-                        return;
+                        return PREPARE_PIC_OK;
                     }
                     file_name = "ZG7:"+font_name;
                     if (filesystem.file_find(file_name,fd)) {
                         buffer = filesystem.get_file(fd);
                         m_custom_reverse = false;
                         std::memcpy(&m_custom_font, buffer.data()+4, 2048);
-                        return;
+                        return PREPARE_PIC_OK;
                     }
 
                     // Trying to find on a host
@@ -467,12 +485,15 @@ namespace dsk_tools {
                         if (internal_name.substr(0, 2) == "ZG") {
                             m_custom_reverse = internal_name.substr(2, 1) == "9";
                             std::memcpy(&m_custom_font, buffer.data()+44, 2048);
-                            return;
+                            return PREPARE_PIC_OK;
                         }
                     }
+                    error_msg = "{$FONT_LOADING_ERROR}: " + font_name;
+                    return PREPARE_PIC_ERROR;
                 }
             }
         }
+        return PREPARE_PIC_OK;
     }
 
     bool ViewerPicAgatText::load_custom_font()
