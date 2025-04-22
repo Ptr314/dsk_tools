@@ -94,6 +94,7 @@ namespace dsk_tools {
     class ViewerPicAgat : public ViewerPic {
     public:
         PicOptions get_options() override;
+        int suggest_option(const BYTES & data) override;
     protected:
         bool exif_found = false;
         AGAT_EXIF_SECTOR exif;
@@ -285,7 +286,7 @@ namespace dsk_tools {
         uint32_t get_pixel(int x, int y) override;
         PicOptions get_options() override;
         int suggest_option(const BYTES & data) override;
-        void prepare_data(const BYTES & data, diskImage &image, fileSystem &filesystem) override;
+        int prepare_data(const BYTES & data, dsk_tools::diskImage & image, dsk_tools::fileSystem & filesystem, std::string & error_msg) override;
     };
 
     class ViewerPicAgatTextT32 : public ViewerPicAgatText {
