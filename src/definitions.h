@@ -3,8 +3,7 @@
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: Some constants definitions
 
-#ifndef DEFINITIONS_H
-#define DEFINITIONS_H
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -222,6 +221,57 @@ namespace dsk_tools {
     // can't use vectors because of non-POD error
     constexpr std::array<const char*, 8> agat_file_types = {"T", "I", "A", "B", "S", "П", "К", "Д"};
 
-}
+    // https://agatcomp.ru/agat/PCutils/EXIF.shtml
+    constexpr std::array<const char*, 16> agat_vr_mode_low = {
+        "{$AGAT_VR_AGAT_GMODES}",           // 0
+        "{$AGAT_VR_AGAT_TMODES}",           // 1
+        "", "", "", "", "", "", "", "",     // 2-9
+        "{$AGAT_VR_A2_MODES}",              // A
+        "", "",                             // B-C
+        "{$AGAT_VR_GIGA_MODES}",            // D
+        "", ""                              // E-F
+    };
+    constexpr std::array<const char*, 16> agat_vr_mode_high_agat_gr = {
+        "",
+        "256х256 МГВР",
+        "", "",
+        "64х64 ЦГНР",
+        "128х128 ЦГСР",
+        "256х256 ЦГВР",
+        "512х256 МГДП",
+        "128х256 16 цветов",
+        "280х192 HGR",
+        "", "", "", "", "", ""
+    };
+    constexpr std::array<const char*, 16> agat_vr_mode_high_agat_tx = {
+        "", "",
+        "Т32 Ц",
+        "Т64 М",
+        "Т64 Ц (Turbo Agat)",
+        "", "", "", "", "",
+        "Т32 ЦЦ",
+        "",
+        "Т64 ЦЦ (Turbo Agat)",
+        "", "", ""
+    };
+    constexpr std::array<const char*, 16> agat_vr_mode_high_apple = {
+        "", "", "", "", "", "", "", "", "",
+        "280х192 HiRes",
+        "T40",
+        "T80",
+        "40х48 LoRes",
+        "80x48 Double LoRes",
+        "140x192 Double Hires color",
+        "560x192 Double Hires b/w"
+    };
 
-#endif // DEFINITIONS_H
+    constexpr std::array<const char*, 16> agat_vr_font = {
+        "", "", "", "", "", "", "",
+        "Agat-7 standard (128 characters)",
+        "Agat-7 extended (256 characters)",
+        "Agat-9 standard",
+        "", "", "", "", "",
+        "Custom Font"
+    };
+
+}
