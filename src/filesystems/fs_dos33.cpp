@@ -215,6 +215,10 @@ namespace dsk_tools {
 
         result += "\n";
 
+        BYTES buffer = get_file(fd);
+        result += agat_vr_info(buffer);
+
+        result += "{$TS_LIST_DATA}:\n";
         do {
             result += "T/S "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
             if (list_track < (image->get_tracks()*image->get_heads()) && list_sector < image->get_sectors()) {

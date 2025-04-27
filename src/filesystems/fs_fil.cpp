@@ -93,6 +93,10 @@ namespace dsk_tools {
         std::memcpy(ts_custom.data(), from, ts_custom.size());
         result += "    {$CUSTOM_DATA}: [" +  toHexList(ts_custom, "$") +"]\n";
 
+        result += "\n";
+        BYTES buffer = get_file(fd);
+        result += agat_vr_info(buffer);
+
         return result;
     }
 

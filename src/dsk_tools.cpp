@@ -500,6 +500,74 @@ namespace dsk_tools {
         return {"BINARY", ""};
     }
 
+    std::string agat_vr_info(const BYTES & data)
+    {
+        std::string result = "";
+
+        if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
+            const AGAT_EXIF_SECTOR * exif = reinterpret_cast<const AGAT_EXIF_SECTOR*>(data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR));
+            if (exif->SIGNATURE[0] == 0xD6 && exif->SIGNATURE[1] == 0xD2) {
+                result += "{$AGAT_VR_FOUND}:\n";
+                result += "    {$AGAT_VR_MODE}: $" + int_to_hex(exif->MODE) + " (";
+                int mode_lo = exif->MODE & 0xF;
+                int mode_hi = exif->MODE >> 4;
+                result += std::string(agat_vr_mode_low[mode_lo]);
+                switch (mode_lo) {
+                case 0:
+                    result += ", " + std::string(agat_vr_mode_high_agat_gr[mode_hi]);
+                    break;
+                case 1:
+                    result += ", " + std::string(agat_vr_mode_high_agat_tx[mode_hi]);
+                    break;
+                case 10:
+                    result += ", " + std::string(agat_vr_mode_high_apple[mode_hi]);
+                    break;
+                default:
+                    break;
+                }
+                result += ")\n";
+                if (mode_lo == 0 || mode_lo == 1) {
+                    result += "    {$AGAT_VR_MAIN_PALETTE}: $" + int_to_hex(exif->PALETTE >> 4, false) + "\n";
+                    result += "    {$AGAT_VR_ATL_PALETTE}: $" + int_to_hex(exif->PALETTE & 0xF, false) + "\n";
+                    result += "    {$AGAT_VR_CUSTOM_PALETTE}:\n";
+                    for (int i=0; i<8; i++) {
+
+                        result += "        " + std::to_string(i*2) + ": #"
+                            + int_to_hex((uint8_t)((exif->R[i] >> 4)*17))
+                            + int_to_hex((uint8_t)((exif->G[i] >> 4)*17))
+                            + int_to_hex((uint8_t)((exif->B[i] >> 4)*17))
+                            + "\n";
+                        result += "        " + std::to_string(i*2+1) + ": #"
+                                  + int_to_hex((uint8_t)((exif->R[i] & 0xF)*17))
+                                  + int_to_hex((uint8_t)((exif->G[i] & 0xF)*17))
+                                  + int_to_hex((uint8_t)((exif->B[i] & 0xF)*17))
+                                  + "\n";
+                    }
+                }
+                if (mode_lo == 1) {
+                    int font = exif->FONT >> 4;
+                    result += "    {$AGAT_VR_FONT}: $" + int_to_hex(font, false) + " (" + std::string(agat_vr_font[font]) + ")\n";
+                    if (font==15) {
+                        result += "    {$AGAT_VR_CUSTOM_FONT}: " + trim(agat_to_utf(exif->FONT_NAME, 15)) + "\n";
+
+                    }
+                }
+                std::string comment = "";
+                for (int i=0; i<12; i++) {
+                    std::string line = agat_to_utf(&(exif->COMMENT[i*16]), 16);
+                    comment += line + "\n";
+                }
+                result += "    {$AGAT_VR_COMMENT}:\n";
+                result += "----------------\n";
+                result += trim(comment, " \t\n") + "\n";
+                result += "----------------\n";
+            }
+            result += "\n";
+        }
+
+        return result;
+    }
+
     void register_all_viewers() {
         dsk_tools::ViewerBinary viewer_binary;
         dsk_tools::ViewerText viewer_text;
