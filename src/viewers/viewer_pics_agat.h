@@ -94,7 +94,7 @@ namespace dsk_tools {
     class ViewerPicAgat : public ViewerPic {
     public:
         PicOptions get_options() override;
-        int suggest_option(const BYTES & data) override;
+        int suggest_option(const std::string file_name, const BYTES & data) override;
     protected:
         bool exif_found = false;
         AGAT_EXIF_SECTOR exif;
@@ -285,7 +285,7 @@ namespace dsk_tools {
     public:
         uint32_t get_pixel(int x, int y) override;
         PicOptions get_options() override;
-        int suggest_option(const BYTES & data) override;
+        int suggest_option(const std::string file_name, const BYTES & data) override;
         int prepare_data(const BYTES & data, dsk_tools::diskImage & image, dsk_tools::fileSystem & filesystem, std::string & error_msg) override;
     };
 
@@ -315,4 +315,21 @@ namespace dsk_tools {
         std::string get_subtype() const override {return "T64";}
         std::string get_subtype_text() const override {return "T64";}
     };
+
+    class ViewerPicAgatFont : public ViewerPic {
+    public:
+        static ViewerRegistrar<ViewerPicAgatFont> registrar;
+        ViewerPicAgatFont() {m_sx = 254; m_sy = 288;};
+
+        PicOptions get_options() override;
+        int suggest_option(const std::string file_name, const BYTES & data) override;
+        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_subtype() const override {return "FONT";}
+        std::string get_subtype_text() const override {return "{$FONT_FILE}";}
+    protected:
+        // void start(const BYTES & data, const int opt, const int frame ) override;
+        bool fits(const BYTES & data) override;
+        uint32_t get_pixel(int x, int y) override;
+    };
+
 }
