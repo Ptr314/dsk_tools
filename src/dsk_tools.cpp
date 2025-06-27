@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include "dsk_tools/dsk_tools.h"
 
@@ -462,7 +463,7 @@ namespace dsk_tools {
         return result;
     }
 
-    std::pair<std::string, std::string> suggest_file_type(const BYTES & data)
+    std::pair<std::string, std::string> suggest_file_type(const std::string file_name, const BYTES & data)
     {
         if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
             const AGAT_EXIF_SECTOR * exif = reinterpret_cast<const AGAT_EXIF_SECTOR *>(data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR));
@@ -497,6 +498,13 @@ namespace dsk_tools {
                 }
             }
         }
+        std::vector<int> sizes_to_fit = {2048, 2048+256};
+        if (std::find(sizes_to_fit.begin(), sizes_to_fit.end(), data.size()) != sizes_to_fit.end()) {
+            std::string prefix = file_name.substr(0, 4);
+            std::transform(prefix.begin(), prefix.end(), prefix.begin(), ::toupper);
+            if ((prefix == "ZG9:") || (prefix == "ZG7:")) return {"PICTURE_AGAT", "FONT"};
+        }
+
         return {"BINARY", ""};
     }
 
