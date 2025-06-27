@@ -38,7 +38,7 @@ namespace dsk_tools {
             m_data = &data; m_disk_image = &image; m_filesystem = &filesystem;
             error_msg = ""; return PREPARE_PIC_OK;
         };
-        virtual int suggest_option(const BYTES & data) {return -1;};
+        virtual int suggest_option(const std::string file_name, const BYTES & data) {return -1;};
         virtual BYTES process_picture(const BYTES & data, int & sx, int & sy, const int opt, int frame = 0);
     };
 
