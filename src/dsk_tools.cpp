@@ -480,6 +480,7 @@ namespace dsk_tools {
                     if (mode_hi == 6) return {type, "256x256x4"};
                     if (mode_hi == 7) return {type, "512x256x1"};
                     if (mode_hi == 8) return {type, "128x256x16"};
+                    if (mode_hi == 9) return {type, "280x192HiRes"};
                 } else
                 if (mode_lo == 1) {
                     // Agat text modes
@@ -592,7 +593,8 @@ namespace dsk_tools {
         dsk_tools::ViewerPicAgatTextT32 viewer_pic_agat_TextT32;
         dsk_tools::ViewerPicAgatTextT64 viewer_pic_agat_TextT64;
 
-        dsk_tools::ViewerPicAgat_280x192HiRes viewer_pic_agat_280x192HiRes;
+        dsk_tools::ViewerPicAgat_280x192HiRes_Agat viewer_pic_agat_280x192HiRes_Agat;
+        dsk_tools::ViewerPicAgat_280x192HiRes_Apple viewer_pic_agat_280x192HiRes_Apple;
         dsk_tools::ViewerPicAgat_140x192DblHiRes viewer_pic_agat_140x192DblHiRes;
         dsk_tools::ViewerPicAgat_560x192DblHiResBW viewer_pic_agat_560x192DblHiResBW;
         dsk_tools::ViewerPicAgat_80x48DblLoRes viewer_pic_agat_80x48DblLoRes;
