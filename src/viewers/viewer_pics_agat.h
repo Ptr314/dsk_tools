@@ -60,17 +60,23 @@ namespace dsk_tools {
         { 2,  0}      // Palette 4
     };
 
-    // ABGR (little-endian RGBA in memory)
-    static const uint32_t agat_apple_colors[2][2] = {
+    // // ABGR (little-endian RGBA in memory)
+    // static const uint32_t agat_apple_colors[2][2] = {
+    //     // Hi  0           1
+    //     {0xFFFF00FF, 0xFFFF0000},   // Even
+    //     {0xFF00FF00, 0xFF0000FF}    // Odd
+    // };
+
+    static const uint32_t agat_apple_colors_ind[2][2] = {
         // Hi  0           1
-        {0xFF00FF00, 0xFFFF0000},   // Even
-        {0xFFFF00FF, 0xFF0000FF}    // Odd
+        {5, 4},   // Even
+        {2, 1}     // Odd
     };
 
     static const uint32_t agat_apple_colors_NTSC[2][2] = {
         // Hi   0           1
-        {0xFF16C265, 0xFFEFA943},   // Even
-        {0xFFFF63C0, 0xFF367CE2}    // Odd
+        {0xFFFF63C0, 0xFFEFA943},   // Even
+        {0xFF16C265, 0xFF367CE2}    // Odd
     };
 
     static const uint32_t agat_apple_hires_colors[16] = {
@@ -198,13 +204,28 @@ namespace dsk_tools {
         uint32_t get_pixel(int x, int y) override;
     };
 
-    class ViewerPicAgat_280x192HiRes : public ViewerPicAgatApple {
+    class ViewerPicAgat_280x192HiRes_Agat : public ViewerPicAgatApple {
     protected:
         void process_line(int line_offset, int y = 0) override;
     public:
-        static ViewerRegistrar<ViewerPicAgat_280x192HiRes> registrar;
+        static ViewerRegistrar<ViewerPicAgat_280x192HiRes_Agat> registrar;
 
-        ViewerPicAgat_280x192HiRes() {m_sx = 280; m_sy = 192; m_sizes_to_fit = {8192, 8192+256};};
+        ViewerPicAgat_280x192HiRes_Agat() {m_sx = 280; m_sy = 192; m_sizes_to_fit = {8192, 8192+256};};
+
+        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_subtype() const override {return "280x192HiRes";}
+        std::string get_subtype_text() const override {return "280x192 HGR";}
+
+        PicOptions get_options() override;
+    };
+
+    class ViewerPicAgat_280x192HiRes_Apple : public ViewerPicAgatApple {
+    protected:
+        void process_line(int line_offset, int y = 0) override;
+    public:
+        static ViewerRegistrar<ViewerPicAgat_280x192HiRes_Apple> registrar;
+
+        ViewerPicAgat_280x192HiRes_Apple() {m_sx = 280; m_sy = 192; m_sizes_to_fit = {8192, 8192+256};};
 
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "280x192HiRes";}
@@ -212,6 +233,7 @@ namespace dsk_tools {
 
         PicOptions get_options() override;
     };
+
 
     class ViewerPicAgat_140x192DblHiRes : public ViewerPicAgatApple {
     protected:
