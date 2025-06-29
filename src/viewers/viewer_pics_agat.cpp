@@ -86,6 +86,9 @@ namespace dsk_tools {
             else
             if (colors == 4)
                 c16 = Agat_4_index[palette_id & 0x3][c];
+            else
+            if (colors == 16)
+                c16 = c;
             std::memcpy(&res, (*palette)[c16], 3);
         } else {
             // Custom palette from EXIF
@@ -94,6 +97,9 @@ namespace dsk_tools {
             else
             if (colors == 4)
                 c16 = Agat_4_index[0][c];
+            else
+            if (colors == 16)
+                c16 = c;
 
             // Each palette byte stores two 4-bit values
             int n = c16 / 2;                                // Position in the custom palette
@@ -471,6 +477,8 @@ namespace dsk_tools {
         current_line = -1;
         ViewerPicAgat::start(data, opt, frame);
 
+        if (exif_found) m_palette = exif.PALETTE >> 4;
+
         switch (opt) {
             case 1:
                 m_font = &A7_font_svt;
@@ -480,10 +488,6 @@ namespace dsk_tools {
                 m_font = &A9_font;
                 m_font_reverse = true;
                 break;
-            // case 3:
-            //     m_font = &Agat_garnizon_font;
-            //     m_font_reverse = true;
-            //     break;
             case 100:
                 m_font = &m_custom_font;
                 m_font_reverse = m_custom_reverse;
@@ -603,8 +607,7 @@ namespace dsk_tools {
                         ccl = cl * c;
                     else
                         ccl = cl * (c ^ 0x01);
-                    uint32_t color = black;
-                    std::memcpy(&color, &(Agat_16_color[ccl]), 3);
+                    uint32_t color = convert_color(16, m_palette, ccl);
                     int pi = char_num*7 + k;
                     line_data[16 + pi] = color;
                 }
