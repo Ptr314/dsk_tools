@@ -70,6 +70,8 @@ namespace dsk_tools {
     std::pair<std::string, std::string> suggest_file_type(const std::string file_name, const BYTES & data);
     std::string agat_vr_info(const BYTES & data);
 
+    int load_agat140_track(int track, BYTES & buffer, const BYTES & in, int track_len);
+
     void register_all_viewers();
 
 } // namespace
