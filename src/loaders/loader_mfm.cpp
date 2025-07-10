@@ -324,8 +324,8 @@ namespace dsk_tools {
                 uint8_t r_t = ind.at(1);
                 uint8_t r_s = ind.at(2);
                 uint8_t r_crc = ind.at(3);
-                uint8_t expectet_crc = static_cast<uint8_t>(r_v ^ r_t ^ r_s);
-                if (r_crc != expectet_crc || r_t != track) {
+                uint8_t expected_crc = static_cast<uint8_t>(r_v ^ r_t ^ r_s);
+                if (r_crc != expected_crc || r_t != track) {
                     errors = true;
                 }
                 // Index end mark
