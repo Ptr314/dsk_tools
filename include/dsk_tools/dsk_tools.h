@@ -71,6 +71,7 @@ namespace dsk_tools {
     std::string agat_vr_info(const BYTES & data);
 
     int load_agat140_track(int track, BYTES & buffer, const BYTES & in, int track_len);
+    int decode_agat_140_image(BYTES &out, const BYTES & in, const int track_len);
 
     void register_all_viewers();
 

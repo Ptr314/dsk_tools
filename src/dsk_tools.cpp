@@ -733,7 +733,6 @@ namespace dsk_tools {
                     }
                     if (r_s < 16) {
                         int t_s = agat_140_raw2logic[r_s];
-                        // int t_s = r_s;
                         std::copy(data.begin(), data.end(), buffer.begin() + (track*16 + t_s)*256);
                     }
                 }
@@ -746,6 +745,16 @@ namespace dsk_tools {
             return FDD_LOAD_DATA_CORRUPT;
         }
 
+    }
+
+    int decode_agat_140_image(BYTES &out, const BYTES & in, const int track_len)
+    {
+        out.resize(35*16*256);
+        for (int i=0; i<35; i++) {
+            BYTES track_in(in.begin() + i*track_len, in.begin() + (i+1)*track_len);
+            if (load_agat140_track(i, out, track_in, track_len) != FDD_LOAD_OK) return FDD_LOAD_DATA_CORRUPT;
+        };
+        return FDD_LOAD_OK;
     }
 
     void register_all_viewers() {
