@@ -633,7 +633,7 @@ namespace dsk_tools {
                                 in.begin() + data_p,
                                 in.begin() + data_p + 256,
                                 out.begin() + offset
-                                );
+                            );
                         }
 
                         // Data end mark
@@ -652,6 +652,26 @@ namespace dsk_tools {
         } else {
             return FDD_LOAD_DATA_CORRUPT;
         }
+    }
+
+    int decode_agat_840_image(BYTES &out, const BYTES & in)
+    {
+        out.resize(160*21*256);
+        int encoded_track_size = in.size() / 160;
+        int raw_track_size = 21*256;
+        for (int i=0; i<160; i++) {
+            BYTES track_in(in.begin() + i*encoded_track_size, in.begin() + (i+1)*encoded_track_size);
+            BYTES track_out;
+            if (decode_agat_840_track(track_out, track_in) != FDD_LOAD_OK) return FDD_LOAD_DATA_CORRUPT;
+            if (track_out.size() == raw_track_size) {
+                std::copy(
+                    track_out.begin(),
+                    track_out.end(),
+                    out.begin() + i*raw_track_size
+                );
+            } else  return FDD_LOAD_DATA_CORRUPT;
+        };
+        return FDD_LOAD_OK;
     }
 
     void register_all_viewers() {
