@@ -674,6 +674,80 @@ namespace dsk_tools {
         return FDD_LOAD_OK;
     }
 
+    int load_agat140_track(int track, BYTES & buffer, const BYTES & in, int track_len)
+    {
+        int in_p = 0;
+        bool errors = false;
+        while (in_p < track_len) {
+            // Looking for Index Mark
+            bool index_found = false;
+            while (in_p < track_len) {
+                if (!iterate_until(in, in_p, 0xD5)) break;
+                if (in_p < track_len) {
+                    uint8_t b1 = in.at(in_p++);
+                    uint8_t b2 = in.at(in_p++);
+                    if (b1 == 0xAA && b2 == 0x96) {index_found = true; break;};
+                }
+            }
+            if (index_found) {
+                BYTES ind_coded(in.begin() + in_p, in.begin() + in_p + 8);
+                in_p += 8;
+                BYTES ind = dsk_tools::decode44(ind_coded);
+                uint8_t r_v = ind.at(0);
+                uint8_t r_t = ind.at(1);
+                uint8_t r_s = ind.at(2);
+                uint8_t r_crc = ind.at(3);
+                uint8_t expected_crc = static_cast<uint8_t>(r_v ^ r_t ^ r_s);
+                if (r_crc != expected_crc || r_t != track) {
+                    errors = true;
+                }
+                // Index end mark
+                BYTES ie(in.begin()+in_p, in.begin()+in_p + 3); in_p += 3;
+                if (ie.at(0) != 0xDE || ie.at(1) != 0xAA || ie.at(2) != 0xEB) {
+                    errors = true;
+                }
+
+                // Data mark
+                bool data_found = false;
+                while (in_p < track_len) {
+                    if (!iterate_until(in, in_p, 0xD5)) break;
+                    if (in_p < track_len) {
+                        uint8_t b1 = in.at(in_p++);
+                        uint8_t b2 = in.at(in_p++);
+                        if (b1 == 0xAA && b2 == 0xAD) {data_found = true; break;};
+                    }
+                };
+                if (data_found) {
+                    // Data
+                    BYTES encoded_sector(in.begin()+ in_p, in.begin()+ in_p + 343);
+                    in_p += 343;
+                    BYTES data(256);
+                    bool crc_ok = decode_gcr62(encoded_sector.data(), data.data());
+                    if (!crc_ok) {
+                        errors = true;
+                    }
+                    // Data end mark
+                    BYTES de(in.begin()+in_p, in.begin()+in_p + 3); in_p += 3;
+                    if (de.at(0) != 0xDE || de.at(1) != 0xAA || de.at(2) != 0xEB) {
+                        errors = true;
+                    }
+                    if (r_s < 16) {
+                        int t_s = agat_140_raw2logic[r_s];
+                        // int t_s = r_s;
+                        std::copy(data.begin(), data.end(), buffer.begin() + (track*16 + t_s)*256);
+                    }
+                }
+            }
+        }
+
+        if (!errors) {
+            return FDD_LOAD_OK;
+        } else {
+            return FDD_LOAD_DATA_CORRUPT;
+        }
+
+    }
+
     void register_all_viewers() {
         dsk_tools::ViewerBinary viewer_binary;
         dsk_tools::ViewerText viewer_text;
