@@ -17,7 +17,7 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
         Loader(file_name, format_id, type_id)
     {}
 
-    int LoaderHXC_HFE::load(std::vector<uint8_t> &buffer)
+    int LoaderHXC_HFE::load(BYTES &buffer)
     {
         uint8_t res = FDD_LOAD_OK;
 
@@ -83,72 +83,16 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
             for (int s=0; s < hdr->number_of_side; s++ ) {
                 BYTES track_data;
                 decode_agat_mfm_data(track_data, track_mfm[s]);
-                int track_len = track_data.size();
-                int in_p = 0;
-                while (in_p < track_len) {
-                    // Looking for Index Mark
-                    bool index_found = false;
-                    while (in_p < track_len) {
-                        if (!iterate_until(track_data, in_p, 0x95)) break;
-                        if (in_p < track_len) {
-                            uint8_t b1 = track_data.at(in_p++);
-                            if (b1 == 0x6A) {index_found = true; break;};
-                        }
-                    }
-                    if (index_found) {
-                        uint8_t r_v = track_data.at(in_p++);
-                        uint8_t r_t = track_data.at(in_p++);
-                        uint8_t r_s = track_data.at(in_p++);
-                        // Index end mark
-                        uint8_t ie = track_data.at(in_p++);
-                        if (ie != 0x5A) errors = true;
 
-                        // Data mark
-                        bool data_found = false;
-                        while (in_p < track_len) {
-                            if (!iterate_until(track_data, in_p, 0x6A)) break;
-                            if (in_p < track_len) {
-                                uint8_t b1 = track_data.at(in_p++);
-                                if (b1 == 0x95) {data_found = true; break;};
-                            }
-                        }
-                        if (data_found) {
-                            // Data
-                            bool error = false;
-                            uint16_t crc = 0;
-                            int data_p = in_p;
-
-                            for (int i=0; i<256; i++) {
-                                if (in_p >= track_len) {error = true; break;};
-                                uint8_t  d = track_data.at(in_p++);
-                                if (crc > 0xFF) crc = (crc + 1) & 0xFF;
-                                crc += d;
-                            }
-                            crc &= 0xFF;
-                            if (!error) {
-                                uint8_t r_crc = track_data.at(in_p++);
-                                if (r_crc != crc) errors = true;
-
-                                if (r_s < sectors_per_track) {
-                                    int offset = r_s * 256;
-                                    std::copy(
-                                        track_data.begin() + data_p,
-                                        track_data.begin() + data_p + sector_size,
-                                        buffer.begin() + (((track << 1) + s) * sectors_per_track + r_s) * sector_size
-                                    );
-                                }
-
-                                // Data end mark
-                                uint8_t de = track_data.at(in_p++);
-                                if (de != 0x5A) errors = true;
-
-                            } else {
-                                errors = true;
-                            }
-                        }
-                    }
-                }
-
+                BYTES raw_data;
+                if (decode_agat_840_track(raw_data, track_data) == FDD_LOAD_OK){
+                    std::copy(
+                        raw_data.begin(),
+                        raw_data.end(),
+                        buffer.begin() + (((track << 1) + s) * sectors_per_track) * sector_size
+                    );
+                } else
+                    errors = true;
             }
         }
         loaded = true;

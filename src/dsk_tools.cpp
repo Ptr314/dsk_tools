@@ -577,6 +577,83 @@ namespace dsk_tools {
         return result;
     }
 
+    int decode_agat_840_track(BYTES &out, const BYTES & in)
+    {
+        out.resize(21*256);
+        int track_len = in.size();
+        int in_p = 0;
+        bool errors = false;
+        while (in_p < track_len) {
+            // Looking for Index Mark
+            bool index_found = false;
+            while (in_p < track_len) {
+                if (!iterate_until(in, in_p, 0x95)) break;
+                if (in_p < track_len) {
+                    uint8_t b1 = in.at(in_p++);
+                    if (b1 == 0x6A) {index_found = true; break;};
+                }
+            }
+            if (index_found) {
+                uint8_t r_v = in.at(in_p++);
+                uint8_t r_t = in.at(in_p++);
+                uint8_t r_s = in.at(in_p++);
+                // Index end mark
+                uint8_t ie = in.at(in_p++);
+                if (ie != 0x5A) errors = true;
+
+                // Data mark
+                bool data_found = false;
+                while (in_p < track_len) {
+                    if (!iterate_until(in, in_p, 0x6A)) break;
+                    if (in_p < track_len) {
+                        uint8_t b1 = in.at(in_p++);
+                        if (b1 == 0x95) {data_found = true; break;};
+                    }
+                }
+                if (data_found) {
+                    // Data
+                    bool error = false;
+                    uint16_t crc = 0;
+                    int data_p = in_p;
+
+                    for (int i=0; i<256; i++) {
+                        if (in_p >= track_len) {error = true; break;};
+                        uint8_t  d = in.at(in_p++);
+                        if (crc > 0xFF) crc = (crc + 1) & 0xFF;
+                        crc += d;
+                    }
+                    crc &= 0xFF;
+                    if (!error) {
+                        uint8_t r_crc = in.at(in_p++);
+                        if (r_crc != crc) errors = true;
+
+                        if (r_s < 21) {
+                            int offset = r_s * 256;
+                            std::copy(
+                                in.begin() + data_p,
+                                in.begin() + data_p + 256,
+                                out.begin() + offset
+                                );
+                        }
+
+                        // Data end mark
+                        uint8_t de = in.at(in_p++);
+                        if (de != 0x5A) errors = true;
+
+                    } else {
+                        errors = true;
+                    }
+                }
+            }
+        }
+
+        if (!errors) {
+            return FDD_LOAD_OK;
+        } else {
+            return FDD_LOAD_DATA_CORRUPT;
+        }
+    }
+
     void register_all_viewers() {
         dsk_tools::ViewerBinary viewer_binary;
         dsk_tools::ViewerText viewer_text;
@@ -599,8 +676,6 @@ namespace dsk_tools {
         dsk_tools::ViewerPicAgat_560x192DblHiResBW viewer_pic_agat_560x192DblHiResBW;
         dsk_tools::ViewerPicAgat_80x48DblLoRes viewer_pic_agat_80x48DblLoRes;
         dsk_tools::ViewerPicAgat_40x48LoRes viewer_pic_agat_40x48LoRes;
-
     }
-
 
 } // namespace
