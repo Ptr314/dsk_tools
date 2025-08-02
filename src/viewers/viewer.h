@@ -18,6 +18,8 @@ namespace dsk_tools {
     #define VIEWER_OUTPUT_TEXT        0
     #define VIEWER_OUTPUT_PICTURE     1
 
+    enum class EntityType { NONE, TOKEN, VAR, CHAR, NUMBER, BR };
+
     class Viewer {
     public:
         virtual ~Viewer() {}

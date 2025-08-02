@@ -252,4 +252,12 @@ namespace dsk_tools
         return file.good();
     }
 
+    std::string pad_number(int num, size_t width) {
+        std::string s = std::to_string(num);
+        if (s.length() >= width) {
+            return s;
+        }
+        return std::string(width - s.length(), ' ') + s;
+    }
+
 } // namespace
