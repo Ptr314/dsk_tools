@@ -10,6 +10,24 @@
 namespace dsk_tools {
     ViewerRegistrar<ViewerBASIC_Agat> ViewerBASIC_Agat::registrar;
 
+    std::string entityTypeToString(EntityType type) {
+        switch (type) {
+        case EntityType::NONE:          return "none";
+        case EntityType::LINE_NUMBER:   return "line-number";
+        case EntityType::TOKEN:         return "token";
+        case EntityType::VAR:           return "variable";
+        case EntityType::CHAR:          return "char";
+        case EntityType::STRING:        return "string";
+        case EntityType::NUMBER:        return "number";
+        case EntityType::BR:            return "br";
+        case EntityType::REM:           return "rem";
+        case EntityType::ASM:           return "asm";
+        case EntityType::ASM_LABEL:     return "asm-label";
+        default:                        return "other";
+        }
+    }
+
+
     std::string ViewerBASIC_Agat::process_as_text(const BYTES & data, const std::string & cm_name)
     {
         return convert_tokenized(data, cm_name, dsk_tools::Agat_tokens);
@@ -20,11 +38,169 @@ namespace dsk_tools {
         std::string out;
         bool in_rem = false;
         bool in_str = false;
+        bool in_asm = false;
 
         EntityType last = EntityType::NONE;
-        std::string last_token = "";
 
-        out += "<body>";
+        using TypeValue = std::pair<EntityType, std::string>;
+        using TypeValueList = std::vector<TypeValue>;
+        TypeValueList elements;
+
+        auto add_entity = [&elements, &last, &in_rem, &in_asm](EntityType t, std::string v) {
+            // std::cout << v << std::endl;
+            if (t == EntityType::TOKEN && v == "REM") {
+                last = EntityType::REM;
+                in_rem = true;
+            } else
+            if (t == EntityType::TOKEN && (v == "!" || (v == "*" && last == EntityType::LINE_NUMBER))) {
+                last = EntityType::ASM;
+                in_asm = true;
+            } else
+            if (t == EntityType::VAR && in_asm) {
+                last = EntityType::ASM_LABEL;
+            } else {
+                    last = t;
+            }
+            elements.push_back({last, v});
+        };
+
+        auto add_char = [&elements, &last, &in_str, &in_rem, &in_asm](std::string v) {
+            // std::cout << "   " << v << std::endl;
+            if (in_rem || (in_str && v !="\"")) {
+                TypeValue& lastPair = elements.back();
+                lastPair.second += v;
+            } else
+            if (v == ":" && !in_asm) {
+                last = EntityType::BR;
+                elements.push_back({last, v});
+            } else
+            if (v == "¤" || v == "$" || v == "%" || (v == "#" && in_asm)) {
+                if (last == EntityType::VAR) {
+                    TypeValue& lastPair = elements.back();
+                    lastPair.second += v;
+                } else {
+                    last = EntityType::NUMBER;
+                    elements.push_back({last, v});
+                }
+            } else
+            if (v == ".") {
+                last = EntityType::NUMBER;
+                elements.push_back({last, v});
+            } else
+            if (v == "\"") {
+                if (last == EntityType::STRING) {
+                    TypeValue& lastPair = elements.back();
+                    lastPair.second += v;
+                    in_str = false;
+                } else {
+                    last = EntityType::STRING;
+                    elements.push_back({last, v});
+                    in_str = true;
+                }
+            } else
+            if (v >= "0" && v <= "9") {
+                if (last == EntityType::NUMBER) {
+                    TypeValue& lastPair = elements.back();
+                    lastPair.second += v;
+                } else {
+                    last = EntityType::NUMBER;
+                    elements.push_back({last, v});
+                }
+            } else
+            if (v >= "A" && v <= "Z") {
+                if (last == EntityType::NUMBER && (v >= "A" && v <= "F")) {
+                    TypeValue& lastPair = elements.back();
+                    lastPair.second += v;
+                } else {
+                    if (!in_asm)
+                        last = EntityType::VAR;
+                    else
+                        last = EntityType::ASM;
+                    elements.push_back({last, v});
+                }
+            } else {
+                last = EntityType::CHAR;
+                elements.push_back({last, v});
+            }
+        };
+
+        auto save_line = [&elements, &out]() {
+            EntityType prev_type = EntityType::NONE;
+            char lastChar = ' ';
+            out += "<div class=\"line\">";
+
+            for (const auto& pair : elements) {
+                char firstChar = pair.second.at(0);
+                if (
+                       (prev_type == EntityType::LINE_NUMBER)
+                    || (prev_type == EntityType::TOKEN && (pair.first == EntityType::TOKEN || pair.first == EntityType::VAR)
+                            && lastChar != '('
+                            && lastChar != '='
+                            && lastChar != '+'
+                            && lastChar != '-'
+                            && lastChar != '*'
+                            && lastChar != '/'
+                            && lastChar != '>'
+                            && lastChar != '<'
+                        )
+                    || (prev_type == EntityType::TOKEN && pair.first == EntityType::STRING
+                            && lastChar != '='
+                            && lastChar != '>'
+                            && lastChar != '<'
+                        )
+                    || (prev_type == EntityType::STRING && pair.first == EntityType::TOKEN)
+                    || (prev_type == EntityType::TOKEN && pair.first == EntityType::NUMBER
+                            && lastChar != ','
+                            && lastChar != '='
+                            && lastChar != '+'
+                            && lastChar != '-'
+                            && lastChar != '*'
+                            && lastChar != '/'
+                            && lastChar != '>'
+                            && lastChar != '<'
+                            && lastChar != '('
+                        )
+                    || (prev_type == EntityType::NUMBER && pair.first == EntityType::TOKEN
+                            && firstChar != '='
+                            && firstChar != '+'
+                            && firstChar != '-'
+                            && firstChar != '*'
+                            && firstChar != '/'
+                            && firstChar != '>'
+                            && firstChar != '<'
+                        )
+                    || (prev_type == EntityType::VAR && pair.first == EntityType::TOKEN
+                            && firstChar != '='
+                            && firstChar != '+'
+                            && firstChar != '-'
+                            && firstChar != '*'
+                            && firstChar != '/'
+                            && firstChar != '>'
+                            && firstChar != '<'
+                        )
+                    || (prev_type == EntityType::ASM && pair.first == EntityType::NUMBER)
+                    || (prev_type == EntityType::ASM && pair.first == EntityType::ASM_LABEL)
+                    || (prev_type == EntityType::ASM && pair.first == EntityType::ASM && lastChar == '!')
+                    || (prev_type != EntityType::LINE_NUMBER && pair.first == EntityType::ASM && firstChar == '!')
+                    || (prev_type == EntityType::TOKEN && pair.first == EntityType::CHAR && firstChar == '(')
+                    || (prev_type == EntityType::CHAR && pair.first == EntityType::TOKEN && lastChar == ')' && firstChar != '=')
+                )
+                {
+                    out += " ";
+                };
+                if (pair.first == EntityType::BR) {
+                    out += "<br/>&nbsp;&nbsp;&nbsp;&nbsp;: ";
+                } else {
+                    std::string text = pair.second;
+                    if (pair.first == EntityType::REM && text.size() > 3 && text.substr(0, 3) == "REM") text.insert(3, " ");
+                    out += "<span class=\"" + entityTypeToString(pair.first) + "\">" + escapeHtml(text, pair.first == EntityType::LINE_NUMBER) + "</span>";
+                }
+                prev_type = pair.first;
+                if (pair.second.size() > 0)
+                    lastChar = pair.second.back();
+            }
+            out += "</div>\n";
+        };
 
         init_charmap(cm_name);
 
@@ -53,49 +229,34 @@ namespace dsk_tools {
             }
         }
 
-
         do {
-            std::string line = "";
             last = EntityType::NONE;
+            elements.clear();
+            in_rem = in_asm = in_str = false;
             int next_addr = (int)data[a] + (int)data[a+1]*256; a +=2;
             int line_num =  (int)data[a] + (int)data[a+1]*256; a +=2;
-            line += "<div class=\"line\">";
-            line += "<span class=\"line-number\">" + pad_number(line_num, 4) + "</span> ";
+
+            add_entity(EntityType::LINE_NUMBER, pad_number(line_num, 5));
+
             uint8_t c = data[a++];
             if (c == 0) break;
             while (a < data.size() && c != 0) {
                 if (c == 0x01 || c == 0x02) {
                     // Long variable link
-                    if (last==EntityType::TOKEN)
-                        line += " ";
-                    line += "<span class=\"variable\">";
                     int var_n = (c-1)*256 + data[a++];
                     if (var_n <= vars.size())
-                        line += vars[var_n-1];
+                        add_entity(EntityType::VAR, vars[var_n-1]);
                     else
-                        line += "?VAR"+std::to_string(var_n)+"?";
-                    line += "</span>";
-                    last = EntityType::VAR;
+                        add_entity(EntityType::VAR, "?VAR"+std::to_string(var_n)+"?");
                 } else {
                     if (c >= 0x03 && c <= 0x06) {
                         // Unknown special char
-                        line += " ??"+std::to_string(c)+"??";
-                        last = EntityType::CHAR;
+                        add_entity(EntityType::TOKEN, " ??"+std::to_string(c)+"??");
                     } else {
                         if (c & 0x80 && !in_str) {
                             // Token
                             std::string token = std::string(tokens[c & 0x7F]);
-                            if (token=="REM") {
-                                in_rem = true;
-                                line += "<span class=\"rem\">";
-                            }
-                            if ((last==EntityType::TOKEN || last==EntityType::NUMBER  || last==EntityType::VAR) && token != "-" && token != "+")
-                                line += " ";
-                            line += "<span class=\"token\">";
-                            line += token;
-                            line += "</span>";
-                            last = EntityType::TOKEN;
-                            last_token = token;
+                            add_entity(EntityType::TOKEN, token);
                         } else {
                             // Ordinal char
                             std::string cc;
@@ -103,68 +264,14 @@ namespace dsk_tools {
                                 cc = (*charmap)[c | 0x80];
                             else
                                 cc = (*charmap)[c];
-
-                            if (cc == ":" && !in_str) {
-                                if (in_rem) {
-                                    in_rem = false;
-                                    line += "</span>";
-                                }
-                                line += "<br/>    :";
-                                last = EntityType::BR;
-                            } else
-                            if (cc == "\"") {
-                                if (in_str) {
-                                    in_str = false;
-                                    line += "\"</span>";
-                                } else {
-                                    if (last==EntityType::TOKEN)
-                                        line += " ";
-                                    in_str = true;
-                                    line += "<span class=\"string\">\"";
-                                }
-                                last = EntityType::CHAR;
-                            } else
-                            if (cc >= "A" && cc <= "Z" && !in_str && !in_rem) {
-                                if (last==EntityType::TOKEN && last_token!="="  && last_token!="-" && last_token!="+")
-                                    line += " ";
-                                line += "<span class=\"variable\">" + cc + "</span>";
-                                last = EntityType::VAR;
-                            } else
-                            if (cc >= "0" && cc <= "9" && !in_str && !in_rem) {
-                                if (last==EntityType::TOKEN && last_token!="="  && last_token!="-" && last_token!="+")
-                                    line += " ";
-                                line += cc;
-                                last = EntityType::NUMBER;
-                            } else
-                            if (cc == "<") {
-                                line += "&lt;";
-                                last = EntityType::CHAR;
-                            } else
-                            if (cc == ">") {
-                                line += "&gt;";
-                                last = EntityType::CHAR;
-                            } else {
-                                line += cc;
-                                last = EntityType::CHAR;
-                            }
+                            add_char(cc);
                         }
                     }
                 }
                 c = data[a++];
             }
-            if (in_str) {
-                in_str = false;
-                line += "</span>";
-            };
-            if (in_rem) {
-                in_rem = false;
-                line += "</span>";
-            }
-            line += "</div>";
-            line += "\n";
-            out += line;
+            save_line();
         } while (a < data.size());
-        out += "</body>";
         return out;
     }
 
