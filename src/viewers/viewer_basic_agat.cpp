@@ -126,6 +126,7 @@ namespace dsk_tools {
 
         auto save_line = [&elements, &out]() {
             EntityType prev_type = EntityType::NONE;
+            std::string prev_val = "";
             char lastChar = ' ';
             out += "<div class=\"line\">";
 
@@ -160,16 +161,7 @@ namespace dsk_tools {
                             && lastChar != '<'
                             && lastChar != '('
                         )
-                    || (prev_type == EntityType::NUMBER && pair.first == EntityType::TOKEN
-                            && firstChar != '='
-                            && firstChar != '+'
-                            && firstChar != '-'
-                            && firstChar != '*'
-                            && firstChar != '/'
-                            && firstChar != '>'
-                            && firstChar != '<'
-                        )
-                    || (prev_type == EntityType::VAR && pair.first == EntityType::TOKEN
+                    || ((prev_type == EntityType::NUMBER || prev_type == EntityType::VAR) && pair.first == EntityType::TOKEN
                             && firstChar != '='
                             && firstChar != '+'
                             && firstChar != '-'
@@ -182,8 +174,8 @@ namespace dsk_tools {
                     || (prev_type == EntityType::ASM && pair.first == EntityType::ASM_LABEL)
                     || (prev_type == EntityType::ASM && pair.first == EntityType::ASM && lastChar == '!')
                     || (prev_type != EntityType::LINE_NUMBER && pair.first == EntityType::ASM && firstChar == '!')
-                    || (prev_type == EntityType::TOKEN && pair.first == EntityType::CHAR && firstChar == '(')
-                    || (prev_type == EntityType::CHAR && pair.first == EntityType::TOKEN && lastChar == ')' && firstChar != '=')
+                    || (prev_type == EntityType::TOKEN && (prev_val=="IF" || prev_val=="OR" || prev_val=="AND") && pair.first == EntityType::CHAR && firstChar == '(')
+                    || (prev_type == EntityType::CHAR && pair.first == EntityType::TOKEN && lastChar == ')' && firstChar != '=' && firstChar != '<' && firstChar != '>')
                 )
                 {
                     out += " ";
@@ -196,6 +188,7 @@ namespace dsk_tools {
                     out += "<span class=\"" + entityTypeToString(pair.first) + "\">" + escapeHtml(text, pair.first == EntityType::LINE_NUMBER) + "</span>";
                 }
                 prev_type = pair.first;
+                prev_val = pair.second;
                 if (pair.second.size() > 0)
                     lastChar = pair.second.back();
             }
@@ -228,12 +221,15 @@ namespace dsk_tools {
                 }
             }
         }
-
         do {
             last = EntityType::NONE;
             elements.clear();
             in_rem = in_asm = in_str = false;
+
+            if (a > data.size()-2) break;
             int next_addr = (int)data[a] + (int)data[a+1]*256; a +=2;
+            if (next_addr == 0) break;
+
             int line_num =  (int)data[a] + (int)data[a+1]*256; a +=2;
 
             add_entity(EntityType::LINE_NUMBER, pad_number(line_num, 5));
@@ -249,7 +245,7 @@ namespace dsk_tools {
                     else
                         add_entity(EntityType::VAR, "?VAR"+std::to_string(var_n)+"?");
                 } else {
-                    if (c >= 0x03 && c <= 0x06) {
+                    if (c >= 0x03 && c <= 0x06 && !in_str) {
                         // Unknown special char
                         add_entity(EntityType::TOKEN, " ??"+std::to_string(c)+"??");
                     } else {
