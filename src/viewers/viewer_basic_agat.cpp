@@ -175,7 +175,14 @@ namespace dsk_tools {
                     || (prev_type == EntityType::ASM && pair.first == EntityType::ASM && lastChar == '!')
                     || (prev_type != EntityType::LINE_NUMBER && pair.first == EntityType::ASM && firstChar == '!')
                     || (prev_type == EntityType::TOKEN && (prev_val=="IF" || prev_val=="OR" || prev_val=="AND") && pair.first == EntityType::CHAR && firstChar == '(')
-                    || (prev_type == EntityType::CHAR && pair.first == EntityType::TOKEN && lastChar == ')' && firstChar != '=' && firstChar != '<' && firstChar != '>')
+                    || (prev_type == EntityType::CHAR && pair.first == EntityType::TOKEN && lastChar == ')'
+                            && firstChar != '='
+                            && firstChar != '<'
+                            && firstChar != '>'
+                            && firstChar != '+'
+                            && firstChar != '-'
+                            && firstChar != '*'
+                        )
                 )
                 {
                     out += " ";
