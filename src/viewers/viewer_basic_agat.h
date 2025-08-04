@@ -10,6 +10,10 @@
 
 namespace dsk_tools {
 
+    enum class EntityType { NONE, LINE_NUMBER, TOKEN, VAR, CHAR, STRING, NUMBER, BR, REM, ASM, ASM_LABEL };
+
+    std::string entityTypeToString(EntityType type);
+
     class ViewerBASIC_Agat : public ViewerText {
     public:
         static ViewerRegistrar<ViewerBASIC_Agat> registrar;

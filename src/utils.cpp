@@ -260,4 +260,31 @@ namespace dsk_tools
         return std::string(width - s.length(), ' ') + s;
     }
 
+    std::string escapeHtml(const std::string& input, bool nbsp)
+    {
+        std::unordered_map<char, std::string> replacements = {
+            {'<', "&lt;"},
+            {'>', "&gt;"},
+            {'&', "&amp;"},
+            {'"', "&quot;"},
+            {'\'', "&apos;"}
+        };
+
+        if (nbsp) replacements[' '] = "&nbsp;";
+
+        std::string output;
+        output.reserve(input.size() * 2); // Резервируем память для ускорения
+
+        for (char c : input) {
+            auto it = replacements.find(c);
+            if (it != replacements.end()) {
+                output += it->second;
+            } else {
+                output += c;
+            }
+        }
+
+        return output;
+    }
+
 } // namespace
