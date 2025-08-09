@@ -521,14 +521,14 @@ namespace dsk_tools {
 
                     // Trying to find on a loaded filesystem
                     fileData fd;
-                    file_name = "ZG9:"+font_name;
+                    file_name = "ZG9_"+font_name;
                     if (filesystem.file_find(file_name,fd)) {
                         buffer = filesystem.get_file(fd);
                         m_custom_reverse = true;
                         std::memcpy(&m_custom_font, buffer.data()+4, 2048);
                         return PREPARE_PIC_OK;
                     }
-                    file_name = "ZG7:"+font_name;
+                    file_name = "ZG7_"+font_name;
                     if (filesystem.file_find(file_name,fd)) {
                         buffer = filesystem.get_file(fd);
                         m_custom_reverse = false;
@@ -659,8 +659,8 @@ namespace dsk_tools {
     {
         std::string prefix = file_name.substr(0, 4);
         std::transform(prefix.begin(), prefix.end(), prefix.begin(), ::toupper);
-        if (prefix == "ZG9:") return 0;
-        if (prefix == "ZG7:") return 1;
+        if (prefix == "ZG9_") return 0;
+        if (prefix == "ZG7_") return 1;
         return -1;
     }
 
