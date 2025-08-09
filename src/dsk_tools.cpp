@@ -503,7 +503,7 @@ namespace dsk_tools {
         if (std::find(sizes_to_fit.begin(), sizes_to_fit.end(), data.size()) != sizes_to_fit.end()) {
             std::string prefix = file_name.substr(0, 4);
             std::transform(prefix.begin(), prefix.end(), prefix.begin(), ::toupper);
-            if ((prefix == "ZG9:") || (prefix == "ZG7:")) return {"PICTURE_AGAT", "FONT"};
+            if ((prefix == "ZG9_") || (prefix == "ZG7_")) return {"PICTURE_AGAT", "FONT"};
         }
 
         return {"BINARY", ""};
