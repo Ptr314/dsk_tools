@@ -541,12 +541,12 @@ namespace dsk_tools {
                     result += "    {$AGAT_VR_CUSTOM_PALETTE}:\n";
                     for (int i=0; i<8; i++) {
 
-                        result += "        " + std::to_string(i*2) + ": #"
+                        result += "        $" + int_to_hex(i*2, false) + ": #"
                             + int_to_hex((uint8_t)((exif->R[i] >> 4)*17))
                             + int_to_hex((uint8_t)((exif->G[i] >> 4)*17))
                             + int_to_hex((uint8_t)((exif->B[i] >> 4)*17))
                             + "\n";
-                        result += "        " + std::to_string(i*2+1) + ": #"
+                        result += "        $" + int_to_hex(i*2+1, false) + ": #"
                                   + int_to_hex((uint8_t)((exif->R[i] & 0xF)*17))
                                   + int_to_hex((uint8_t)((exif->G[i] & 0xF)*17))
                                   + int_to_hex((uint8_t)((exif->B[i] & 0xF)*17))
