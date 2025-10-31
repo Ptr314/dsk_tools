@@ -122,8 +122,8 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
                 }
                 if (index_found) {
                     // VTS
-                    result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p - 2)) + " {$INDEX_MARK} ($95 $6A)\n";
-                    result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p)) + " {$SECTOR_INDEX}:";
+                    result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p*2 - 2)) + " {$INDEX_MARK} ($95 $6A)\n";
+                    result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p*2)) + " {$SECTOR_INDEX}:";
                     uint8_t r_v = in.at(in_p++) & 0xFF;
                     uint8_t r_t = in.at(in_p++) & 0xFF;
                     uint8_t r_s = in.at(in_p++) & 0xFF;
@@ -146,8 +146,8 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
                     };
                     if (data_found) {
                         // Data
-                        result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p-2)) + " {$DATA_MARK} ($6A $95)\n";
-                        result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p)) + " {$DATA_FIELD} (256)\n";
+                        result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p*2-2)) + " {$DATA_MARK} ($6A $95)\n";
+                        result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p*2)) + " {$DATA_FIELD} (256)\n";
                         uint16_t crc = 0;
                         error = false;
                         for (int i=0; i<256; i++) {
@@ -157,7 +157,7 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
                             crc += d;
                         }
                         if (!error) {
-                            result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p));
+                            result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p*2));
                             uint8_t r_crc = in.at(in_p++) & 0xFF;
                             if (r_crc == (crc & 0xFF)) {
                                 result += " {$SECTOR_CRC_OK} ($" + dsk_tools::int_to_hex(r_crc) + ")";
@@ -176,7 +176,7 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
             for (int i=0; i<track_len; i++) {
                 uint8_t hi = in.at(i) >> 8;
                 if (hi != 0) {
-                    result += "    Command[$" + dsk_tools::int_to_hex(static_cast<uint16_t>(i)) + "] = $" + dsk_tools::int_to_hex(hi) + "\n";
+                    result += "    Command[$" + dsk_tools::int_to_hex(static_cast<uint16_t>(i*2)) + "] = $" + dsk_tools::int_to_hex(hi) + "\n";
                 }
             }
         }
