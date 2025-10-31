@@ -172,7 +172,13 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
                         result += "\n\n";
                     }
                 }
-            };
+            }
+            for (int i=0; i<track_len; i++) {
+                uint8_t hi = in.at(i) >> 8;
+                if (hi != 0) {
+                    result += "    Command[$" + dsk_tools::int_to_hex(static_cast<uint16_t>(i)) + "] = $" + dsk_tools::int_to_hex(hi) + "\n";
+                }
+            }
         }
         if (errors) {
             result += "{$ERROR_PARSING}\n";
