@@ -3,16 +3,14 @@
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: Main header file
 
-#ifndef DSK_TOOLS_H
-#define DSK_TOOLS_H
-
-
+#pragma once
 
 #include <string>
 #include <sstream>
 
 #include "definitions.h"
 #include "utils.h"
+#include "bit_enums.h"
 
 #include "disk_image.h"
 #include "image_agat140.h"
@@ -76,5 +74,3 @@ namespace dsk_tools {
     void register_all_viewers();
 
 } // namespace
-
-#endif /* DSK_TOOLS_H */
