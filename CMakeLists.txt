@@ -11,6 +11,7 @@ add_library(${PROJECT_NAME} STATIC
     src/charmaps.h
     src/bas_tokens.h
     src/utils.h                         src/utils.cpp
+    src/bit_enums.h
 
     src/loaders/loader.h                src/loaders/loader.cpp
     src/loaders/loader_raw.h            src/loaders/loader_raw.cpp
@@ -52,8 +53,6 @@ add_library(${PROJECT_NAME} STATIC
     src/viewers/viewer_pics.h
     src/viewers/viewer_pics.cpp
     src/viewers/agat_fonts.h
-
-
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
