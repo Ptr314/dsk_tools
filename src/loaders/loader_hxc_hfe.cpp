@@ -58,7 +58,7 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
 
         int tracklist_offset = hdr->track_list_offset*HXC_HFE_BLOCK_SIZE;
 
-        HXC_HFE_TRACK * ti[hdr->number_of_track];
+        std::vector<HXC_HFE_TRACK*> ti(hdr->number_of_track);
 
         for (int track=0; track < hdr->number_of_track; track++)
             ti[track] = reinterpret_cast<HXC_HFE_TRACK *>(in.data() + tracklist_offset + track * sizeof(HXC_HFE_TRACK));
@@ -69,7 +69,7 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
             int mixed_track_len = std::ceil(static_cast<double>(ti[track]->track_len) / HXC_HFE_BLOCK_SIZE) * HXC_HFE_BLOCK_SIZE;
 
             BYTES track_mixed(in.begin() + in_base, in.begin() + in_base + mixed_track_len);
-            BYTES track_mfm[hdr->number_of_side];
+            std::vector<BYTES> track_mfm(hdr->number_of_side);
             if (hdr->number_of_side == 1) {
                 track_mfm[0] = track_mixed;
             } else {
@@ -150,7 +150,7 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
 
         result += "$" + dsk_tools::int_to_hex(tracklist_offset) + " {$TRACKLIST_OFFSET}\n";
 
-        HXC_HFE_TRACK * ti[hdr->number_of_track];
+        std::vector<HXC_HFE_TRACK*> ti(hdr->number_of_track);
 
         for (int track=0; track < hdr->number_of_track; track++) {
             ti[track] = reinterpret_cast<HXC_HFE_TRACK *>(in.data() + tracklist_offset + track * sizeof(HXC_HFE_TRACK));
@@ -167,7 +167,7 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
 
             // result += "$" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_base)) + ": {$TRACK} " + std::to_string(track) + "\n";
             BYTES track_mixed(in.begin() + in_base, in.begin() + in_base + mixed_track_len);
-            BYTES track_mfm[hdr->number_of_side];
+            std::vector<BYTES> track_mfm(hdr->number_of_side);
             if (hdr->number_of_side == 1) {
                 track_mfm[0] = track_mixed;
             } else {
