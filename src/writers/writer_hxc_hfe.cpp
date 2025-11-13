@@ -74,7 +74,7 @@ WriterHxCHFE::WriterHxCHFE(const std::string & format_id, diskImage * image_to_s
         write_hxc_hfe_header(buffer);
         write_hxc_hfe_tracks_lut(buffer);
 
-        BYTES track_buffer[image->get_heads()];
+        std::vector<BYTES> track_buffer(image->get_heads());
 
         for (uint8_t track = 0; track < image->get_tracks(); track++)
         {

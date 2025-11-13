@@ -30,17 +30,18 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
 
         if (image->get_type_id() == "TYPE_AGAT_140") {
             // n = 10, BLS = 1024 (2**n)
+            // SPT, BSH, BLM, EXM, DSM, DRM, AL0, AL1, CKS, OFF
             DPB = {
-                .SPT = 32,          // 256*16/128
-                .BSH = 3,           // n-7
-                .BLM = 7,           // 2**BSH - 1
-                .EXM = 0,           // 2**(BHS-2) - 1 if DSM<256
-                .DSM = 127,
-                .DRM = 63,
-                .AL0 = 0b11000000,
-                .AL1 = 0b00000000,
-                .CKS = 16,
-                .OFF = 3
+                32,          // SPT: 256*16/128
+                3,           // BSH: n-7
+                7,           // BLM: 2**BSH - 1
+                0,           // EXM: 2**(BHS-2) - 1 if DSM<256
+                127,         // DSM
+                63,          // DRM
+                0b11000000,  // AL0
+                0b00000000,  // AL1
+                16,          // CKS
+                3            // OFF
             };
         } else
             return FDD_OPEN_BAD_FORMAT;
@@ -80,7 +81,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         int entries_in_sector = 8;
         int catalog_size = directory_sectors * entries_in_sector;
 
-        CPM_DIR_ENTRY * catalog[catalog_size];
+        std::vector<CPM_DIR_ENTRY*> catalog(catalog_size);
 
         for (int i = 0; i < directory_sectors; i++) {
             uint8_t * sector = image->get_sector_data(0, DPB.OFF, translate_sector(i));
