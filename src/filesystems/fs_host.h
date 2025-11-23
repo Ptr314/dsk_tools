@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
-// Description: A class which represents a .FIL as a single-file contaiter - filesystem part
+// Description: A class which represents a host filesystem
 
-#ifndef FS_FIL_H
-#define FS_FIL_H
-
+#pragma once
 
 #include "filesystem.h"
 
 namespace dsk_tools {
 
-    class fsFIL: public fileSystem
+    class fsHost: public fileSystem
     {
 
     public:
-        fsFIL(diskImage * image);
+        fsHost(diskImage * image);
         virtual int open() override;
         virtual int get_capabilities() override;
         virtual FSCaps getCaps() override;
@@ -32,4 +30,3 @@ namespace dsk_tools {
     };
 }
 
-#endif // FS_FIL_H

@@ -57,5 +57,8 @@ namespace dsk_tools
     std::string pad_number(int num, size_t width = 4);
     std::string escapeHtml(const std::string& input, bool nbsp = false);
 
+    std::vector<uint8_t> strToBytes(const std::string& s);
+    std::string bytesToString(const std::vector<uint8_t>& v);
+
 }
 #endif // UTILS_H

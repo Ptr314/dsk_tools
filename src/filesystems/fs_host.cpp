@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
-// Description: A class which represents a .FIL as a single-file contaiter - filesystem part
+// Description: A class which represents a host filesystem
 
 #include <cmath>
 #include <iostream>
@@ -10,26 +10,25 @@
 
 #include "dsk_tools/dsk_tools.h"
 #include "utils.h"
-#include "fs_fil.h"
-#include "fs_dos33.h"
+#include "fs_host.h"
 
 namespace dsk_tools {
 
-    fsFIL::fsFIL(diskImage * image):
-        fileSystem(image)
+    fsHost::fsHost(diskImage * image):
+        fileSystem(nullptr)
     {}
 
-    int fsFIL::get_capabilities()
+    int fsHost::get_capabilities()
     {
-        return FILE_PROTECTION | FILE_TYPE | FILE_RENAME;
+        return FILE_RENAME | FILE_ADD | FILE_DELETE | FILE_DIRS;
     }
 
-    FSCaps fsFIL::getCaps()
+    FSCaps fsHost::getCaps()
     {
-        return FSCaps::Protect | FSCaps::Types | FSCaps::Rename;
+        return FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename;
     }
 
-    int fsFIL::open()
+    int fsHost::open()
     {
         if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;
 
@@ -38,7 +37,7 @@ namespace dsk_tools {
         return FDD_OPEN_OK;
     }
 
-    int fsFIL::dir(std::vector<dsk_tools::fileData> * files, bool show_deleted)
+    int fsHost::dir(std::vector<dsk_tools::fileData> * files, bool show_deleted)
     {
         if (!is_open) return FDD_OP_NOT_OPEN;
 
@@ -69,7 +68,7 @@ namespace dsk_tools {
         return FDD_OP_OK;
     }
 
-    BYTES fsFIL::get_file(const fileData & fd)
+    BYTES fsHost::get_file(const fileData & fd)
     {
         BYTES data;
 
@@ -80,7 +79,7 @@ namespace dsk_tools {
         return data;
     }
 
-    std::string fsFIL::file_info(const fileData & fd) {
+    std::string fsHost::file_info(const fileData & fd) {
 
         std::string result = "";
 
@@ -105,12 +104,12 @@ namespace dsk_tools {
         return result;
     }
 
-    std::vector<std::string> fsFIL::get_save_file_formats()
+    std::vector<std::string> fsHost::get_save_file_formats()
     {
         return {"FILE_FIL", "FILE_BINARY"};
     }
 
-    int fsFIL::save_file(const std::string & format_id, const std::string & file_name, const fileData &fd)
+    int fsHost::save_file(const std::string & format_id, const std::string & file_name, const fileData &fd)
     {
 
         if (image->get_size() > sizeof(FIL_header)) {
@@ -133,7 +132,7 @@ namespace dsk_tools {
         }
     }
 
-    std::string fsFIL::information()
+    std::string fsHost::information()
     {
         std::string result;
 
@@ -141,7 +140,7 @@ namespace dsk_tools {
     }
 
 
-    int fsFIL::file_rename(const fileData & fd, const std::string & new_name)
+    int fsHost::file_rename(const fileData & fd, const std::string & new_name)
     {
         FIL_header * header = reinterpret_cast<FIL_header *>(image->get_sector_data(0,0,0));
 
@@ -154,7 +153,7 @@ namespace dsk_tools {
         return FILE_RENAME_OK;
     }
 
-    std::vector<ParameterDescription> fsFIL::file_get_metadata(const fileData &fd)
+    std::vector<ParameterDescription> fsHost::file_get_metadata(const fileData &fd)
     {
         FIL_header * header = reinterpret_cast<FIL_header *>(image->get_sector_data(0,0,0));
 
@@ -181,7 +180,7 @@ namespace dsk_tools {
         return params;
     }
 
-    int fsFIL::file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata)
+    int fsHost::file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata)
     {
         FIL_header * header = reinterpret_cast<FIL_header *>(image->get_sector_data(0,0,0));
 
@@ -230,7 +229,7 @@ namespace dsk_tools {
         return FILE_METADATA_OK;
     }
 
-    bool fsFIL::file_find(const std::string & file_name, fileData & fd)
+    bool fsHost::file_find(const std::string & file_name, fileData & fd)
     {
         return false;
     }
