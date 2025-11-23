@@ -24,6 +24,11 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return FILE_PROTECTION | FILE_TYPE;
     }
 
+    FSCaps fsCPM::getCaps()
+    {
+        return FSCaps::Protect | FSCaps::Types;
+    }
+
     int fsCPM::open()
     {
         if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;

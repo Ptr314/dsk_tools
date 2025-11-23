@@ -10,6 +10,8 @@
 #include <vector>
 #include <array>
 
+#include "bit_enums.h"
+
 namespace dsk_tools {
 
     #define FDD_LOAD_OK                 0
@@ -90,6 +92,43 @@ namespace dsk_tools {
         std::vector<uint8_t>    metadata;
         std::vector<uint32_t>   position;
     };
+
+    enum class FSCaps : unsigned int {
+        None        = 0,
+        Dirs        = 1 << 0,       // Directories present
+        Protect     = 1 << 1,       // File protection allowed
+        Types       = 1 << 2,       // Files have types
+        Delete      = 1 << 3,       // Files can be deleted
+        Add         = 1 << 4,       // Files can be added
+        Rename      = 1 << 5,       // Files can be renamed
+        All         = Dirs | Protect | Types | Delete | Add | Rename
+    };
+
+    ENABLE_ENUM_FLAG_OPERATORS(FSCaps);
+
+    enum class FS {Host, DOS33, Sprite, CPM};
+    enum class PreferredType {Binary, Text, AgatBASIC, AppleBASIC, MBASIC};
+
+    struct UniversalFile {
+        FS                      fs;             // Original filesystem type
+
+        // Universal data
+        std::string             name;           // Common name
+        uint32_t                size;
+        bool                    is_dir;
+        bool                    is_protected;
+        bool                    is_deleted;
+        PreferredType           type;
+        std::vector<uint8_t>    data;
+
+        // FS-specific data
+        std::vector<uint8_t>    original_name;
+        uint32_t                attributes;
+        std::vector<uint8_t>    metadata;
+        std::vector<uint32_t>   position;
+    };
+
+    typedef std::vector<UniversalFile> Files;
 
     static const int agat_140_raw2logic[16] = {
         0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15

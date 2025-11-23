@@ -24,6 +24,11 @@ namespace dsk_tools {
         return FILE_PROTECTION | FILE_DIRS;
     }
 
+    FSCaps fsSpriteOS::getCaps()
+    {
+        return FSCaps::Protect | FSCaps::Dirs;
+    }
+
     int fsSpriteOS::open()
     {
         if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;
