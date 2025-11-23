@@ -23,6 +23,11 @@ namespace dsk_tools {
         return FILE_PROTECTION | FILE_TYPE | FILE_DELETE | FILE_ADD | FILE_DIRECTORIES | FILE_RENAME;
     }
 
+    FSCaps fsDOS33::getCaps()
+    {
+        return FSCaps::Protect | FSCaps::Types | FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename;
+    }
+
     int fsDOS33::open()
     {
         if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;

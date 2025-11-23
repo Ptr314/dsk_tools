@@ -287,4 +287,14 @@ namespace dsk_tools
         return output;
     }
 
+    std::vector<uint8_t> strToBytes(const std::string& s)
+    {
+        return std::vector<uint8_t>(s.begin(), s.end());
+    }
+
+    std::string bytesToString(const std::vector<uint8_t>& v)
+    {
+        return std::string(v.begin(), v.end());
+    }
+
 } // namespace

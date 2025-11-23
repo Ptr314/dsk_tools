@@ -53,6 +53,8 @@ add_library(${PROJECT_NAME} STATIC
     src/viewers/viewer_pics.h
     src/viewers/viewer_pics.cpp
     src/viewers/agat_fonts.h
+        src/filesystems/fs_host.h
+        src/filesystems/fs_host.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
