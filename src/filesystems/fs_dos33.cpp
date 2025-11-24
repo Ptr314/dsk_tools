@@ -877,7 +877,7 @@ namespace dsk_tools {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
-    Result fsDOS33::put_file(const UniversalFile & uf, const BYTES & data)
+    Result fsDOS33::put_file(const UniversalFile & uf, const BYTES & data, bool force_replace)
     {
         return Result::error(ErrorCode::NotImplementedYet);
     }

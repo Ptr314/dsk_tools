@@ -119,7 +119,7 @@ namespace dsk_tools {
         return Result::ok();
     }
 
-    Result fsHost::put_file(const UniversalFile & uf, const BYTES & data)
+    Result fsHost::put_file(const UniversalFile & uf, const BYTES & data, bool force_replace)
     {
         std::cout << "Host: put_file " << m_path << " + " << uf.name << std::endl;
 
@@ -134,6 +134,15 @@ namespace dsk_tools {
                 fullPath += '/';  // Use forward slash (works on all platforms)
             }
             fullPath += uf.name;
+        }
+
+        // Check if file already exists
+        std::ifstream testFile(fullPath);
+        if (testFile.good()) {
+            testFile.close();
+            if (!force_replace) {
+                return Result::error(ErrorCode::FileAlreadyExists);
+            }
         }
 
         // Open file in binary write mode

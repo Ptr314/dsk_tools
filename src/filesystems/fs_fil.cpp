@@ -235,7 +235,7 @@ namespace dsk_tools {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
-    Result fsFIL::put_file(const UniversalFile & uf, const BYTES & data)
+    Result fsFIL::put_file(const UniversalFile & uf, const BYTES & data, bool force_replace)
     {
         return Result::error(ErrorCode::NotImplementedYet);
     }
