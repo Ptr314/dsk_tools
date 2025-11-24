@@ -135,7 +135,6 @@ namespace dsk_tools {
     public:
         fsDOS33(diskImage * image);
         virtual int open() override;
-        virtual int get_capabilities() override;
         virtual FSCaps getCaps() override;
         virtual void cd(const dsk_tools::fileData & dir) override;
         virtual void cd_up() override;

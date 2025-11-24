@@ -47,7 +47,6 @@ namespace dsk_tools {
 
         // Service functions
         virtual int open() = 0;
-        virtual int get_capabilities() = 0;
         virtual FSCaps getCaps() = 0;
         virtual std::string get_delimiter();
         virtual std::vector<std::string> get_save_file_formats() = 0;

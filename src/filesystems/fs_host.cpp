@@ -18,11 +18,6 @@ namespace dsk_tools {
         fileSystem(nullptr)
     {}
 
-    int fsHost::get_capabilities()
-    {
-        return FILE_RENAME | FILE_ADD | FILE_DELETE | FILE_DIRS;
-    }
-
     FSCaps fsHost::getCaps()
     {
         return FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename;
