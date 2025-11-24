@@ -48,6 +48,7 @@ namespace dsk_tools {
         // Service functions
         virtual int open() = 0;
         virtual FSCaps getCaps() = 0;
+        virtual FS getFS() const = 0;
         virtual std::string get_delimiter();
         virtual std::vector<std::string> get_save_file_formats() = 0;
         virtual std::vector<std::string> get_add_file_formats() {return {};} ;
@@ -61,12 +62,15 @@ namespace dsk_tools {
         // Directories
         virtual int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) = 0;
         virtual void cd(const dsk_tools::fileData & dir) {};
+        virtual void cd(const std::string & path) {};
         virtual void cd_up() {};
         virtual int mkdir(const std::string & dir_name) {return FDD_DIR_ERROR;};
         virtual bool is_root() {return true;};
 
         // Files
         virtual BYTES get_file(const fileData & fd) = 0;
+        virtual Result get_file(const UniversalFile & uf, BYTES & data) const = 0;
+        virtual Result put_file(const UniversalFile & uf, const BYTES & data) = 0;
         virtual std::string file_info(const fileData & fd) = 0;
         virtual int file_delete(const fileData & fd) {return FILE_DELETE_ERROR;};
         virtual int file_add(const std::string & file_name, const std::string & format_id) {return FILE_ADD_ERROR;};

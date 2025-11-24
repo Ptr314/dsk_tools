@@ -124,6 +124,8 @@ namespace dsk_tools {
     enum class ErrorCode {
         Ok = 0,
 
+        NotImplementedYet,
+
         // Load errors (FDD_LOAD_*)
         LoadError,
         LoadSizeMismatch,
@@ -159,6 +161,9 @@ namespace dsk_tools {
         FileAddErrorSpace,
         FileRenameError,
         FileMetadataError,
+        FileIncorrectFS,
+        ReadError,
+        FileNotFound,
 
         // Detection errors (FDD_DETECT_*)
         DetectError
@@ -168,7 +173,8 @@ namespace dsk_tools {
         ErrorCode code;
         std::string message;   // empty if Ok
         static Result ok() {return Result{ ErrorCode::Ok, "" };}
-        static Result error(ErrorCode c, std::string msg) {return Result{ c, std::move(msg) };}
+        static Result error(const ErrorCode c, std::string msg) {return Result{ c, std::move(msg) };}
+        static Result error(const ErrorCode c) {return Result{ c, "" };}
         bool isOk() const {return code == ErrorCode::Ok;}
         operator bool() const { return isOk(); } // convenience: allow `if (res)` syntax
     };
