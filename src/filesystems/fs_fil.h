@@ -17,7 +17,6 @@ namespace dsk_tools {
     public:
         fsFIL(diskImage * image);
         virtual int open() override;
-        virtual int get_capabilities() override;
         virtual FSCaps getCaps() override;
         virtual int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) override;
         virtual BYTES get_file(const fileData & fd) override;

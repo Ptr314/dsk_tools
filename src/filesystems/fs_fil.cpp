@@ -19,11 +19,6 @@ namespace dsk_tools {
         fileSystem(image)
     {}
 
-    int fsFIL::get_capabilities()
-    {
-        return FILE_PROTECTION | FILE_TYPE | FILE_RENAME;
-    }
-
     FSCaps fsFIL::getCaps()
     {
         return FSCaps::Protect | FSCaps::Types | FSCaps::Rename;

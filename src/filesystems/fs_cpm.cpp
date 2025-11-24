@@ -19,11 +19,6 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         , m_filesystem_id(filesystem_id)
     {}
 
-    int fsCPM::get_capabilities()
-    {
-        return FILE_PROTECTION | FILE_TYPE;
-    }
-
     FSCaps fsCPM::getCaps()
     {
         return FSCaps::Protect | FSCaps::Types;

@@ -18,11 +18,6 @@ namespace dsk_tools {
         fileSystem(image)
     {}
 
-    int fsDOS33::get_capabilities()
-    {
-        return FILE_PROTECTION | FILE_TYPE | FILE_DELETE | FILE_ADD | FILE_DIRECTORIES | FILE_RENAME;
-    }
-
     FSCaps fsDOS33::getCaps()
     {
         return FSCaps::Protect | FSCaps::Types | FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename;
