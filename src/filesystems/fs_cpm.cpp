@@ -303,4 +303,15 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
     {
         return false;
     }
+
+    Result fsCPM::get_file(const UniversalFile & uf, BYTES & data) const
+    {
+        return Result::error(ErrorCode::NotImplementedYet);
+    }
+
+    Result fsCPM::put_file(const UniversalFile & uf, const BYTES & data)
+    {
+        return Result::error(ErrorCode::NotImplementedYet);
+    }
+
 }
