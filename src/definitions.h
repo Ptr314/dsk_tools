@@ -30,15 +30,6 @@ namespace dsk_tools {
     #define FDD_OP_ERROR                1
     #define FDD_OP_NOT_OPEN             2
 
-
-    #define FILE_PROTECTION             1
-    #define FILE_TYPE                   2
-    #define FILE_DELETE                 4
-    #define FILE_DIRS                   8
-    #define FILE_ADD                   16
-    #define FILE_DIRECTORIES           32
-    #define FILE_RENAME                64
-
     #define FDD_WRITE_OK                0
     #define FDD_WRITE_ERROR             1
     #define FDD_WRITE_UNSUPPORTED       2
@@ -129,6 +120,58 @@ namespace dsk_tools {
     };
 
     typedef std::vector<UniversalFile> Files;
+
+    enum class ErrorCode {
+        Ok = 0,
+
+        // Load errors (FDD_LOAD_*)
+        LoadError,
+        LoadSizeMismatch,
+        LoadParamsMismatch,
+        LoadIncorrectFile,
+        LoadFileCorrupt,
+        LoadDataCorrupt,
+
+        // Open errors (FDD_OPEN_*)
+        OpenNotLoaded,
+        OpenBadFormat,
+
+        // Operation errors (FDD_OP_*)
+        OperationError,
+        OperationNotOpen,
+
+        // Write errors (FDD_WRITE_*)
+        WriteError,
+        WriteUnsupported,
+        WriteErrorReading,
+        WriteIncorrectTemplate,
+        WriteIncorrectSource,
+
+        // Directory errors (FDD_DIR_*)
+        DirError,
+        DirErrorSpace,
+        DirNotEmpty,
+
+        // File operation errors (FILE_*)
+        FileDeleteError,
+        FileAddError,
+        FileAddErrorIO,
+        FileAddErrorSpace,
+        FileRenameError,
+        FileMetadataError,
+
+        // Detection errors (FDD_DETECT_*)
+        DetectError
+    };
+
+    struct Result {
+        ErrorCode code;
+        std::string message;   // empty if Ok
+        static Result ok() {return Result{ ErrorCode::Ok, "" };}
+        static Result error(ErrorCode c, std::string msg) {return Result{ c, std::move(msg) };}
+        bool isOk() const {return code == ErrorCode::Ok;}
+        operator bool() const { return isOk(); } // convenience: allow `if (res)` syntax
+    };
 
     static const int agat_140_raw2logic[16] = {
         0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15
