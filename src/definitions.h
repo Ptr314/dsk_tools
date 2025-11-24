@@ -164,6 +164,7 @@ namespace dsk_tools {
         FileIncorrectFS,
         ReadError,
         FileNotFound,
+        FileAlreadyExists,
 
         // Detection errors (FDD_DETECT_*)
         DetectError

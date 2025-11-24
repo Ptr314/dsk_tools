@@ -31,7 +31,7 @@ namespace dsk_tools {
         bool file_find(const std::string & file_name, fileData &fd) override;
 
         Result get_file(const UniversalFile & uf, BYTES & data) const override;
-        Result put_file(const UniversalFile & uf, const BYTES & data) override;
+        Result put_file(const UniversalFile & uf, const BYTES & data, bool force_replace = false) override;
         void cd(const std::string & path) override {m_path = path;};
     };
 }
