@@ -57,7 +57,6 @@ namespace dsk_tools {
     public:
         fsCPM(diskImage * image, const std::string & filesystem_id);
         virtual int open() override;
-        virtual int get_capabilities() override;
         virtual FSCaps getCaps() override;
         virtual void cd(const dsk_tools::fileData & dir) override;
         virtual void cd_up() override;
