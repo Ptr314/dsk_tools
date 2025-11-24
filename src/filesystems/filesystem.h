@@ -70,7 +70,7 @@ namespace dsk_tools {
         // Files
         virtual BYTES get_file(const fileData & fd) = 0;
         virtual Result get_file(const UniversalFile & uf, BYTES & data) const = 0;
-        virtual Result put_file(const UniversalFile & uf, const BYTES & data) = 0;
+        virtual Result put_file(const UniversalFile & uf, const BYTES & data, bool force_replace = false) = 0;
         virtual std::string file_info(const fileData & fd) = 0;
         virtual int file_delete(const fileData & fd) {return FILE_DELETE_ERROR;};
         virtual int file_add(const std::string & file_name, const std::string & format_id) {return FILE_ADD_ERROR;};
