@@ -272,9 +272,9 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return false;
     }
 
-    int fsCPM::mkdir(const std::string & dir_name)
+    Result fsCPM::mkdir(const std::string & dir_name)
     {
-        return FDD_DIR_ERROR;
+        return Result::error(ErrorCode::NotImplementedYet);
     }
 
     int fsCPM::file_rename(const fileData & fd, const std::string & new_name)

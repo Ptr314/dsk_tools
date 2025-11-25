@@ -72,7 +72,7 @@ namespace dsk_tools {
         std::vector<std::string> get_add_file_formats() override;
         int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) override;
         std::string information() override;
-        int mkdir(const std::string & dir_name) override;
+        Result mkdir(const std::string & dir_name) override;
         int file_rename(const fileData & fd, const std::string & new_name) override;
         bool is_root() override;
         std::vector<ParameterDescription> file_get_metadata(const fileData & fd) override;
