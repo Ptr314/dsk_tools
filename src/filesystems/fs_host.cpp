@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <cstdio>
 
 #include "dsk_tools/dsk_tools.h"
 #include "utils.h"
@@ -162,5 +163,28 @@ namespace dsk_tools {
         return Result::ok();
     }
 
+    Result fsHost::delete_file(const UniversalFile & uf)
+    {
+        // Validate filesystem type
+        if (uf.fs != getFS()) return Result::error(ErrorCode::FileIncorrectFS);
+
+        // Extract path from metadata
+        std::string path = bytesToString(uf.metadata);
+        std::cout << "Host: delete_file " << path << std::endl;
+
+        // Check if file exists
+        std::ifstream testFile(path);
+        if (!testFile.good()) {
+            return Result::error(ErrorCode::FileNotFound);
+        }
+        testFile.close();
+
+        // Delete the file
+        if (std::remove(path.c_str()) != 0) {
+            return Result::error(ErrorCode::FileDeleteError);
+        }
+
+        return Result::ok();
+    }
 
 }

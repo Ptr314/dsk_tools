@@ -23,6 +23,7 @@ namespace dsk_tools {
         BYTES get_file(const fileData & fd) override;
         Result get_file(const UniversalFile & uf, BYTES & data) const override;
         Result put_file(const UniversalFile & uf, const BYTES & data, bool force_replace = false) override;
+        Result delete_file(const UniversalFile & uf) override;
         std::string file_info(const fileData & fd) override;
         std::vector<std::string> get_save_file_formats() override;
         int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) override;
