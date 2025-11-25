@@ -157,6 +157,8 @@ namespace dsk_tools {
         // File operation errors (FILE_*)
         FileDeleteError,
         FileAddError,
+        FileAddErrorAllocateDirEntry,
+        FileAddErrorAllocateSector,
         FileAddErrorIO,
         FileAddErrorSpace,
         FileRenameError,
