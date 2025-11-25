@@ -882,5 +882,11 @@ namespace dsk_tools {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
+    Result fsDOS33::delete_file(const UniversalFile & uf)
+    {
+        return Result::error(ErrorCode::NotImplementedYet);
+    }
+
+
 
 }

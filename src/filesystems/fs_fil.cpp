@@ -240,5 +240,11 @@ namespace dsk_tools {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
+    Result fsFIL::delete_file(const UniversalFile & uf)
+    {
+        return Result::error(ErrorCode::NotImplementedYet);
+    }
+
+
 
 }
