@@ -279,12 +279,12 @@ namespace dsk_tools {
         return false;
     }
 
-    Result fsSpriteOS::get_file(const UniversalFile & uf, BYTES & data) const
+    Result fsSpriteOS::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
-    Result fsSpriteOS::put_file(const UniversalFile & uf, const BYTES & data, bool force_replace)
+    Result fsSpriteOS::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
     {
         return Result::error(ErrorCode::NotImplementedYet);
     }
@@ -294,6 +294,11 @@ namespace dsk_tools {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
+    Result fsSpriteOS::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
+    {
+        files.clear();
+        return Result::error(ErrorCode::NotImplementedYet);
+    }
 
 
 }

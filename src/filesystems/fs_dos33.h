@@ -123,7 +123,7 @@ namespace dsk_tools {
         Agat_VTOC * VTOC;
         TS_PAIR current_dir;
         std::vector<TS_PAIR> current_path;
-        int attr_to_type(uint8_t a);
+        static int attr_to_type(uint8_t a);
         bool find_epmty_dir_entry(Apple_DOS_File *& dir_entry, bool just_check, bool &extra_sector);
         bool find_empty_sector(uint8_t start_track, TS_PAIR & ts, bool go_forward);
         bool sector_is_free(int head, int track, int sector) override;
@@ -131,6 +131,9 @@ namespace dsk_tools {
         bool sector_occupy(int head, int track, int sector) override;
         int free_sectors() override;
         virtual uint32_t * track_map(int track);
+
+    private:
+        Result get_file_contents(const Apple_DOS_File * dir_entry, BYTES & data) const;
 
     public:
         explicit fsDOS33(diskImage * image);
@@ -140,9 +143,10 @@ namespace dsk_tools {
         void cd(const dsk_tools::fileData & dir) override;
         void cd_up() override;
         int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) override;
+        Result dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted) override;
         BYTES get_file(const fileData & fd) override;
-        Result get_file(const UniversalFile & uf, BYTES & data) const override;
-        Result put_file(const UniversalFile & uf, const BYTES & data, bool force_replace = false) override;
+        Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;
+        Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace = false) override;
         Result delete_file(const UniversalFile & uf) override;
         std::string file_info(const fileData & fd) override;
         int file_delete(const fileData & fd) override;
