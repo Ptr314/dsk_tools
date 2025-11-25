@@ -60,9 +60,10 @@ namespace dsk_tools {
         void cd(const dsk_tools::fileData & dir) override;
         void cd_up() override;
         int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) override;
+        Result dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted) override;
         BYTES get_file(const fileData & fd) override;
-        Result get_file(const UniversalFile & uf, BYTES & data) const override;
-        Result put_file(const UniversalFile & uf, const BYTES & data, bool force_replace = false) override;
+        Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;
+        Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace = false) override;
         Result delete_file(const UniversalFile & uf) override;
         std::string file_info(const fileData & fd) override;
         int file_delete(const fileData & fd) override;

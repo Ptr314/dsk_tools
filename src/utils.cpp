@@ -241,6 +241,14 @@ namespace dsk_tools
             return PREFERRED_BINARY;
     }
 
+    PreferredType agat_preferred_file_type_new(const int t)
+    {
+        if (t == 0) return PreferredType::Text;
+        if (t == 2) return PreferredType::AgatBASIC;
+        return PreferredType::Binary;
+    }
+
+
     std::string to_upper(std::string s) {
         std::transform(s.begin(), s.end(), s.begin(),
                        [](unsigned char c) { return std::toupper(c); });

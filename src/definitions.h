@@ -109,11 +109,11 @@ namespace dsk_tools {
         bool                    is_dir;
         bool                    is_protected;
         bool                    is_deleted;
-        PreferredType           type;
-        std::vector<uint8_t>    data;
+        PreferredType           type_preferred;
 
         // FS-specific data
         std::vector<uint8_t>    original_name;
+        std::string             type_label;
         uint32_t                attributes;
         std::vector<uint8_t>    metadata;
         std::vector<uint32_t>   position;

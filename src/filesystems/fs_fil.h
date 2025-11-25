@@ -20,9 +20,10 @@ namespace dsk_tools {
         FSCaps getCaps() override;
         FS getFS() const override {return FS::DOS33;};
         int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) override;
+        Result dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted) override;
         BYTES get_file(const fileData & fd) override;
-        Result get_file(const UniversalFile & uf, BYTES & data) const override;
-        Result put_file(const UniversalFile & uf, const BYTES & data, bool force_replace = false) override;
+        Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;
+        Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace = false) override;
         Result delete_file(const UniversalFile & uf) override;
         std::string file_info(const fileData & fd) override;
         std::vector<std::string> get_save_file_formats() override;
