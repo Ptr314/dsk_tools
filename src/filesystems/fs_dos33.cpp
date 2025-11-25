@@ -690,7 +690,7 @@ namespace dsk_tools {
         return FILE_ADD_OK;
     }
 
-    int fsDOS33::mkdir(const std::string & dir_name)
+    Result fsDOS33::mkdir(const std::string & dir_name)
     {
         int sectors_body = 1;  // We need at least 1 sector for the new directory
 
@@ -698,17 +698,17 @@ namespace dsk_tools {
         Apple_DOS_File * dir_entry;
         bool extra_sector;
         if (!find_epmty_dir_entry(dir_entry, true, extra_sector))
-            return FILE_ADD_ERROR;
-        int sectors_catalog = (extra_sector)?1:0;
+            return Result::error(ErrorCode::DirErrorAllocateDirEntry);
+        const int sectors_catalog = (extra_sector)?1:0;
 
         int sectors_total = sectors_body + sectors_catalog;
 
         if (sectors_total > free_sectors())
-            return FDD_DIR_ERROR_SPACE;
+            return Result::error(ErrorCode::DirErrorSpace);
 
         // Create a directory entry
         if (!find_epmty_dir_entry(dir_entry, false, extra_sector))
-            return FILE_ADD_ERROR;
+            return Result::error(ErrorCode::DirErrorAllocateDirEntry);
 
         // Meatdata
         std::memset(dir_entry, 0, sizeof(Apple_DOS_File));
@@ -717,16 +717,16 @@ namespace dsk_tools {
 
         // Name
         std::memset(dir_entry->name, 0xA0, sizeof(dir_entry->name));
-        BYTES name_str = utf_to_agat(get_filename(dir_name));
-        int len = name_str.size();
+        const BYTES name_str = utf_to_agat(get_filename(dir_name));
+        const int len = name_str.size();
         std::memcpy(dir_entry->name, name_str.data(), (len <= sizeof(dir_entry->name))?len:sizeof(dir_entry->name));
 
         // Catalog body
-        TS_PAIR catalog_ts = current_path.back();
+        const TS_PAIR catalog_ts = current_path.back();
         TS_PAIR ts;
-        bool res = find_empty_sector(catalog_ts.track, ts, false);
+        const bool res = find_empty_sector(catalog_ts.track, ts, false);
         if (!res)
-            return FDD_DIR_ERROR;
+            return Result::error(ErrorCode::DirErrorAllocateSector);;
 
         // std::cout << "NEW CATALOG: " << (int)ts.track << ":" << (int)ts.sector << std::endl;
 
@@ -747,7 +747,7 @@ namespace dsk_tools {
         std::memcpy(new_catalog->files[0].name, name_str.data(), (len <= sizeof(dir_entry->name))?len:sizeof(dir_entry->name));
 
         is_changed = true;
-        return FDD_DIR_OK;
+        return Result::ok();
     }
 
     int fsDOS33::file_rename(const fileData & fd, const std::string & new_name)

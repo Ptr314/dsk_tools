@@ -152,6 +152,8 @@ namespace dsk_tools {
         // Directory errors (FDD_DIR_*)
         DirError,
         DirErrorSpace,
+        DirErrorAllocateDirEntry,
+        DirErrorAllocateSector,
         DirNotEmpty,
 
         // File operation errors (FILE_*)

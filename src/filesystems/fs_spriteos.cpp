@@ -247,9 +247,9 @@ namespace dsk_tools {
         return false;
     }
 
-    int fsSpriteOS::mkdir(const std::string & dir_name)
+    Result fsSpriteOS::mkdir(const std::string & dir_name)
     {
-        return FDD_DIR_ERROR;
+        return Result::error(ErrorCode::NotImplementedYet);
     }
 
     int fsSpriteOS::file_rename(const fileData & fd, const std::string & new_name)
