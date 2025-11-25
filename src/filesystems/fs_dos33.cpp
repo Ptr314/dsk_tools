@@ -47,7 +47,7 @@ namespace dsk_tools {
         return FDD_OPEN_OK;
     }
 
-    int fsDOS33::attr_to_type(uint8_t a)
+    int fsDOS33::attr_to_type(const uint8_t a)
     {
         uint8_t v = a & 0x7F;
         int n = 0;
@@ -872,12 +872,73 @@ namespace dsk_tools {
         return false;
     }
 
-    Result fsDOS33::get_file(const UniversalFile & uf, BYTES & data) const
-    {
-        return Result::error(ErrorCode::NotImplementedYet);
+    Result fsDOS33::get_file_contents(const Apple_DOS_File * dir_entry, BYTES & data) const {
+        int list_track = dir_entry->tbl_track;
+        int list_sector = dir_entry->tbl_sector;
+
+        if (list_track == 0xFF) {
+            list_track = dir_entry->name[29];
+        }
+
+        do {
+            const auto * ts_list = reinterpret_cast<const Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+
+            for (int i = 0; i < VTOC->pairs_on_sector; i++){
+                const int file_track = ts_list->ts[i][0];
+                const int file_sector = ts_list->ts[i][1];
+                if (file_track == 0) break;
+                std::uint8_t * sector = image->get_sector_data(0, file_track, file_sector);
+                data.insert(data.end(),&sector[0],&sector[256]);
+            }
+
+            list_track = ts_list->next_track;
+            list_sector = ts_list->next_sector;
+
+        } while (list_track != 0);
+
+        return Result::ok();
+
     }
 
-    Result fsDOS33::put_file(const UniversalFile & uf, const BYTES & data, bool force_replace)
+    Result fsDOS33::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
+    {
+        if (uf.fs != FS::DOS33) return Result::error(ErrorCode::FileIncorrectFS);
+
+        data.clear();
+
+        const auto *dir_entry = reinterpret_cast<const Apple_DOS_File *>(uf.metadata.data());
+
+        if (format == "FILE_FIL") {
+            FIL_header header {};
+            memcpy(&header.name, &(dir_entry->name), sizeof(header.name));
+            header.type = dir_entry->type;
+            if (attr_to_type(dir_entry->type) == 6) {
+                // K Type
+                // http://agatcomp.ru/agat/PCutils/FileType/FIL.shtml
+                const int list_track = dir_entry->tbl_track;
+                const int list_sector = dir_entry->tbl_sector;
+
+                if (list_track != 0xFF) {
+                    auto * ts_list = reinterpret_cast<Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+                    const void * from = &(ts_list->_not_used_03);
+                    std::memcpy(header.tsl, from, 9);
+                } else
+                    std::memset(header.tsl, 0, sizeof(header.tsl));
+            } else
+                std::memset(header.tsl, 0, sizeof(header.tsl));
+
+            const auto* headerBytes = reinterpret_cast<const uint8_t*>(&header);
+            data.insert(data.end(), headerBytes, headerBytes + sizeof(header));
+        } else
+            if (format != "FILE_BINARY")
+                return Result::error(ErrorCode::WriteUnsupported);
+
+        auto Result = get_file_contents(dir_entry, data);
+
+        return Result::ok();
+    }
+
+    Result fsDOS33::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
     {
         return Result::error(ErrorCode::NotImplementedYet);
     }
@@ -887,6 +948,76 @@ namespace dsk_tools {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
+    Result fsDOS33::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
+    {
+        if (!is_open) return Result::error(ErrorCode::OpenNotLoaded);
+
+        files.clear();
+
+        TS_PAIR catalog_ts = current_path.back();
+
+        // std::cout << "DIR: " << (int)catalog_ts.track << ":" << (int)catalog_ts.sector << std::endl;
+
+        Apple_DOS_Catalog * catalog;
+
+        do {
+            catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
+
+            // std::cout << "CATALOG: " << (int)catalog_ts.track << ":" << (int)catalog_ts.sector << std::endl;
+
+            for (int i=0; i<7; i++) {
+                const bool is_deleted = catalog->files[i].tbl_track == 0xFF;
+                if (!is_deleted || show_deleted) {
+                    UniversalFile f;
+
+                    if (catalog->files[i].tbl_track == 0) {
+                        // Means end of the list
+                        return Result::ok();
+                    } else {
+                        f.fs = getFS();
+                        f.is_dir = catalog->files[i].type == 0xFF;
+                        f.is_deleted = is_deleted;
+                        f.is_protected = (catalog->files[i].type & 0x80) != 0;
+                        f.attributes = catalog->files[i].type & 0x7F;
+
+                        bool updir = false;
+                        if (current_path.size() > 1 && f.is_dir) {
+                            const TS_PAIR parent_ts = current_path[current_path.size()-2];
+                            updir = catalog->files[i].tbl_track == parent_ts.track && catalog->files[i].tbl_sector == parent_ts.sector;
+                        }
+                        if (updir)
+                            f.name = "..";
+                        else
+                            f.name = trim(agat_to_utf(catalog->files[i].name, 30));
+
+                        const auto T = attr_to_type(catalog->files[i].type);
+                        f.type_preferred = agat_preferred_file_type_new(T);
+                        f.size = catalog->files[i].size * 256;
+
+                        f.original_name.resize(30);
+                        memcpy(f.original_name.data(), &catalog->files[i].name, f.original_name.size());
+                        f.type_label = std::string(agat_file_types[T]);
+
+
+                        f.metadata.resize(sizeof(catalog->files[i]));
+                        memcpy(f.metadata.data(), &(catalog->files[i]), sizeof(catalog->files[i]));
+
+                        f.position.push_back(catalog_ts.track);
+                        f.position.push_back(catalog_ts.sector);
+                        f.position.push_back(i);
+
+                        files.push_back(f);
+                    }
+                } //show deleted
+            }
+
+            catalog_ts.track = catalog->next_track;
+            catalog_ts.sector = catalog->next_sector;
+
+        } while (catalog_ts.track != 0);
+
+        return Result::ok();
+    }
 
 
 }

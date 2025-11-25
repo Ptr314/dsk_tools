@@ -91,7 +91,7 @@ namespace dsk_tools {
         return false;
     }
 
-    Result fsHost::get_file(const UniversalFile & uf, BYTES & data) const
+    Result fsHost::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
         if (uf.fs != getFS()) return Result::error(ErrorCode::FileIncorrectFS);
 
@@ -120,7 +120,7 @@ namespace dsk_tools {
         return Result::ok();
     }
 
-    Result fsHost::put_file(const UniversalFile & uf, const BYTES & data, bool force_replace)
+    Result fsHost::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
     {
         std::cout << "Host: put_file " << m_path << " + " << uf.name << std::endl;
 
@@ -135,6 +135,10 @@ namespace dsk_tools {
                 fullPath += '/';  // Use forward slash (works on all platforms)
             }
             fullPath += uf.name;
+        }
+
+        if (format == "FILE_FIL") {
+            fullPath += ".fil";
         }
 
         // Check if file already exists
@@ -186,5 +190,12 @@ namespace dsk_tools {
 
         return Result::ok();
     }
+
+    Result fsHost::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
+    {
+        files.clear();
+        return Result::error(ErrorCode::NotImplementedYet);
+    }
+
 
 }

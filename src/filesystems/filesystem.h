@@ -61,6 +61,7 @@ namespace dsk_tools {
 
         // Directories
         virtual int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) = 0;
+        virtual Result dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted) = 0;
         virtual void cd(const dsk_tools::fileData & dir) {};
         virtual void cd(const std::string & path) {};
         virtual void cd_up() {};
@@ -69,8 +70,8 @@ namespace dsk_tools {
 
         // Files
         virtual BYTES get_file(const fileData & fd) = 0;
-        virtual Result get_file(const UniversalFile & uf, BYTES & data) const = 0;
-        virtual Result put_file(const UniversalFile & uf, const BYTES & data, bool force_replace = false) = 0;
+        virtual Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const = 0;
+        virtual Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace) = 0;
         virtual Result delete_file(const UniversalFile & uf) = 0;
         virtual std::string file_info(const fileData & fd) = 0;
         virtual int file_delete(const fileData & fd) {return FILE_DELETE_ERROR;};

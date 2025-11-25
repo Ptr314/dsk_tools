@@ -304,20 +304,25 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return false;
     }
 
-    Result fsCPM::get_file(const UniversalFile & uf, BYTES & data) const
+    Result fsCPM::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
-    Result fsCPM::put_file(const UniversalFile & uf, const BYTES & data, bool force_replace)
+    Result fsCPM::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
     {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
     Result fsCPM::delete_file(const UniversalFile & uf)
-{
-    return Result::error(ErrorCode::NotImplementedYet);
-}
+    {
+        return Result::error(ErrorCode::NotImplementedYet);
+    }
 
+    Result fsCPM::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
+    {
+        files.clear();
+        return Result::error(ErrorCode::NotImplementedYet);
+    }
 
 }
