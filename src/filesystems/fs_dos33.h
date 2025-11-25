@@ -87,6 +87,12 @@ namespace dsk_tools {
         uint8_t         ts[122][2];         // 0C-FF
     };
 
+    // Custom structure used for copying files between images
+    struct Apple_DOS_File_Metadata {
+        Apple_DOS_File  dir_entry;
+        uint8_t         tsl[9];
+    };
+
     struct FIL_header
     {
         uint8_t     name[30];
