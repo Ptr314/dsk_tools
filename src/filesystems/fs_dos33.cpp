@@ -930,7 +930,7 @@ namespace dsk_tools {
             const auto* headerBytes = reinterpret_cast<const uint8_t*>(&header);
             data.insert(data.end(), headerBytes, headerBytes + sizeof(header));
         } else
-            if (format != "FILE_BINARY")
+            if (format != "FILE_BINARY" && !format.empty())
                 return Result::error(ErrorCode::WriteUnsupported);
 
         auto Result = get_file_contents(dir_entry, data);
@@ -941,11 +941,14 @@ namespace dsk_tools {
     Result fsDOS33::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
     {
         bool is_fil = false;
+        bool is_native = false;
         if (format.empty()) {
             // Suggest format;
             if (uf.fs == FS::Host) {
                 std::string ext = get_file_ext(bytesToString(uf.metadata));
                 is_fil = ext==".fil";
+            } else if (uf.fs == FS::DOS33) {
+                is_native = true;
             }
         }
 
@@ -958,16 +961,24 @@ namespace dsk_tools {
             FIL_header header {};
             std::memcpy(&header, data.data(), sizeof(header));
             file_type = header.type;
-            std::memcpy(&file_name, header.name, sizeof(file_name));
-            std::memcpy(&file_tsl, header.tsl, sizeof(file_tsl));
+            std::memcpy(file_name, header.name, sizeof(file_name));
+            std::memcpy(file_tsl, header.tsl, sizeof(file_tsl));
             data_offset = sizeof(header);
         } else {
-            file_type = 0;
-            std::memset(file_name, 0xA0, sizeof(file_name));
-            const BYTES name_str = utf_to_agat(get_filename(uf.name));
-            const auto len = name_str.size();
-            std::memcpy(file_name, name_str.data(), (len <= sizeof(file_name))?len:sizeof(file_name));
-            std::memset(file_tsl, 0, sizeof(file_tsl));
+            if (is_native) {
+                Apple_DOS_File_Metadata metadata {};
+                std::memcpy(&metadata, uf.metadata.data(), std::min(uf.metadata.size(), sizeof(metadata)));
+                file_type = metadata.dir_entry.type;
+                std::memcpy(file_name, metadata.dir_entry.name, std::min(sizeof(file_name), sizeof(metadata.dir_entry.name)));
+                std::memcpy(file_tsl, metadata.tsl, sizeof(file_tsl));
+            } else {
+                file_type = 0;
+                std::memset(file_name, 0xA0, sizeof(file_name));
+                const BYTES name_str = utf_to_agat(get_filename(uf.name));
+                const auto len = name_str.size();
+                std::memcpy(file_name, name_str.data(), (len <= sizeof(file_name))?len:sizeof(file_name));
+                std::memset(file_tsl, 0, sizeof(file_tsl));
+            }
         }
 
         const auto file_size = data.size() - data_offset;
@@ -1094,12 +1105,12 @@ namespace dsk_tools {
             for (int i=0; i<7; i++) {
                 const bool is_deleted = catalog->files[i].tbl_track == 0xFF;
                 if (!is_deleted || show_deleted) {
-                    UniversalFile f;
-
                     if (catalog->files[i].tbl_track == 0) {
                         // Means end of the list
                         return Result::ok();
                     } else {
+                        UniversalFile f;
+
                         f.fs = getFS();
                         f.is_dir = catalog->files[i].type == 0xFF;
                         f.is_deleted = is_deleted;
@@ -1124,9 +1135,24 @@ namespace dsk_tools {
                         memcpy(f.original_name.data(), &catalog->files[i].name, f.original_name.size());
                         f.type_label = std::string(agat_file_types[T]);
 
+                        //// Getting metadata from dir_entry & ts list
+                        Apple_DOS_File_Metadata metadata {};
+                        // Dir entry
+                        metadata.dir_entry = catalog->files[i];
 
-                        f.metadata.resize(sizeof(catalog->files[i]));
-                        memcpy(f.metadata.data(), &(catalog->files[i]), sizeof(catalog->files[i]));
+                        // TS List
+                        const int list_track = catalog->files[i].tbl_track;
+                        const int list_sector = catalog->files[i].tbl_sector;
+
+                        if (list_track != 0xFF) {
+                            const auto * ts_list = reinterpret_cast<Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+                            const void * from = &(ts_list->_not_used_03);
+                            std::memcpy(metadata.tsl, from, 9);
+                        } else
+                            std::memset(metadata.tsl, 0, sizeof(metadata.tsl));
+
+                        f.metadata.resize(sizeof(Apple_DOS_File_Metadata));
+                        memcpy(f.metadata.data(), &metadata, sizeof(metadata));
 
                         f.position.push_back(catalog_ts.track);
                         f.position.push_back(catalog_ts.sector);
