@@ -314,4 +314,10 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
+    Result fsCPM::delete_file(const UniversalFile & uf)
+{
+    return Result::error(ErrorCode::NotImplementedYet);
+}
+
+
 }
