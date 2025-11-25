@@ -63,6 +63,7 @@ namespace dsk_tools {
         virtual int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) = 0;
         virtual Result dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted) = 0;
         virtual void cd(const dsk_tools::fileData & dir) {};
+        virtual void cd(const dsk_tools::UniversalFile & dir) {};
         virtual void cd(const std::string & path) {};
         virtual void cd_up() {};
         virtual Result mkdir(const std::string & dir_name) {return Result::error(ErrorCode::NotImplementedYet);};

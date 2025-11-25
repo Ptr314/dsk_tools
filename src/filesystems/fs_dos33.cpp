@@ -184,6 +184,25 @@ namespace dsk_tools {
         }
     }
 
+    void fsDOS33::cd(const dsk_tools::UniversalFile & dir)
+    {
+        if (dir.name == "..") {
+            cd_up();
+        } else {
+            Apple_DOS_File_Metadata f;
+            memcpy(&f, dir.metadata.data(), sizeof(f));
+
+            // std::cout << "CD: " << (int)f.tbl_track << ":" << (int)f.tbl_sector << std::endl;
+
+            current_path.push_back(
+                {
+                    f.dir_entry.tbl_track,
+                    f.dir_entry.tbl_sector
+                }
+            );
+        }
+    }
+
     std::string fsDOS33::file_info(const fileData & fd) {
         const dsk_tools::Apple_DOS_File * dir_entry = reinterpret_cast<const dsk_tools::Apple_DOS_File *>(fd.metadata.data());
 
