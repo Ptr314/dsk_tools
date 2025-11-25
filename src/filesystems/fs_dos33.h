@@ -147,6 +147,7 @@ namespace dsk_tools {
         FSCaps getCaps() override;
         FS getFS() const override {return FS::DOS33;};
         void cd(const dsk_tools::fileData & dir) override;
+        void cd(const dsk_tools::UniversalFile & dir) override;
         void cd_up() override;
         int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) override;
         Result dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted) override;
