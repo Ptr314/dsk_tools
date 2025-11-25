@@ -940,7 +940,133 @@ namespace dsk_tools {
 
     Result fsDOS33::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
     {
-        return Result::error(ErrorCode::NotImplementedYet);
+        bool is_fil = false;
+        if (format.empty()) {
+            // Suggest format;
+            if (uf.fs == FS::Host) {
+                std::string ext = get_file_ext(bytesToString(uf.metadata));
+                is_fil = ext==".fil";
+            }
+        }
+
+        uint8_t file_type;
+        uint8_t file_name[30];
+        uint8_t file_tsl[9];
+        int data_offset = 0;
+
+        if (is_fil) {
+            FIL_header header {};
+            std::memcpy(&header, data.data(), sizeof(header));
+            file_type = header.type;
+            std::memcpy(&file_name, header.name, sizeof(file_name));
+            std::memcpy(&file_tsl, header.tsl, sizeof(file_tsl));
+            data_offset = sizeof(header);
+        } else {
+            file_type = 0;
+            std::memset(file_name, 0xA0, sizeof(file_name));
+            const BYTES name_str = utf_to_agat(get_filename(uf.name));
+            const auto len = name_str.size();
+            std::memcpy(file_name, name_str.data(), (len <= sizeof(file_name))?len:sizeof(file_name));
+            std::memset(file_tsl, 0, sizeof(file_tsl));
+        }
+
+        const auto file_size = data.size() - data_offset;
+
+        // --------------- Checking for sufficient space
+
+        int sectors_body = (file_size+255)/256;                                                   // File body
+        int ts_pairs = sectors_body + 1;                                                          // We need an extra 0:0 pair to finish the list;
+        int ts_lists = (ts_pairs + VTOC->pairs_on_sector - 1) / VTOC->pairs_on_sector;    // T/S lists, 122 sectors each.
+
+        // Check if we need a new sector for catalog
+        Apple_DOS_File * dir_entry;
+        bool extra_sector;
+        if (!find_epmty_dir_entry(dir_entry, true, extra_sector))
+            return Result::error(ErrorCode::FileAddErrorAllocateDirEntry);
+        const int sectors_catalog = (extra_sector)?1:0;
+        const int sectors_total = sectors_body + ts_lists + sectors_catalog;
+        if (sectors_total > free_sectors())
+            return Result::error(ErrorCode::FileAddErrorSpace);
+
+        // ----------------   Main process
+
+        // Create a directory entry
+        if (!find_epmty_dir_entry(dir_entry, false, extra_sector))
+            return Result::error(ErrorCode::FileAddErrorAllocateDirEntry);
+
+        std::memset(dir_entry, 0, sizeof(Apple_DOS_File));
+        dir_entry->type = file_type;
+        dir_entry->size = sectors_body + ts_lists;
+        std::memcpy(dir_entry->name, file_name, sizeof(file_name));
+
+        Apple_DOS_TS_List * last_ts_list = nullptr;
+
+        // Filling T/S lists
+        for (int i=0; i < ts_lists; i++) {
+
+            // std::cout << "TS List: " << i << std::endl;
+
+            const TS_PAIR catalog_ts = current_path.back();
+            TS_PAIR ts {};
+            bool res = find_empty_sector(catalog_ts.track, ts, false);
+            if (!res)
+                return Result::error(ErrorCode::FileAddErrorAllocateSector);
+
+            // std::cout << ">" << (int)ts.track << ":" << (int)ts.sector << std::endl;
+
+            sector_occupy(0, ts.track, ts.sector);
+            auto * ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, ts.track, ts.sector));
+            std::memset(ts_list, 0, sizeof(Apple_DOS_TS_List));
+            if (i==0) {
+                // Store first T/S to a catalog entry
+                // std::cout << "First, store to dir" << std::endl;
+
+                dir_entry->tbl_track = ts.track;
+                dir_entry->tbl_sector = ts.sector;
+
+                // Set TSL for the first T/S list
+                void * to_ptr = &(ts_list->_not_used_03);
+                std::memcpy(to_ptr, file_tsl, 9);
+
+            } else {
+                // Secondary T/S lists make a chain
+                // std::cout << "Subsequent, store to previous" << std::endl;
+                ts_list->offset = i * VTOC->pairs_on_sector;
+                last_ts_list->next_track = ts.track;
+                last_ts_list->next_sector = ts.sector;
+            }
+            uint8_t start_track = ts.track;
+            for (int j=0; j < VTOC->pairs_on_sector; j++) {
+                int ts_pair = i*VTOC->pairs_on_sector + j;
+                if (ts_pair < ts_pairs-1) {
+                    // File part
+                    TS_PAIR file_ts {};
+                    res = find_empty_sector(start_track, file_ts, false);
+                    if (!res)
+                        return Result::error(ErrorCode::FileAddErrorAllocateSector);
+
+                    // std::cout << (int)file_ts.track << ":" << (int)file_ts.sector << std::endl;
+
+                    sector_occupy(0, file_ts.track, file_ts.sector);
+                    ts_list->ts[j][0] = file_ts.track;
+                    ts_list->ts[j][1] = file_ts.sector;
+
+                    uint8_t * disk_data = image->get_sector_data(0, file_ts.track, file_ts.sector);
+                    std::memcpy(disk_data, data.data() + data_offset + ts_pair * image->get_sector_size(), image->get_sector_size());
+
+                    start_track = file_ts.track;
+                } else {
+                    // List end mark 0:0
+                    ts_list->ts[j][0] = 0;
+                    ts_list->ts[j][1] = 0;
+                    break;
+                }
+            }
+            last_ts_list = ts_list;
+        }
+
+        is_changed = true;
+        return Result::ok();
     }
 
     Result fsDOS33::delete_file(const UniversalFile & uf)
