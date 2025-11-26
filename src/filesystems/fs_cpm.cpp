@@ -57,7 +57,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return trim(std::string(reinterpret_cast<char*>(&di.F), 8)) + ((ext.size() > 0)?("."+ext):"");
     }
 
-    int fsCPM::translate_sector(int sector)
+    int fsCPM::translate_sector(int sector) const
     {
         if (m_filesystem_id == "FILESYSTEM_CPM_RAW")
             return sector;
@@ -123,7 +123,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return result;
     }
 
-    void fsCPM::load_file(const BYTES * dir_records, int extents, BYTES & out)
+    void fsCPM::load_file(const BYTES * dir_records, int extents, BYTES & out) const
     {
         out.clear();
         int file_size = 0;
@@ -249,7 +249,9 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
 
     Result fsCPM::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
-        return Result::error(ErrorCode::NotImplementedYet);
+        data.clear();
+        load_file(reinterpret_cast<const BYTES*>(uf.metadata.data()), uf.metadata.size() / sizeof(CPM_DIR_ENTRY), data);
+        return Result::ok();
     }
 
     Result fsCPM::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
