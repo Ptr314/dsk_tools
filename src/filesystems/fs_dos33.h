@@ -3,8 +3,7 @@
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: A class and other definitions for the Apple DOS 3.3 filesystem
 
-#ifndef FS_DOS33_H
-#define FS_DOS33_H
+#pragma once
 
 #include "filesystem.h"
 
@@ -126,8 +125,8 @@ namespace dsk_tools {
     class fsDOS33: public fileSystem
     {
     protected:
-        Agat_VTOC * VTOC;
-        TS_PAIR current_dir;
+        Agat_VTOC * VTOC{};
+        TS_PAIR current_dir{};
         std::vector<TS_PAIR> current_path;
         static int attr_to_type(uint8_t a);
         bool find_epmty_dir_entry(Apple_DOS_File *& dir_entry, bool just_check, bool &extra_sector);
@@ -146,32 +145,22 @@ namespace dsk_tools {
         int open() override;
         FSCaps getCaps() override;
         FS getFS() const override {return FS::DOS33;};
-        void cd(const dsk_tools::fileData & dir) override;
         void cd(const dsk_tools::UniversalFile & dir) override;
         void cd_up() override;
         Result dir(std::vector<UniversalFile> & files, bool show_deleted) override;
-        BYTES get_file(const fileData & fd) override;
         Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;
-        Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace = false) override;
+        Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace) override;
         Result delete_file(const UniversalFile & uf) override;
         std::string file_info(const UniversalFile & fd) override;
-        int file_delete(const fileData & fd) override;
-        int file_add(const std::string & file_name, const std::string & format_id) override;
         std::vector<std::string> get_save_file_formats() override;
         std::vector<std::string> get_add_file_formats() override;
-        int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) override;
         std::string information() override;
         Result mkdir(const std::string & dir_name) override;
-        int file_rename(const fileData & fd, const std::string & new_name) override;
         bool is_root() override;
-        std::vector<ParameterDescription> file_get_metadata(const fileData & fd) override;
-        int file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata) override;
-        bool file_find(const std::string & file_name, fileData &fd) override;
+        Result find_file(const std::string & file_name, UniversalFile & fd) override;
         std::vector<ParameterDescription> file_get_metadata(const UniversalFile & fd) override;
         Result file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata) override;
-        Result file_rename(const UniversalFile & fd, const std::string & new_name) override;
+        Result rename_file(const UniversalFile & fd, const std::string & new_name) override;
 
     };
 }
-
-#endif // FS_DOS33_H

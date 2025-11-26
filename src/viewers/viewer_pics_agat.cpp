@@ -520,17 +520,17 @@ namespace dsk_tools {
                     std::string file_name;
 
                     // Trying to find on a loaded filesystem
-                    fileData fd;
+                    UniversalFile fd;
                     file_name = "ZG9_"+font_name;
-                    if (filesystem.file_find(file_name,fd)) {
-                        buffer = filesystem.get_file(fd);
+                    if (filesystem.find_file(file_name,fd)) {
+                        filesystem.get_file(fd, "", buffer);
                         m_custom_reverse = true;
                         std::memcpy(&m_custom_font, buffer.data()+4, 2048);
                         return PREPARE_PIC_OK;
                     }
                     file_name = "ZG7_"+font_name;
-                    if (filesystem.file_find(file_name,fd)) {
-                        buffer = filesystem.get_file(fd);
+                    if (filesystem.find_file(file_name,fd)) {
+                        filesystem.get_file(fd, "", buffer);
                         m_custom_reverse = false;
                         std::memcpy(&m_custom_font, buffer.data()+4, 2048);
                         return PREPARE_PIC_OK;

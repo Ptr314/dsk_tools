@@ -52,9 +52,9 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
 
     std::string fsCPM::make_file_name(CPM_DIR_ENTRY & di)
     {
-        std::string ext = "";
-        for (int i=0; i<3; i++) ext += static_cast<char>(di.E[i] & 0x7F);
-        return trim(std::string(reinterpret_cast<char*>(&di.F), 8)) + ((ext.size() > 0)?("."+ext):"");
+        std::string ext;
+        for (const unsigned char i : di.E) ext += static_cast<char>(i & 0x7F);
+        return trim(std::string(reinterpret_cast<char*>(&di.F), 8)) + ((!ext.empty())?("."+ext):"");
     }
 
     int fsCPM::translate_sector(int sector) const
@@ -71,18 +71,12 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
             throw std::runtime_error("Incorrect filesystem id");
     }
 
-        void fsCPM::cd_up()
-    {}
+    std::string fsCPM::file_info(const UniversalFile & fd) {
 
-    void fsCPM::cd(const dsk_tools::fileData & dir)
-    {}
+        std::string result;
+        std::string attrs;
 
-    std::string fsCPM::file_info(const fileData & fd) {
-
-        std::string result = "";
-        std::string attrs = "";
-
-        CPM_DIR_ENTRY dir_entry;
+        CPM_DIR_ENTRY dir_entry{};
         std::memcpy(&dir_entry, fd.metadata.data(), sizeof(CPM_DIR_ENTRY));
 
         attrs += (dir_entry.E[0] & 0x80)?"P":"-"; // Read-only
@@ -92,15 +86,14 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         result += "{$FILE_NAME}: " +  make_file_name(dir_entry) + "\n";
 
         int file_size = 0;
-        std::string list = "";
+        std::string list;
         for (int i=0; i < fd.metadata.size() / sizeof(CPM_DIR_ENTRY); i++) {
             list += "{$EXTENT}: " +  std::to_string(i) + "\n";
             std::memcpy(&dir_entry, fd.metadata.data() + i*sizeof(CPM_DIR_ENTRY), sizeof(CPM_DIR_ENTRY));
             file_size += dir_entry.RC*128;
-            for (int j=0; j<16; j++) {
-                uint8_t AL = dir_entry.AL[j];
-                int track = AL / 4 + DPB.OFF;
-                int part = AL % 4;
+            for (const unsigned char AL : dir_entry.AL) {
+                const int track = AL / 4 + DPB.OFF;
+                const int part = AL % 4;
                 if (AL != 0 && AL != 0xE5)  {
                     list += "    Block: " + std::to_string(AL);
                     list += " Track: " + std::to_string(track);
@@ -128,32 +121,24 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         out.clear();
         int file_size = 0;
         for (int i=0; i<extents; i++) {
-            CPM_DIR_ENTRY dir_entry;
+            CPM_DIR_ENTRY dir_entry{};
             std::memcpy(&dir_entry, dir_records + i*sizeof(CPM_DIR_ENTRY), sizeof(CPM_DIR_ENTRY));
 
             file_size += dir_entry.RC*128;
 
-            for (int j=0; j<16; j++) {
-                uint8_t AL = dir_entry.AL[j];
-                int track = AL / 4 + DPB.OFF;
-                int part = AL % 4;
+            for (const unsigned char AL : dir_entry.AL) {
+                const int track = AL / 4 + DPB.OFF;
+                const int part = AL % 4;
                 if (AL != 0 && AL != 0xE5)  {
                     for (int k=0; k<4; k++) {
-                        int sector = translate_sector(part*4 + k);
-                        auto p = image->get_sector_data(0, track, sector);
+                        const int sector = translate_sector(part*4 + k);
+                        const auto p = image->get_sector_data(0, track, sector);
                         out.insert(out.end(), p, p + 256);
                     }
                 }
             }
         }
         out.resize(file_size);
-    }
-
-    BYTES fsCPM::get_file(const fileData & fd)
-    {
-        BYTES data;
-        load_file(reinterpret_cast<const BYTES*>(fd.metadata.data()), fd.metadata.size() / sizeof(CPM_DIR_ENTRY), data);
-        return data;
     }
 
     std::vector<std::string> fsCPM::get_save_file_formats()
@@ -166,102 +151,11 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return {"FILE_BINARY"};
     }
 
-    int fsCPM::save_file(const std::string & format_id, const std::string & file_name, const fileData &fd)
-    {
-        BYTES buffer = get_file(fd);
-        if (buffer.size() > 0) {
-            if (format_id == "FILE_BINARY") {
-                std::ofstream file(file_name, std::ios::binary);
-
-                if (!file.good()) {
-                    return FDD_WRITE_ERROR;
-                }
-
-                file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
-            } else
-                return FDD_WRITE_UNSUPPORTED;
-            return FDD_WRITE_OK;
-        } else {
-            return FDD_WRITE_ERROR_READING;
-        }
-    }
-
-    std::string fsCPM::information()
-    {
-        return "";
-    }
-
-    bool fsCPM::sector_is_free(int head, int track, int sector)
-    {
-        return false;
-    }
-
-    void fsCPM::sector_free(int head, int track, int sector)
-    {
-    }
-
-    bool fsCPM::sector_occupy(int head, int track, int sector)
-    {
-        return false;
-    }
-
-    int fsCPM::file_delete(const fileData & fd)
-    {
-        return false;
-    }
-
-    int fsCPM::file_add(const std::string & file_name, const std::string & format_id)
-    {
-        return false;
-    }
-
-    Result fsCPM::mkdir(const std::string & dir_name)
-    {
-        return Result::error(ErrorCode::NotImplementedYet);
-    }
-
-    int fsCPM::file_rename(const fileData & fd, const std::string & new_name)
-    {
-        return FILE_RENAME_OK;
-    }
-
-    bool fsCPM::is_root()
-    {
-        return true;
-    }
-
-    std::vector<ParameterDescription> fsCPM::file_get_metadata(const fileData &fd)
-    {
-        std::vector<ParameterDescription> params = {};
-
-        return params;
-    }
-
-    int fsCPM::file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata)
-    {
-        return FILE_METADATA_OK;
-    }
-
-    bool fsCPM::file_find(const std::string & file_name, fileData & fd)
-    {
-        return false;
-    }
-
     Result fsCPM::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
         data.clear();
         load_file(reinterpret_cast<const BYTES*>(uf.metadata.data()), uf.metadata.size() / sizeof(CPM_DIR_ENTRY), data);
         return Result::ok();
-    }
-
-    Result fsCPM::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
-    {
-        return Result::error(ErrorCode::NotImplementedYet);
-    }
-
-    Result fsCPM::delete_file(const UniversalFile & uf)
-    {
-        return Result::error(ErrorCode::NotImplementedYet);
     }
 
     Result fsCPM::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
@@ -319,17 +213,6 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         }
 
         return Result::ok();
-    }
-
-    std::vector<ParameterDescription> fsCPM::file_get_metadata(const UniversalFile & fd)
-    {
-        std::vector<ParameterDescription> params;
-        return params;
-    }
-
-    Result fsCPM::file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata)
-    {
-        return Result::error(ErrorCode::NotImplementedYet);
     }
 
 }
