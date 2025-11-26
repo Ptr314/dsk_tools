@@ -41,7 +41,7 @@ namespace dsk_tools {
         return FDD_OPEN_OK;
     }
 
-    void fsSpriteOS::load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out)
+    void fsSpriteOS::load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out) const
     {
         std::vector<uint8_t> buffer;
         int tr;
@@ -144,6 +144,16 @@ namespace dsk_tools {
     }
 
     void fsSpriteOS::cd(const dsk_tools::fileData & dir)
+    {
+        if (dir.name == "..") {
+            cd_up();
+        } else {
+            memcpy(&CURRENT_DIR, dir.metadata.data(), sizeof(CURRENT_DIR));
+            current_path.push_back(CURRENT_DIR);
+        }
+    }
+
+    void fsSpriteOS::cd(const dsk_tools::UniversalFile & dir)
     {
         if (dir.name == "..") {
             cd_up();
@@ -281,7 +291,9 @@ namespace dsk_tools {
 
     Result fsSpriteOS::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
-        return Result::error(ErrorCode::NotImplementedYet);
+        const auto * dir_entry = reinterpret_cast<const SPRITE_OS_DIR_ENTRY*>(uf.metadata.data());
+        load_file(*dir_entry, data);
+        return Result::ok();
     }
 
     Result fsSpriteOS::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
@@ -294,10 +306,45 @@ namespace dsk_tools {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
-    Result fsSpriteOS::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
+    Result fsSpriteOS::dir(std::vector<UniversalFile> & files, bool show_deleted)
     {
+        if (!is_open) return Result::error(ErrorCode::OpenNotLoaded);
+
         files.clear();
-        return Result::error(ErrorCode::NotImplementedYet);
+
+        if (current_path.size() > 1) {
+            UniversalFile updir;
+            updir.name = "..";
+            updir.is_dir = true;
+            updir.is_deleted = false;
+            files.push_back(updir);
+        }
+
+        BYTES buffer;
+        load_file(CURRENT_DIR, buffer);
+
+        for (int i=0; i < buffer.size() / sizeof(SPRITE_OS_DIR_ENTRY); i++) {
+            auto * dir_entry = reinterpret_cast<SPRITE_OS_DIR_ENTRY*>(buffer.data() + i*sizeof(SPRITE_OS_DIR_ENTRY));
+            bool is_deleted = dir_entry->NAME[0] == 0xFF;
+            if (dir_entry->NAME[0] != 0 && (!is_deleted || show_deleted)) {
+                UniversalFile file;
+                file.name = trim(agat_to_utf(dir_entry->NAME, 15));
+                file.size = dir_entry->FILELEN[0] + (dir_entry->FILELEN[1] << 8) + (dir_entry->FILELEN[2] << 16);
+                file.is_dir = (dir_entry->STATUS & 0x01) != 0;
+                file.is_deleted = is_deleted;
+
+                std::set<std::string> txts = {".txt", ".doc", ".pas", ".cmd", ".def", ".hlp", ".gid"};
+                std::string ext = get_file_ext(file.name);
+                file.type_preferred = (txts.find(ext) != txts.end())?PreferredType::Text:PreferredType::Binary;
+
+                file.metadata.resize(sizeof(SPRITE_OS_DIR_ENTRY));
+                memcpy(file.metadata.data(), dir_entry, sizeof(SPRITE_OS_DIR_ENTRY));
+
+                files.push_back(file);
+            }
+        }
+
+        return Result::ok();
     }
 
 
