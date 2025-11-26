@@ -149,13 +149,12 @@ namespace dsk_tools {
         void cd(const dsk_tools::fileData & dir) override;
         void cd(const dsk_tools::UniversalFile & dir) override;
         void cd_up() override;
-        int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) override;
-        Result dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted) override;
+        Result dir(std::vector<UniversalFile> & files, bool show_deleted) override;
         BYTES get_file(const fileData & fd) override;
         Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;
         Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace = false) override;
         Result delete_file(const UniversalFile & uf) override;
-        std::string file_info(const fileData & fd) override;
+        std::string file_info(const UniversalFile & fd) override;
         int file_delete(const fileData & fd) override;
         int file_add(const std::string & file_name, const std::string & format_id) override;
         std::vector<std::string> get_save_file_formats() override;
@@ -168,6 +167,10 @@ namespace dsk_tools {
         std::vector<ParameterDescription> file_get_metadata(const fileData & fd) override;
         int file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata) override;
         bool file_find(const std::string & file_name, fileData &fd) override;
+        std::vector<ParameterDescription> file_get_metadata(const UniversalFile & fd) override;
+        Result file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata) override;
+        Result file_rename(const UniversalFile & fd, const std::string & new_name) override;
+
     };
 }
 
