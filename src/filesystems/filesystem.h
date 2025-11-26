@@ -60,28 +60,32 @@ namespace dsk_tools {
         virtual bool get_changed() {return is_changed;};
 
         // Directories
-        virtual int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) = 0;
-        virtual Result dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted) = 0;
-        virtual void cd(const dsk_tools::fileData & dir) {};
-        virtual void cd(const dsk_tools::UniversalFile & dir) {};
+        virtual Result dir(std::vector<UniversalFile> & files, bool show_deleted) = 0;
+            virtual void cd(const dsk_tools::fileData & dir) {};
+        virtual void cd(const UniversalFile & dir) {};
         virtual void cd(const std::string & path) {};
         virtual void cd_up() {};
         virtual Result mkdir(const std::string & dir_name) {return Result::error(ErrorCode::NotImplementedYet);};
         virtual bool is_root() {return true;};
 
         // Files
-        virtual BYTES get_file(const fileData & fd) = 0;
+            virtual BYTES get_file(const fileData & fd) = 0;
         virtual Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const = 0;
         virtual Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace) = 0;
         virtual Result delete_file(const UniversalFile & uf) = 0;
-        virtual std::string file_info(const fileData & fd) = 0;
+        virtual std::string file_info(const fileData & fd) {return "";};
+        virtual std::string file_info(const UniversalFile & fd) {return "";};
         virtual int file_delete(const fileData & fd) {return FILE_DELETE_ERROR;};
         virtual int file_add(const std::string & file_name, const std::string & format_id) {return FILE_ADD_ERROR;};
         virtual int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) = 0;
-        virtual int file_rename(const fileData & fd, const std::string & new_name) {return FILE_RENAME_ERROR;};
-        virtual std::vector<dsk_tools::ParameterDescription> file_get_metadata(const fileData & fd) = 0;
-        virtual int file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata) = 0;
-        virtual bool file_find(const std::string & file_name, fileData & fd) = 0;
+            virtual int file_rename(const fileData & fd, const std::string & new_name) {return FILE_RENAME_ERROR;};
+        virtual Result file_rename(const UniversalFile & fd, const std::string & new_name) {return Result::error(ErrorCode::FileRenameError);};
+            virtual std::vector<dsk_tools::ParameterDescription> file_get_metadata(const fileData & fd) = 0;
+        virtual std::vector<ParameterDescription> file_get_metadata(const UniversalFile & fd) = 0;
+            virtual int file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata) = 0;
+        virtual Result file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata) = 0;
+            virtual bool file_find(const std::string & file_name, fileData & fd) = 0;
+        // virtual bool file_find(const std::string & file_name, UniversalFile & fd) = 0;
     };
 
 } // namespace
