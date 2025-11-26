@@ -27,61 +27,13 @@ namespace dsk_tools {
     int fsHost::open()
     {
         if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;
-
         is_open = true;
-
         return FDD_OPEN_OK;
-    }
-
-    BYTES fsHost::get_file(const fileData & fd)
-    {
-        BYTES data;
-        return data;
-    }
-
-    std::string fsHost::file_info(const fileData & fd)
-    {
-
-        std::string result = "";
-        return result;
     }
 
     std::vector<std::string> fsHost::get_save_file_formats()
     {
         return {};
-    }
-
-    int fsHost::save_file(const std::string & format_id, const std::string & file_name, const fileData &fd)
-    {
-        return FDD_WRITE_UNSUPPORTED;
-    }
-
-    std::string fsHost::information()
-    {
-        std::string result;
-        return result;
-    }
-
-
-    int fsHost::file_rename(const fileData & fd, const std::string & new_name)
-    {
-        return FILE_RENAME_OK;
-    }
-
-    std::vector<ParameterDescription> fsHost::file_get_metadata(const fileData &fd)
-    {
-        std::vector<ParameterDescription> params;
-        return params;
-    }
-
-    int fsHost::file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata)
-    {
-        return FILE_METADATA_OK;
-    }
-
-    bool fsHost::file_find(const std::string & file_name, fileData & fd)
-    {
-        return false;
     }
 
     Result fsHost::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
@@ -189,17 +141,5 @@ namespace dsk_tools {
         files.clear();
         return Result::error(ErrorCode::NotImplementedYet);
     }
-
-    std::vector<ParameterDescription> fsHost::file_get_metadata(const UniversalFile & fd)
-    {
-        std::vector<ParameterDescription> params;
-        return params;
-    }
-
-    Result fsHost::file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata)
-    {
-        return Result::error(ErrorCode::NotImplementedYet);
-    }
-
 
 }
