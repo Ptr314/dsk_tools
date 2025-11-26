@@ -46,7 +46,7 @@ namespace dsk_tools {
         SPRITE_OS_DPB_DISK DPB;
         SPRITE_OS_DIR_ENTRY CURRENT_DIR;
         std::vector<SPRITE_OS_DIR_ENTRY> current_path;
-        void load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out);
+        void load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out) const;
 
         bool sector_is_free(int head, int track, int sector) override;
         void sector_free(int head, int track, int sector) override;
@@ -58,12 +58,13 @@ namespace dsk_tools {
         FSCaps getCaps() override;
         FS getFS() const override {return FS::Sprite;};
         void cd(const dsk_tools::fileData & dir) override;
+        void cd(const dsk_tools::UniversalFile & dir) override;
         void cd_up() override;
-        int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) override;
-        Result dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted) override;
+        int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted) override;
+        Result dir(std::vector<UniversalFile> & files, bool show_deleted) override;
         BYTES get_file(const fileData & fd) override;
         Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;
-        Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace = false) override;
+        Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace) override;
         Result delete_file(const UniversalFile & uf) override;
         std::string file_info(const fileData & fd) override;
         int file_delete(const fileData & fd) override;
