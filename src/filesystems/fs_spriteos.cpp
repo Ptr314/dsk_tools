@@ -83,32 +83,11 @@ namespace dsk_tools {
         out = buffer;
     }
 
-        BYTES fsSpriteOS::get_file(const fileData & fd)
-    {
-        BYTES data;
-
-        const SPRITE_OS_DIR_ENTRY * dir_entry = reinterpret_cast<const SPRITE_OS_DIR_ENTRY*>(fd.metadata.data());
-
-        load_file(*dir_entry, data);
-
-        return data;
-    }
-
     void fsSpriteOS::cd_up()
     {
         if (current_path.size() > 1) {
             current_path.pop_back();
             CURRENT_DIR = current_path.back();
-        }
-    }
-
-    void fsSpriteOS::cd(const dsk_tools::fileData & dir)
-    {
-        if (dir.name == "..") {
-            cd_up();
-        } else {
-            memcpy(&CURRENT_DIR, dir.metadata.data(), sizeof(CURRENT_DIR));
-            current_path.push_back(CURRENT_DIR);
         }
     }
 
@@ -122,11 +101,11 @@ namespace dsk_tools {
         }
     }
 
-    std::string fsSpriteOS::file_info(const fileData & fd) {
-        std::string result = "";
-        std::string attrs = "";
+    std::string fsSpriteOS::file_info(const UniversalFile & fd) {
+        std::string result;
+        std::string attrs;
 
-        const SPRITE_OS_DIR_ENTRY * dir_entry = reinterpret_cast<const SPRITE_OS_DIR_ENTRY*>(fd.metadata.data());
+        const auto * dir_entry = reinterpret_cast<const SPRITE_OS_DIR_ENTRY*>(fd.metadata.data());
 
         attrs += (dir_entry->STATUS & 0x80)?"P":"-";
         attrs += (dir_entry->STATUS & 0x40)?"B":"-";
@@ -162,68 +141,9 @@ namespace dsk_tools {
         return {"FILE_SOS", "FILE_BINARY"};
     }
 
-    int fsSpriteOS::save_file(const std::string & format_id, const std::string & file_name, const fileData &fd)
-    {
-        BYTES buffer = get_file(fd);
-
-        if (buffer.size() > 0) {
-            if (format_id == "FILE_BINARY") {
-                std::ofstream file(file_name, std::ios::binary);
-
-                if (!file.good()) {
-                    return FDD_WRITE_ERROR;
-                }
-
-                file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
-
-            } else
-            if (format_id == "FILE_SOS") {
-                std::cout << dsk_tools::base64_encode(buffer, 32) << std::endl;
-            }
-            return FDD_WRITE_OK;
-        } else {
-            return FDD_WRITE_ERROR_READING;
-        }
-    }
-
     std::string fsSpriteOS::information()
     {
         return agat_sos_info(DPB);
-    }
-
-    bool fsSpriteOS::sector_is_free(int head, int track, int sector)
-    {
-        return false;
-    }
-
-    void fsSpriteOS::sector_free(int head, int track, int sector)
-    {
-
-    }
-
-    bool fsSpriteOS::sector_occupy(int head, int track, int sector)
-    {
-        return false;
-    }
-
-    int fsSpriteOS::file_delete(const fileData & fd)
-    {
-        return false;
-    }
-
-    int fsSpriteOS::file_add(const std::string & file_name, const std::string & format_id)
-    {
-        return false;
-    }
-
-    Result fsSpriteOS::mkdir(const std::string & dir_name)
-    {
-        return Result::error(ErrorCode::NotImplementedYet);
-    }
-
-    int fsSpriteOS::file_rename(const fileData & fd, const std::string & new_name)
-    {
-        return FILE_RENAME_OK;
     }
 
     bool fsSpriteOS::is_root()
@@ -231,38 +151,11 @@ namespace dsk_tools {
         return current_path.size() == 1;
     }
 
-    std::vector<ParameterDescription> fsSpriteOS::file_get_metadata(const fileData &fd)
-    {
-        std::vector<ParameterDescription> params = {};
-
-        return params;
-    }
-
-    int fsSpriteOS::file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata)
-    {
-        return FILE_METADATA_OK;
-    }
-
-    bool fsSpriteOS::file_find(const std::string & file_name, fileData & fd)
-    {
-        return false;
-    }
-
     Result fsSpriteOS::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
         const auto * dir_entry = reinterpret_cast<const SPRITE_OS_DIR_ENTRY*>(uf.metadata.data());
         load_file(*dir_entry, data);
         return Result::ok();
-    }
-
-    Result fsSpriteOS::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
-    {
-        return Result::error(ErrorCode::NotImplementedYet);
-    }
-
-    Result fsSpriteOS::delete_file(const UniversalFile & uf)
-    {
-        return Result::error(ErrorCode::NotImplementedYet);
     }
 
     Result fsSpriteOS::dir(std::vector<UniversalFile> & files, bool show_deleted)
@@ -305,17 +198,5 @@ namespace dsk_tools {
 
         return Result::ok();
     }
-
-    std::vector<ParameterDescription> fsSpriteOS::file_get_metadata(const UniversalFile & fd)
-    {
-        std::vector<ParameterDescription> params;
-        return params;
-    }
-
-    Result fsSpriteOS::file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata)
-    {
-        return Result::error(ErrorCode::NotImplementedYet);
-    }
-
 
 }

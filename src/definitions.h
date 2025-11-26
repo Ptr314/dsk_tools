@@ -67,23 +67,6 @@ namespace dsk_tools {
 
     typedef std::vector<uint8_t> BYTES;
 
-    struct fileData
-    {
-        uint8_t                 original_name[100];
-        int                     original_name_length;
-        std::string             name;
-        std::string             type_str;
-        std::string             type_str_short;
-        bool                    is_protected;
-        bool                    is_deleted;
-        bool                    is_dir;
-        uint32_t                attributes;
-        uint32_t                size;
-        int                     preferred_type;
-        std::vector<uint8_t>    metadata;
-        std::vector<uint32_t>   position;
-    };
-
     enum class FSCaps : unsigned int {
         None        = 0,
         Dirs        = 1 << 0,       // Directories present
@@ -125,6 +108,7 @@ namespace dsk_tools {
         Ok = 0,
 
         NotImplementedYet,
+        NotFound,
 
         // Load errors (FDD_LOAD_*)
         LoadError,
