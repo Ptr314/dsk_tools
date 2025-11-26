@@ -19,8 +19,7 @@ namespace dsk_tools {
         int open() override;
         FSCaps getCaps() override;
         FS getFS() const override {return FS::DOS33;};
-        int dir(std::vector<dsk_tools::fileData> * files, bool show_deleted = true) override;
-        Result dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted) override;
+        Result dir(std::vector<UniversalFile> & files, bool show_deleted) override;
         BYTES get_file(const fileData & fd) override;
         Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;
         Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace = false) override;
@@ -33,6 +32,8 @@ namespace dsk_tools {
         std::vector<ParameterDescription> file_get_metadata(const fileData & fd) override;
         int file_set_metadata(const fileData & fd, const std::map<std::string, std::string> & metadata) override;
         bool file_find(const std::string & file_name, fileData &fd) override;
+        std::vector<ParameterDescription> file_get_metadata(const UniversalFile & fd) override;
+        Result file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata) override;
     };
 }
 

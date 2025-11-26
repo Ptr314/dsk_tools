@@ -83,48 +83,7 @@ namespace dsk_tools {
         out = buffer;
     }
 
-    int fsSpriteOS::dir(std::vector<dsk_tools::fileData> * files, bool show_deleted)
-    {
-        if (!is_open) return FDD_OP_NOT_OPEN;
-
-        files->clear();
-
-        if (current_path.size() > 1) {
-            fileData updir;
-            updir.name = "..";
-            updir.is_dir = true;
-            updir.is_deleted = false;
-            files->push_back(updir);
-        }
-
-        BYTES buffer;
-        load_file(CURRENT_DIR, buffer);
-
-        for (int i=0; i < buffer.size() / sizeof(SPRITE_OS_DIR_ENTRY); i++) {
-            SPRITE_OS_DIR_ENTRY * dir_entry = reinterpret_cast<SPRITE_OS_DIR_ENTRY*>(buffer.data() + i*sizeof(SPRITE_OS_DIR_ENTRY));
-            bool is_deleted = dir_entry->NAME[0] == 0xFF;
-            if (dir_entry->NAME[0] != 0 && (!is_deleted || show_deleted)) {
-                fileData file;
-                file.name = trim(agat_to_utf(dir_entry->NAME, 15));
-                file.size = dir_entry->FILELEN[0] + (dir_entry->FILELEN[1] << 8) + (dir_entry->FILELEN[2] << 16);
-                file.is_dir = (dir_entry->STATUS & 0x01) != 0;
-                file.is_deleted = is_deleted;
-
-                std::set<std::string> txts = {".txt", ".doc", ".pas", ".cmd", ".def", ".hlp", ".gid"};
-                std::string ext = get_file_ext(file.name);
-                file.preferred_type = (txts.find(ext) != txts.end())?PREFERRED_TEXT:PREFERRED_BINARY;
-
-                file.metadata.resize(sizeof(SPRITE_OS_DIR_ENTRY));
-                memcpy(file.metadata.data(), dir_entry, sizeof(SPRITE_OS_DIR_ENTRY));
-
-                files->push_back(file);
-            }
-        }
-
-        return FDD_OP_OK;
-    }
-
-    BYTES fsSpriteOS::get_file(const fileData & fd)
+        BYTES fsSpriteOS::get_file(const fileData & fd)
     {
         BYTES data;
 
@@ -345,6 +304,17 @@ namespace dsk_tools {
         }
 
         return Result::ok();
+    }
+
+    std::vector<ParameterDescription> fsSpriteOS::file_get_metadata(const UniversalFile & fd)
+    {
+        std::vector<ParameterDescription> params;
+        return params;
+    }
+
+    Result fsSpriteOS::file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata)
+    {
+        return Result::error(ErrorCode::NotImplementedYet);
     }
 
 

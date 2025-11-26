@@ -71,64 +71,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
             throw std::runtime_error("Incorrect filesystem id");
     }
 
-    int fsCPM::dir(std::vector<dsk_tools::fileData> * files, bool show_deleted)
-    {
-        if (!is_open) return FDD_OP_NOT_OPEN;
-
-        files->clear();
-
-        int directory_sectors = 6;
-        int entries_in_sector = 8;
-        int catalog_size = directory_sectors * entries_in_sector;
-
-        std::vector<CPM_DIR_ENTRY*> catalog(catalog_size);
-
-        for (int i = 0; i < directory_sectors; i++) {
-            uint8_t * sector = image->get_sector_data(0, DPB.OFF, translate_sector(i));
-            for (int j = 0; j < entries_in_sector; j++)
-                catalog[i*entries_in_sector + j] = reinterpret_cast<CPM_DIR_ENTRY*>(sector + j*sizeof(CPM_DIR_ENTRY));
-        }
-
-        for (int i = 0; i < catalog_size; i++) {
-            uint8_t ST = catalog[i]->ST;
-            if (ST != 0xE5 && ST != 0x1F) {
-                int extent = catalog[i]->XH*32 + catalog[i]->XL;
-                if (extent == 0) {
-                    fileData file;
-                    file.is_dir = false;
-                    file.is_deleted = false;
-                    file.name = make_file_name(*catalog[i]);
-                    file.size = catalog[i]->RC * 128;
-
-                    file.is_protected = (catalog[i]->E[0] & 0x80) != 0;
-                    file.type_str_short = "";
-                    file.type_str_short += (catalog[i]->E[1] & 0x80)?"S":""; // System (hidden)
-                    file.type_str_short += (catalog[i]->E[2] & 0x80)?"A":""; // Archived
-
-
-                    std::set<std::string> txts = {".txt", ".doc", ".pas", ".asm"};
-                    std::string ext = get_file_ext(file.name);
-                    file.preferred_type = (txts.find(ext) != txts.end())?PREFERRED_TEXT:PREFERRED_BINARY;
-                    if (ext == ".bas")
-                        file.preferred_type = PREFERRED_MBASIC;
-
-                    file.metadata.resize(sizeof(CPM_DIR_ENTRY));
-                    std::memcpy(file.metadata.data(), catalog[i], sizeof(CPM_DIR_ENTRY));
-
-                    files->push_back(file);
-                } else {
-                    fileData * f = &(files->at(files->size()-1));
-                    f->size += catalog[i]->RC * 128;
-                    f->metadata.resize(f->metadata.size() + sizeof(CPM_DIR_ENTRY));
-                    std::memcpy(f->metadata.data() + sizeof(CPM_DIR_ENTRY)*extent, catalog[i], sizeof(CPM_DIR_ENTRY));
-                }
-            }
-        }
-
-        return FDD_OP_OK;
-    }
-
-    void fsCPM::cd_up()
+        void fsCPM::cd_up()
     {}
 
     void fsCPM::cd(const dsk_tools::fileData & dir)
@@ -321,7 +264,69 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
 
     Result fsCPM::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
     {
+        if (!is_open) return Result::error(ErrorCode::OpenNotLoaded);
+
         files.clear();
+
+        constexpr int directory_sectors = 6;
+        constexpr int entries_in_sector = 8;
+        constexpr int catalog_size = directory_sectors * entries_in_sector;
+
+        std::vector<CPM_DIR_ENTRY*> catalog(catalog_size);
+
+        for (int i = 0; i < directory_sectors; i++) {
+            uint8_t * sector = image->get_sector_data(0, DPB.OFF, translate_sector(i));
+            for (int j = 0; j < entries_in_sector; j++)
+                catalog[i*entries_in_sector + j] = reinterpret_cast<CPM_DIR_ENTRY*>(sector + j*sizeof(CPM_DIR_ENTRY));
+        }
+
+        for (int i = 0; i < catalog_size; i++) {
+            const uint8_t ST = catalog[i]->ST;
+            if (ST != 0xE5 && ST != 0x1F) {
+                const int extent = catalog[i]->XH*32 + catalog[i]->XL;
+                if (extent == 0) {
+                    UniversalFile f;
+                    f.is_dir = false;
+                    f.is_deleted = false;
+                    f.name = make_file_name(*catalog[i]);
+                    f.size = catalog[i]->RC * 128;
+
+                    f.is_protected = (catalog[i]->E[0] & 0x80) != 0;
+                    f.type_label = "";
+                    f.type_label += (catalog[i]->E[1] & 0x80)?"S":""; // System (hidden)
+                    f.type_label += (catalog[i]->E[2] & 0x80)?"A":""; // Archived
+
+
+                    std::set<std::string> txts = {".txt", ".doc", ".pas", ".asm"};
+                    std::string ext = get_file_ext(f.name);
+                    f.type_preferred = (txts.find(ext) != txts.end())?PreferredType::Text:PreferredType::Binary;
+                    if (ext == ".bas")
+                        f.type_preferred = PreferredType::MBASIC;
+
+                    f.metadata.resize(sizeof(CPM_DIR_ENTRY));
+                    std::memcpy(f.metadata.data(), catalog[i], sizeof(CPM_DIR_ENTRY));
+
+                    files.push_back(f);
+                } else {
+                    UniversalFile * f = &(files.at(files.size()-1));
+                    f->size += catalog[i]->RC * 128;
+                    f->metadata.resize(f->metadata.size() + sizeof(CPM_DIR_ENTRY));
+                    std::memcpy(f->metadata.data() + sizeof(CPM_DIR_ENTRY)*extent, catalog[i], sizeof(CPM_DIR_ENTRY));
+                }
+            }
+        }
+
+        return Result::ok();
+    }
+
+    std::vector<ParameterDescription> fsCPM::file_get_metadata(const UniversalFile & fd)
+    {
+        std::vector<ParameterDescription> params;
+        return params;
+    }
+
+    Result fsCPM::file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata)
+    {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 

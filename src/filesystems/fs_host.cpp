@@ -33,13 +33,6 @@ namespace dsk_tools {
         return FDD_OPEN_OK;
     }
 
-    int fsHost::dir(std::vector<dsk_tools::fileData> * files, bool show_deleted)
-    {
-        if (!is_open) return FDD_OP_NOT_OPEN;
-        files->clear();
-        return FDD_OP_OK;
-    }
-
     BYTES fsHost::get_file(const fileData & fd)
     {
         BYTES data;
@@ -194,6 +187,17 @@ namespace dsk_tools {
     Result fsHost::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
     {
         files.clear();
+        return Result::error(ErrorCode::NotImplementedYet);
+    }
+
+    std::vector<ParameterDescription> fsHost::file_get_metadata(const UniversalFile & fd)
+    {
+        std::vector<ParameterDescription> params;
+        return params;
+    }
+
+    Result fsHost::file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata)
+    {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 

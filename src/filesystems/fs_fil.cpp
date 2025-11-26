@@ -33,37 +33,6 @@ namespace dsk_tools {
         return FDD_OPEN_OK;
     }
 
-    int fsFIL::dir(std::vector<dsk_tools::fileData> * files, bool show_deleted)
-    {
-        if (!is_open) return FDD_OP_NOT_OPEN;
-
-        files->clear();
-
-        fileData file;
-
-        FIL_header * header = reinterpret_cast<FIL_header *>(image->get_sector_data(0,0,0));
-
-        file.is_dir = header->type == 0xFF;
-        file.is_deleted = false;
-        file.is_protected = (header->type & 0x80) != 0;
-        file.attributes = header->type & 0x7F;
-        memcpy(&file.original_name, header->name, 30);
-        file.original_name_length = 30;
-
-        file.name = trim(agat_to_utf(header->name, 30));
-
-        auto T = agat_attr_to_type(header->type);
-        file.type_str_short = std::string(agat_file_types[T]);
-
-        file.preferred_type = agat_preferred_file_type(T);
-
-        file.size = image->get_size()-40;
-
-        files->push_back(file);
-
-        return FDD_OP_OK;
-    }
-
     BYTES fsFIL::get_file(const fileData & fd)
     {
         BYTES data;
@@ -232,7 +201,10 @@ namespace dsk_tools {
 
     Result fsFIL::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
-        return Result::error(ErrorCode::NotImplementedYet);
+        data.clear();
+        auto * raw_data = image->get_sector_data(0,0,0);
+        data.insert(data.end(), raw_data + sizeof(FIL_header), raw_data + image->get_size());
+        return Result::ok();
     }
 
     Result fsFIL::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
@@ -245,9 +217,41 @@ namespace dsk_tools {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 
-    Result fsFIL::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
+    Result fsFIL::dir(std::vector<UniversalFile> & files, bool show_deleted)
     {
+        if (!is_open) return Result::error(ErrorCode::OpenNotLoaded);
+
         files.clear();
+
+        const auto * header = reinterpret_cast<FIL_header *>(image->get_sector_data(0,0,0));
+
+        UniversalFile f;
+
+        f.name = trim(agat_to_utf(header->name, 30));
+        f.size = image->get_size()-40;
+        f.is_dir = header->type == 0xFF;
+        f.is_deleted = false;
+        f.is_protected = (header->type & 0x80) != 0;
+        f.attributes = header->type & 0x7F;
+        f.original_name.resize(30);
+        memcpy(f.original_name.data(), header->name, f.original_name.size());
+        auto T = agat_attr_to_type(header->type);
+        f.type_label = std::string(agat_file_types[T]);
+        f.type_preferred = agat_preferred_file_type_new(T);
+
+        files.push_back(f);
+
+        return Result::ok();
+    }
+
+    std::vector<ParameterDescription> fsFIL::file_get_metadata(const UniversalFile & fd)
+    {
+        std::vector<ParameterDescription> params;
+        return params;
+    }
+
+    Result fsFIL::file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata)
+    {
         return Result::error(ErrorCode::NotImplementedYet);
     }
 

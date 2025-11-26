@@ -59,79 +59,11 @@ namespace dsk_tools {
         return 0;
     }
 
-    int fsDOS33::dir(std::vector<dsk_tools::fileData> * files, bool show_deleted)
-    {
-        if (!is_open) return FDD_OP_NOT_OPEN;
-
-        files->clear();
-
-        TS_PAIR catalog_ts = current_path.back();
-
-        // std::cout << "DIR: " << (int)catalog_ts.track << ":" << (int)catalog_ts.sector << std::endl;
-
-        Apple_DOS_Catalog * catalog;
-
-        do {
-            catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
-
-            // std::cout << "CATALOG: " << (int)catalog_ts.track << ":" << (int)catalog_ts.sector << std::endl;
-
-            for (int i=0; i<7; i++) {
-                bool is_deleted = catalog->files[i].tbl_track == 0xFF;
-                if (!is_deleted || show_deleted) {
-                    fileData file;
-
-                    if (catalog->files[i].tbl_track == 0) {
-                        // Means end of the list
-                        return FDD_OP_OK;
-                    } else {
-                        file.is_dir = catalog->files[i].type == 0xFF;
-                        file.is_deleted = is_deleted;
-                        file.is_protected = (catalog->files[i].type & 0x80) != 0;
-                        file.attributes = catalog->files[i].type & 0x7F;
-                        memcpy(&file.original_name, &catalog->files[i].name, 30);
-                        file.original_name_length = 30;
-
-                        bool updir = false;
-                        if (current_path.size() > 1 && file.is_dir) {
-                            TS_PAIR parent_ts = current_path[current_path.size()-2];
-                            updir = catalog->files[i].tbl_track == parent_ts.track && catalog->files[i].tbl_sector == parent_ts.sector;
-                        }
-                        if (updir)
-                            file.name = "..";
-                        else
-                            file.name = trim(agat_to_utf(catalog->files[i].name, 30));
-
-                        auto T = attr_to_type(catalog->files[i].type);
-                        file.type_str_short = std::string(agat_file_types[T]);
-                        file.preferred_type = agat_preferred_file_type(T);
-                        file.size = catalog->files[i].size * 256;
-
-                        file.metadata.resize(sizeof(catalog->files[i]));
-                        memcpy(file.metadata.data(), &(catalog->files[i]), sizeof(catalog->files[i]));
-
-                        file.position.push_back(catalog_ts.track);
-                        file.position.push_back(catalog_ts.sector);
-                        file.position.push_back(i);
-
-                        files->push_back(file);
-                    }
-                } //show deleted
-            }
-
-            catalog_ts.track = catalog->next_track;
-            catalog_ts.sector = catalog->next_sector;
-
-        } while (catalog_ts.track != 0);
-
-        return FDD_OP_OK;
-    }
-
-    BYTES fsDOS33::get_file(const fileData & fd)
+        BYTES fsDOS33::get_file(const fileData & fd)
     {
         BYTES data;
 
-        const dsk_tools::Apple_DOS_File * dir_entry = reinterpret_cast<const dsk_tools::Apple_DOS_File *>(fd.metadata.data());
+        const Apple_DOS_File * dir_entry = reinterpret_cast<const dsk_tools::Apple_DOS_File *>(fd.metadata.data());
         int list_track = dir_entry->tbl_track;
         int list_sector = dir_entry->tbl_sector;
 
@@ -203,10 +135,11 @@ namespace dsk_tools {
         }
     }
 
-    std::string fsDOS33::file_info(const fileData & fd) {
-        const dsk_tools::Apple_DOS_File * dir_entry = reinterpret_cast<const dsk_tools::Apple_DOS_File *>(fd.metadata.data());
+    std::string fsDOS33::file_info(const UniversalFile & fd) {
+        const auto * metadata = reinterpret_cast<const Apple_DOS_File_Metadata *>(fd.metadata.data());
+        const auto * dir_entry = &metadata->dir_entry;
 
-        std::string result = "";
+        std::string result;
         result += "{$DIRECTORY_ENTRY}:\n";
         result += "    {$FILE_NAME}: " +  trim(agat_to_utf(dir_entry->name, 30)) + " (" + toHexList(dir_entry->name, 30, "$") +")\n";
         result += "    {$SIZE}: " + std::to_string(dir_entry->size * 256) + " {$BYTES} (" + std::to_string(dir_entry->size) + " {$SECTORS})\n";
@@ -234,7 +167,8 @@ namespace dsk_tools {
 
         result += "\n";
 
-        BYTES buffer = get_file(fd);
+        BYTES buffer;
+        auto res =  get_file(fd, "", buffer);
         result += agat_vr_info(buffer);
 
         result += "{$TS_LIST_DATA}:\n";
@@ -880,14 +814,14 @@ namespace dsk_tools {
 
     bool fsDOS33::file_find(const std::string & file_name, fileData & fd)
     {
-        std::vector<fileData> files;
-        dir(&files);
-        for (const dsk_tools::fileData& f : files) {
-            if (to_upper(f.name) == file_name) {
-                fd = f;
-                return true;
-            }
-        }
+        // std::vector<fileData> files;
+        // dir(&files);
+        // for (const dsk_tools::fileData& f : files) {
+        //     if (to_upper(f.name) == file_name) {
+        //         fd = f;
+        //         return true;
+        //     }
+        // }
         return false;
     }
 
@@ -1190,7 +1124,7 @@ namespace dsk_tools {
         return Result::ok();
     }
 
-    Result fsDOS33::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
+    Result fsDOS33::dir(std::vector<UniversalFile> & files, bool show_deleted)
     {
         if (!is_open) return Result::error(ErrorCode::OpenNotLoaded);
 
@@ -1275,6 +1209,93 @@ namespace dsk_tools {
 
         return Result::ok();
     }
+
+    std::vector<ParameterDescription> fsDOS33::file_get_metadata(const UniversalFile & fd)
+    {
+        std::vector<ParameterDescription> params;
+        params.push_back({"filename", "{$META_FILENAME}", ParamType::String, fd.name});
+        params.push_back({"protected", "{$META_PROTECTED}", ParamType::Checkbox, fd.is_protected?"true":"false"});
+
+        std::vector<std::pair<std::string, std::string>> options;
+        options.reserve(agat_file_types.size());
+        int c=0;
+        for (auto s : agat_file_types) {
+            options.emplace_back(s, std::to_string(c++));
+        }
+
+        const auto T = attr_to_type(fd.attributes);
+        params.push_back({"type", "{$META_TYPE}", ParamType::Enum, std::to_string(T), options});
+
+        const auto * metadata = reinterpret_cast<const Apple_DOS_File_Metadata *>(fd.metadata.data());
+        const int list_track = metadata->dir_entry.tbl_track;
+        const int list_sector = metadata->dir_entry.tbl_sector;
+
+        const auto * ts_list = reinterpret_cast<Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+        BYTES ts_custom(fd.is_dir?8:9);
+        const void * from = &(ts_list->_not_used_03);
+        std::memcpy(ts_custom.data(), from, ts_custom.size());
+        for (int i = 0; i < ts_custom.size(); i++) {
+            params.push_back({"extended_"+std::to_string(i), "{$META_EXTENDED} #"+std::to_string(i), ParamType::Byte,std::to_string(ts_custom[i])});
+        }
+
+        return params;
+    }
+
+    Result fsDOS33::file_rename(const UniversalFile & fd, const std::string & new_name)
+    {
+        auto * catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, fd.position[0], fd.position[1]));
+        auto * dir_entry = &(catalog->files[fd.position[2]]);
+
+        const BYTES name_str = utf_to_agat(new_name);
+        const auto len = name_str.size();
+        std::memset(dir_entry->name, 0xA0, sizeof(dir_entry->name));
+        std::memcpy(dir_entry->name, name_str.data(), (len <= sizeof(dir_entry->name))?len:sizeof(dir_entry->name));
+
+        is_changed = true;
+        return Result::ok();
+    }
+
+    Result fsDOS33::file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata)
+    {
+        // uint8_t new_type = 0;
+        // bool is_protected = false;
+        // BYTES ts_custom(fd.is_dir?8:9);
+        //
+        // const std::string ext_prefix = "extended_";
+        //
+        // for (const auto& pair : metadata) {
+        //     const std::string& key = pair.first;
+        //     const std::string& val = pair.second;
+        //     std::cout << "+ " << key << "=" << val << std::endl;
+        //     if (key == "filename") {
+        //         if (val != fd.name) {
+        //             int res = file_rename(fd, val);
+        //             if (res != FILE_RENAME_OK)
+        //                 return FILE_METADATA_ERROR;
+        //         }
+        //     } else
+        //         if (key == "type") {
+        //             uint8_t val_i = std::stoi(val);
+        //             if (val_i == 0) new_type = 0;
+        //             else
+        //                 if (val_i == 7) new_type = 0xFF;
+        //                 else
+        //                     new_type = 0x01 << (val_i - 1);
+        //         } else
+        //             if (key == "protected") {
+        //                 is_protected = (val == "true");
+        //             } else
+        //                 if (key.compare(0, ext_prefix.size(), ext_prefix) == 0) {
+        //                     // std::cout << "! " << ext_prefix.size() << " : " << key << std::endl;
+        //                     std::string number_part = key.substr(ext_prefix.size());
+        //                     int number_out = std::stoi(number_part);
+        //
+        //                     uint8_t val_i = std::stoi(val);
+        //                     ts_custom[number_out] = val_i;
+        //                 }
+            return Result::ok();
+    }
+
 
 
 }
