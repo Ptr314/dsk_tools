@@ -56,7 +56,7 @@ namespace dsk_tools {
         // Disk functions
         virtual std::string information() = 0;
         virtual int get_volume_id() {return volume_id;};
-        virtual int translate_sector(int sector) {return sector;};
+        virtual int translate_sector(int sector) const {return sector;};
         virtual bool get_changed() {return is_changed;};
 
         // Directories

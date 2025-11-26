@@ -49,7 +49,7 @@ namespace dsk_tools {
         CPM_DPB DPB;
         std::string m_filesystem_id;
         std::string make_file_name(CPM_DIR_ENTRY & di);
-        void load_file(const BYTES *dir_records, int extents, BYTES & out);
+        void load_file(const BYTES *dir_records, int extents, BYTES & out) const;
 
         bool sector_is_free(int head, int track, int sector) override;
         void sector_free(int head, int track, int sector) override;
@@ -73,7 +73,7 @@ namespace dsk_tools {
         std::vector<std::string> get_add_file_formats() override;
         int save_file(const std::string & format_id, const std::string & file_name, const fileData & fd) override;
         std::string information() override;
-        int translate_sector(int sector) override;
+        int translate_sector(int sector) const override;
         Result mkdir(const std::string & dir_name) override;
         int file_rename(const fileData & fd, const std::string & new_name) override;
         bool is_root() override;
