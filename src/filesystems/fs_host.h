@@ -25,6 +25,8 @@ namespace dsk_tools {
         Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace) override;
         Result delete_file(const UniversalFile & uf) override;
         void cd(const std::string & path) override {m_path = path;};
+        Result mkdir(const std::string & dir_name) override;
+
 
     };
 }
