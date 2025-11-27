@@ -20,7 +20,7 @@ namespace dsk_tools {
 
     FSCaps fsDOS33::getCaps()
     {
-        return FSCaps::Protect | FSCaps::Types | FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename;
+        return FSCaps::Protect | FSCaps::Types | FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename | FSCaps::MkDir;
     }
 
     int fsDOS33::open()
