@@ -75,6 +75,7 @@ namespace dsk_tools {
         Delete      = 1 << 3,       // Files can be deleted
         Add         = 1 << 4,       // Files can be added
         Rename      = 1 << 5,       // Files can be renamed
+        MkDir       = 1 << 6,       // Creating directories
         All         = Dirs | Protect | Types | Delete | Add | Rename
     };
 
