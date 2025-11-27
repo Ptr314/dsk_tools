@@ -8,6 +8,14 @@
 #include <fstream>
 #include <cstring>
 #include <cstdio>
+#include <cerrno>
+
+#ifdef _WIN32
+    #include <direct.h>
+#else
+    #include <sys/stat.h>
+    #include <sys/types.h>
+#endif
 
 #include "dsk_tools/dsk_tools.h"
 #include "utils.h"
@@ -21,7 +29,7 @@ namespace dsk_tools {
 
     FSCaps fsHost::getCaps()
     {
-        return FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename;
+        return FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename| FSCaps::MkDir;
     }
 
     int fsHost::open()
@@ -140,6 +148,40 @@ namespace dsk_tools {
     {
         files.clear();
         return Result::error(ErrorCode::NotImplementedYet);
+    }
+
+    Result fsHost::mkdir(const std::string & dir_name)
+    {
+        // std::cout << "Host: mkdir " << m_path << " + " << dir_name << std::endl;
+
+        std::string fullPath;
+        if (m_path.empty()) {
+            fullPath = dir_name;
+        } else {
+            fullPath = m_path;
+            char lastChar = m_path[m_path.length() - 1];
+            if (lastChar != '/' && lastChar != '\\') {
+                fullPath += '/';
+            }
+            fullPath += dir_name;
+        }
+
+        // Platform-specific directory creation
+        #ifdef _WIN32
+            int result = _mkdir(fullPath.c_str());
+        #else
+            int result = ::mkdir(fullPath.c_str(), 0755);
+        #endif
+
+        if (result != 0) {
+            // Check if directory already exists
+            if (errno == EEXIST) {
+                return Result::error(ErrorCode::DirAlreadyExists);
+            }
+            return Result::error(ErrorCode::DirError);
+        }
+
+        return Result::ok();
     }
 
 }
