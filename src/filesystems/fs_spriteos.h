@@ -2,9 +2,8 @@
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: A class and ther definitions for the Agat Sprite OS filesystem
+#pragma once
 
-#ifndef FS_SPRITEOS_H
-#define FS_SPRITEOS_H
 
 #include "filesystem.h"
 
@@ -64,5 +63,3 @@ namespace dsk_tools {
         bool is_root() override;
     };
 }
-
-#endif // FS_SPRITEOS_H

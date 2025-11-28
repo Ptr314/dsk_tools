@@ -2,9 +2,8 @@
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: Character maps for displaying files
+#pragma once
 
-#ifndef CHARMAPS_H
-#define CHARMAPS_H
 
 #include <string>
 #include <map>
@@ -125,5 +124,3 @@ namespace dsk_tools {
     };
 
 }
-
-#endif // CHARMAPS_H

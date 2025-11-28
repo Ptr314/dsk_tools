@@ -2,9 +2,8 @@
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: A top level abstract class for different writers
+#pragma once
 
-#ifndef WRITER_H
-#define WRITER_H
 
 #include <string>
 
@@ -29,5 +28,3 @@ namespace dsk_tools {
     };
 
 }
-
-#endif // WRITER_H

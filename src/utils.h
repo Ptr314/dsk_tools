@@ -2,9 +2,8 @@
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: Service functions
+#pragma once
 
-#ifndef UTILS_H
-#define UTILS_H
 
 #include <cstdint>
 #include <iomanip>
@@ -69,4 +68,3 @@ namespace dsk_tools
 #endif
 
 }
-#endif // UTILS_H

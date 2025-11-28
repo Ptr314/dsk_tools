@@ -2,9 +2,8 @@
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: Numeric tokens for different tokenized BASIC files
+#pragma once
 
-#ifndef BAS_TOKENS_H
-#define BAS_TOKENS_H
 
 #include <array>
 
@@ -68,5 +67,3 @@ namespace dsk_tools {
     };
 
 }
-
-#endif // BAS_TOKENS_H
