@@ -2,9 +2,8 @@
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: A loader class for AIM (Agat 840 Kb psysical images)
+#pragma once
 
-#ifndef LOADER_AIM_H
-#define LOADER_AIM_H
 
 #include "loader.h"
 
@@ -24,4 +23,3 @@ namespace dsk_tools {
     };
 
 }
-#endif // LOADER_AIM_H

@@ -2,9 +2,8 @@
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: A class which represents a .FIL as a single-file contaiter - filesystem part
+#pragma once
 
-#ifndef FS_FIL_H
-#define FS_FIL_H
 
 
 #include "filesystem.h"
@@ -28,5 +27,3 @@ namespace dsk_tools {
         Result file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata) override;
     };
 }
-
-#endif // FS_FIL_H

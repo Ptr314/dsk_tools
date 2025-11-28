@@ -2,9 +2,8 @@
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: A writer class for .HFE files
+#pragma once
 
-#ifndef WRITER_HXC_HFE_H
-#define WRITER_HXC_HFE_H
 
 #include "writer_mfm.h"
 
@@ -27,5 +26,3 @@ namespace dsk_tools {
     };
 
 }
-
-#endif // WRITER_HXC_HFE_H
