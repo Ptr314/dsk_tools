@@ -305,4 +305,27 @@ namespace dsk_tools
         return std::string(v.begin(), v.end());
     }
 
+#ifdef _WIN32
+    #include <windows.h>
+
+    std::wstring utf8_to_wide(const std::string& utf8_str)
+    {
+        if (utf8_str.empty()) return std::wstring();
+
+        // Get required buffer size
+        int size_needed = MultiByteToWideChar(CP_UTF8, 0, utf8_str.c_str(),
+                                              static_cast<int>(utf8_str.size()),
+                                              nullptr, 0);
+        if (size_needed <= 0) return std::wstring();
+
+        // Perform conversion
+        std::wstring result(size_needed, 0);
+        MultiByteToWideChar(CP_UTF8, 0, utf8_str.c_str(),
+                           static_cast<int>(utf8_str.size()),
+                           &result[0], size_needed);
+
+        return result;
+    }
+#endif
+
 } // namespace
