@@ -21,6 +21,59 @@
 #include "utils.h"
 #include "fs_host.h"
 
+#ifdef _WIN32
+    #include <windows.h>
+
+    // Windows-specific wrappers for UTF-8 file I/O
+
+    // Wrapper for std::ifstream that handles UTF-8 paths on Windows
+    class UTF8_ifstream : public std::ifstream {
+    public:
+        explicit UTF8_ifstream(const std::string& filename,
+                              std::ios_base::openmode mode = std::ios_base::in)
+        {
+            std::wstring wpath = dsk_tools::utf8_to_wide(filename);
+            this->open(wpath.c_str(), mode);
+        }
+    };
+
+    // Wrapper for std::ofstream that handles UTF-8 paths on Windows
+    class UTF8_ofstream : public std::ofstream {
+    public:
+        explicit UTF8_ofstream(const std::string& filename,
+                              std::ios_base::openmode mode = std::ios_base::out)
+        {
+            std::wstring wpath = dsk_tools::utf8_to_wide(filename);
+            this->open(wpath.c_str(), mode);
+        }
+    };
+
+    // Helper function for file removal with UTF-8 path
+    inline int utf8_remove(const std::string& path) {
+        std::wstring wpath = dsk_tools::utf8_to_wide(path);
+        return _wremove(wpath.c_str());
+    }
+
+    // Helper function for directory creation with UTF-8 path
+    inline int utf8_mkdir(const std::string& path) {
+        std::wstring wpath = dsk_tools::utf8_to_wide(path);
+        return _wmkdir(wpath.c_str());
+    }
+
+#else
+    // On non-Windows platforms, use standard classes directly
+    using UTF8_ifstream = std::ifstream;
+    using UTF8_ofstream = std::ofstream;
+
+    inline int utf8_remove(const std::string& path) {
+        return std::remove(path.c_str());
+    }
+
+    inline int utf8_mkdir(const std::string& path) {
+        return ::mkdir(path.c_str(), 0755);
+    }
+#endif
+
 namespace dsk_tools {
 
     fsHost::fsHost(diskImage * image):
@@ -52,7 +105,7 @@ namespace dsk_tools {
         std::cout << "Host: get_file " << path << std::endl;
 
         // Open file in binary mode
-        std::ifstream file(path, std::ios::binary);
+        UTF8_ifstream file(path, std::ios::binary);
         if (!file.is_open()) {
             return Result::error(ErrorCode::FileNotFound);
         }
@@ -77,6 +130,7 @@ namespace dsk_tools {
     {
         std::cout << "Host: put_file " << m_path << " + " << uf.name << std::endl;
 
+        // std::str file_name = uf.name;
         // Construct full file path
         std::string fullPath;
         if (m_path.empty()) {
@@ -95,7 +149,7 @@ namespace dsk_tools {
         }
 
         // Check if file already exists
-        std::ifstream testFile(fullPath);
+        UTF8_ifstream testFile(fullPath);
         if (testFile.good()) {
             testFile.close();
             if (!force_replace) {
@@ -104,7 +158,7 @@ namespace dsk_tools {
         }
 
         // Open file in binary write mode
-        std::ofstream file(fullPath, std::ios::binary);
+        UTF8_ofstream file(fullPath, std::ios::binary);
         if (!file.is_open()) {
             return Result::error(ErrorCode::WriteError);
         }
@@ -130,14 +184,14 @@ namespace dsk_tools {
         std::cout << "Host: delete_file " << path << std::endl;
 
         // Check if file exists
-        std::ifstream testFile(path);
+        UTF8_ifstream testFile(path);
         if (!testFile.good()) {
             return Result::error(ErrorCode::FileNotFound);
         }
         testFile.close();
 
         // Delete the file
-        if (std::remove(path.c_str()) != 0) {
+        if (utf8_remove(path) != 0) {
             return Result::error(ErrorCode::FileDeleteError);
         }
 
@@ -166,12 +220,8 @@ namespace dsk_tools {
             fullPath += dir_name;
         }
 
-        // Platform-specific directory creation
-        #ifdef _WIN32
-            int result = _mkdir(fullPath.c_str());
-        #else
-            int result = ::mkdir(fullPath.c_str(), 0755);
-        #endif
+        // Platform-specific directory creation with UTF-8 support
+        int result = utf8_mkdir(fullPath);
 
         if (result != 0) {
             // Check if directory already exists
