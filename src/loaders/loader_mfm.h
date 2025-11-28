@@ -2,9 +2,8 @@
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: A top level abstract class for different physical format loaders
+#pragma once
 
-#ifndef LOADER_MFM_H
-#define LOADER_MFM_H
 
 #include "loader.h"
 
@@ -42,5 +41,3 @@ namespace dsk_tools {
     };
 
 }
-
-#endif // LOADER_MFM_H

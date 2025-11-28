@@ -2,9 +2,8 @@
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: Top level abstract class for all loaders
+#pragma once
 
-#ifndef LOADER_H
-#define LOADER_H
 
 #include <cstdint>
 #include <string>
@@ -37,5 +36,3 @@ namespace dsk_tools {
 
 
 }
-
-#endif // LOADER_H

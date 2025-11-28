@@ -2,9 +2,8 @@
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: Abstract class for all disk images
+#pragma once
 
-#ifndef DISK_IMAGE_H
-#define DISK_IMAGE_H
 
 #include "definitions.h"
 #include "loader.h"
@@ -72,5 +71,3 @@ namespace dsk_tools {
             BYTES * get_buffer() {return &buffer;};
     };
 }
-
-#endif // DISK_IMAGE_H
