@@ -63,5 +63,10 @@ namespace dsk_tools
     std::vector<uint8_t> strToBytes(const std::string& s);
     std::string bytesToString(const std::vector<uint8_t>& v);
 
+#ifdef _WIN32
+    // Windows-specific UTF-8 to UTF-16 conversion
+    std::wstring utf8_to_wide(const std::string& utf8_str);
+#endif
+
 }
 #endif // UTILS_H
