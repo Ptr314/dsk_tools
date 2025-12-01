@@ -226,11 +226,26 @@ namespace dsk_tools {
     void decode_agat_mfm_data(BYTES & out, const BYTES & in) {
         out.clear();
 
-        for (int i=0; i<in.size()/2; i++)
+        // Ensure input size is even and sufficient for decoding
+        if (in.size() < 2) {
+            return;
+        }
+
+        for (size_t i = 0; i < in.size() / 2; i++)
         {
+            // Bounds check: ensure we can read two bytes
+            if (i * 2 + 1 >= in.size()) {
+                break;
+            }
+
             uint8_t b1 = in[i*2];
             uint8_t b2 = in[i*2+1];
-            uint8_t b =  (agat_MFM_decode_tab[b1>>1] << 4) | agat_MFM_decode_tab[b2>>1];
+
+            // Bounds check: ensure indices into decode table are valid (table size is 256)
+            uint8_t idx1 = b1 >> 1;
+            uint8_t idx2 = b2 >> 1;
+
+            uint8_t b = (agat_MFM_decode_tab[idx1] << 4) | agat_MFM_decode_tab[idx2];
             out.push_back(b);
         }
     }
