@@ -155,8 +155,8 @@ namespace dsk_tools {
         std::vector<std::string> get_save_file_formats() override;
         std::vector<std::string> get_add_file_formats() override;
         std::string information() override;
-        Result mkdir(const std::string & dir_name) override;
-        Result mkdir(const UniversalFile & uf) override;
+        Result mkdir(const std::string & dir_name, UniversalFile & new_dir) override;
+        Result mkdir(const UniversalFile & uf, UniversalFile & new_dir) override;
         bool is_root() override;
         Result find_file(const std::string & file_name, UniversalFile & fd) override;
         std::vector<ParameterDescription> file_get_metadata(const UniversalFile & fd) override;

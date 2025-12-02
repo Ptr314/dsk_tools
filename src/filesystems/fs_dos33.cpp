@@ -304,15 +304,15 @@ namespace dsk_tools {
         return true;
     }
 
-    Result fsDOS33::mkdir(const std::string & dir_name)
+    Result fsDOS33::mkdir(const std::string & dir_name,  UniversalFile & new_dir)
     {
         UniversalFile uf;
         uf.fs = FS::None;
         uf.name = dir_name;
-        return mkdir(uf);
+        return mkdir(uf, new_dir);
     }
 
-    Result fsDOS33::mkdir(const UniversalFile & uf)
+    Result fsDOS33::mkdir(const UniversalFile & uf,  UniversalFile & new_dir)
     {
 
         constexpr int sectors_body = 1;  // We need at least 1 sector for the new directory
@@ -373,9 +373,21 @@ namespace dsk_tools {
         new_catalog->files[0].tbl_track = catalog_ts.track;
         new_catalog->files[0].tbl_sector = catalog_ts.sector;
         new_catalog->files[0].type = 0xFF;
-        // std::memset(new_catalog->files[0].name, 0xA0, sizeof(dir_entry->name));
-        // std::memcpy(new_catalog->files[0].name, name_str.data(), (len <= sizeof(dir_entry->name))?len:sizeof(dir_entry->name));
         std::memcpy(new_catalog->files[0].name, &dir_entry->name, sizeof(dir_entry->name));
+
+        new_dir.fs = FS::DOS33;
+        new_dir.name = uf.name;
+        new_dir.is_dir = true;
+
+        Apple_DOS_File_Metadata metadata {};
+        std::memcpy(&metadata.dir_entry, &dir_entry, sizeof(metadata.dir_entry));
+        std::memset(metadata.tsl, 0, sizeof(metadata.tsl));
+        new_dir.metadata.resize(sizeof(Apple_DOS_File_Metadata));
+        memcpy(new_dir.metadata.data(), &metadata, sizeof(metadata));
+
+        new_dir.position.push_back(catalog_ts.track);
+        new_dir.position.push_back(catalog_ts.sector);
+        new_dir.position.push_back(0);
 
         is_changed = true;
         return Result::ok();

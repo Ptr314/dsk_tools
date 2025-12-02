@@ -12,9 +12,11 @@
 
 #ifdef _WIN32
     #include <direct.h>
+    #include <io.h>
 #else
     #include <sys/stat.h>
     #include <sys/types.h>
+    #include <dirent.h>
 #endif
 
 #include "dsk_tools/dsk_tools.h"
@@ -130,19 +132,8 @@ namespace dsk_tools {
     {
         std::cout << "Host: put_file " << m_path << " + " << uf.name << std::endl;
 
-        // std::str file_name = uf.name;
         // Construct full file path
-        std::string fullPath;
-        if (m_path.empty()) {
-            fullPath = uf.name;
-        } else {
-            fullPath = m_path;
-            char lastChar = m_path[m_path.length() - 1];
-            if (lastChar != '/' && lastChar != '\\') {
-                fullPath += '/';  // Use forward slash (works on all platforms)
-            }
-            fullPath += uf.name;
-        }
+        std::string fullPath = join_paths(m_path, uf.name);
 
         if (format == "FILE_FIL") {
             fullPath += ".fil";
@@ -201,24 +192,135 @@ namespace dsk_tools {
     Result fsHost::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
     {
         files.clear();
-        return Result::error(ErrorCode::NotImplementedYet);
+
+        if (m_path.empty()) {
+            return Result::error(ErrorCode::DirError);
+        }
+
+        bool at_root = is_at_root(m_path);
+
+        // Add parent directory entry if not at root
+        if (!at_root) {
+            UniversalFile parent;
+            parent.fs = FS::Host;
+            parent.name = "..";
+            parent.is_dir = true;
+            parent.size = 0;
+            parent.is_protected = false;
+            parent.is_deleted = false;
+            parent.type_preferred = PreferredType::Binary;
+
+            std::string parent_path = get_parent_path(m_path);
+            parent.metadata = strToBytes(parent_path);
+
+            files.push_back(parent);
+        }
+
+#ifdef _WIN32
+        // Windows implementation using _wfindfirst/_wfindnext
+        std::wstring search_pattern = utf8_to_wide(m_path);
+        if (!search_pattern.empty() && search_pattern.back() != L'\\' && search_pattern.back() != L'/') {
+            search_pattern += L'\\';
+        }
+        search_pattern += L'*';
+
+        struct _wfinddata_t fileInfo;
+        intptr_t handle = _wfindfirst(search_pattern.c_str(), &fileInfo);
+
+        if (handle != -1) {
+            do {
+                std::wstring wname = fileInfo.name;
+
+                // Convert wide filename to UTF-8
+                int utf8_length = WideCharToMultiByte(CP_UTF8, 0, wname.c_str(), -1,
+                                                     nullptr, 0, nullptr, nullptr);
+                if (utf8_length <= 0) continue;
+
+                std::string name(utf8_length - 1, '\0');
+                WideCharToMultiByte(CP_UTF8, 0, wname.c_str(), -1,
+                                   &name[0], utf8_length, nullptr, nullptr);
+
+                // Skip "." and ".." as we handle parent manually
+                if (name == "." || name == "..") continue;
+
+                UniversalFile uf;
+                uf.fs = FS::Host;
+                uf.name = name;
+                uf.is_dir = (fileInfo.attrib & _A_SUBDIR) != 0;
+                uf.size = uf.is_dir ? 0 : static_cast<uint32_t>(fileInfo.size);
+                uf.is_protected = false;
+                uf.is_deleted = false;
+                uf.type_preferred = PreferredType::Binary;
+
+                // Construct full path for metadata
+                std::string fullPath = join_paths(m_path, name);
+
+                uf.metadata = strToBytes(fullPath);
+                files.push_back(uf);
+
+            } while (_wfindnext(handle, &fileInfo) == 0);
+
+            _findclose(handle);
+        }
+
+#else
+        // POSIX implementation using opendir/readdir/stat
+        DIR* dir = opendir(m_path.c_str());
+        if (!dir) {
+            return Result::ok();  // Empty or inaccessible directory
+        }
+
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            std::string name = entry->d_name;
+
+            // Skip "." and ".." as we handle parent manually
+            if (name == "." || name == "..") continue;
+
+            // Construct full path
+            std::string fullPath = join_paths(m_path, name);
+
+            struct stat statbuf;
+            if (stat(fullPath.c_str(), &statbuf) != 0) {
+                continue;  // Skip files we can't stat
+            }
+
+            UniversalFile uf;
+            uf.fs = FS::Host;
+            uf.name = name;
+            uf.is_dir = S_ISDIR(statbuf.st_mode);
+            uf.size = uf.is_dir ? 0 : static_cast<uint32_t>(statbuf.st_size);
+            uf.is_protected = false;
+            uf.is_deleted = false;
+            uf.type_preferred = PreferredType::Binary;
+
+            uf.metadata = strToBytes(fullPath);
+            files.push_back(uf);
+        }
+
+        closedir(dir);
+#endif
+
+        return Result::ok();
     }
 
-    Result fsHost::mkdir(const std::string & dir_name)
+    void fsHost::cd(const UniversalFile & dir)
     {
-        // std::cout << "Host: mkdir " << m_path << " + " << dir_name << std::endl;
+        std::string fullPath = join_paths(m_path, dir.name);
+        cd(fullPath);
+    }
 
-        std::string fullPath;
-        if (m_path.empty()) {
-            fullPath = dir_name;
-        } else {
-            fullPath = m_path;
-            char lastChar = m_path[m_path.length() - 1];
-            if (lastChar != '/' && lastChar != '\\') {
-                fullPath += '/';
-            }
-            fullPath += dir_name;
+    void fsHost::cd_up()
+    {
+        if (!is_at_root(m_path)) {
+            m_path = get_parent_path(m_path);
         }
+    }
+
+    Result fsHost::mkdir(const std::string & dir_name, UniversalFile & new_dir)
+    {
+        // Construct full path
+        std::string fullPath = join_paths(m_path, dir_name);
 
         // Platform-specific directory creation with UTF-8 support
         int result = utf8_mkdir(fullPath);
@@ -231,7 +333,18 @@ namespace dsk_tools {
             return Result::error(ErrorCode::DirError);
         }
 
+        new_dir.fs = getFS();
+        new_dir.name = dir_name;
+        new_dir.is_dir = true;
+        new_dir.metadata = strToBytes(fullPath);
+
         return Result::ok();
+    }
+
+    Result fsHost::mkdir(const UniversalFile & uf, UniversalFile & new_dir)
+    {
+
+        return mkdir(uf.name, new_dir);
     }
 
 }

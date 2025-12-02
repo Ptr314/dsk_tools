@@ -328,4 +328,67 @@ namespace dsk_tools
     }
 #endif
 
+    // Helper: Detect if path is at root directory
+    bool is_at_root(const std::string& path) {
+#ifdef _WIN32
+        // Windows roots: "C:\", "C:", UNC "\\server\share"
+        if (path.length() <= 3 && path.length() >= 2 && path[1] == ':') {
+            return path.length() == 2 ||
+                   (path.length() == 3 && (path[2] == '\\' || path[2] == '/'));
+        }
+        // UNC path root detection
+        if (path.length() >= 2 && path[0] == '\\' && path[1] == '\\') {
+            size_t third = path.find('\\', 2);
+            if (third == std::string::npos) return false;
+            size_t fourth = path.find('\\', third + 1);
+            return fourth == std::string::npos;
+        }
+        return false;
+#else
+        return path == "/";
+#endif
+    }
+
+    // Helper: Get parent directory path
+    std::string get_parent_path(const std::string& path) {
+        std::string result = path;
+
+        // Remove trailing separator if present
+        while (!result.empty() && (result.back() == '/' || result.back() == '\\')) {
+            result.pop_back();
+        }
+
+        // Find last separator
+        size_t pos = result.find_last_of("/\\");
+        if (pos == std::string::npos) {
+            return result;  // No separator found
+        }
+
+        result = result.substr(0, pos);
+
+        // On Windows, keep drive letter (e.g., "C:" for "C:\foo")
+#ifdef _WIN32
+        if (result.empty() || (result.length() == 2 && result[1] == ':')) {
+            return result.length() == 2 ? result + '/' : result;
+        }
+#endif
+
+        return result.empty() ? "/" : result;
+    }
+
+    // Join base path with a filename/directory name
+    std::string join_paths(const std::string& base, const std::string& name) {
+        if (base.empty()) {
+            return name;
+        }
+
+        std::string result = base;
+        char lastChar = base[base.length() - 1];
+        if (lastChar != '/' && lastChar != '\\') {
+            result += '/';  // Use forward slash (works on all platforms)
+        }
+        result += name;
+        return result;
+    }
+
 } // namespace
