@@ -216,12 +216,15 @@ namespace dsk_tools {
 
     void fsDOS33::sector_free(int head, int track, int sector)
     {
+        // std::cout << "sector_free: " << track << ":" << sector << std::endl;
+
         *track_map(track) |= (image->get_sectors()==16)?VTOCMask140[sector]:VTOCMask840[sector];
-        // std::cout << "FREE " << track << " " << sector << std::endl;
     }
 
     bool fsDOS33::sector_occupy(int head, int track, int sector)
     {
+        // std::cout << "sector_occupy: " << track << ":" << sector << std::endl;
+
         if (!sector_is_free(0, track, sector)) return false;
         *track_map(track) &= ~((image->get_sectors()==16)?VTOCMask140[sector]:VTOCMask840[sector]);
         return true;
@@ -229,7 +232,7 @@ namespace dsk_tools {
 
     bool fsDOS33::find_empty_sector(uint8_t start_track, TS_PAIR &ts, bool go_forward)
     {
-        // std::cout << "?? " << (int)start_track << " ";
+        // std::cout << "find_empty_sector: start_track=" << (int)start_track << std::endl;
 
         int track = start_track;
         int sector;
@@ -250,7 +253,7 @@ namespace dsk_tools {
                 ts.track = track;
                 ts.sector = sector;
 
-                // std::cout << "! " << track << ":" << sector << std::endl;
+                // std::cout << "==> found T:S = " << track << ":" << sector << std::endl;
 
                 return true;
             } else {
@@ -261,7 +264,7 @@ namespace dsk_tools {
         } while (true);
     }
 
-    bool fsDOS33::find_epmty_dir_entry(Apple_DOS_File *& dir_entry, bool just_check, bool & extra_sector)
+    bool fsDOS33::find_epmty_dir_entry(Apple_DOS_File *& dir_entry, int & dir_pos, bool just_check, bool &extra_sector)
     {
 
         TS_PAIR catalog_ts = current_path.back();
@@ -270,12 +273,16 @@ namespace dsk_tools {
 
         do {
             catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
+            // std::cout << "find_epmty_dir_entry" <<  std::endl;
+            // std::cout << "==> catalog T:S = " << unsigned(catalog_ts.track) << ":" << unsigned(catalog_ts.sector) << std::endl;
 
             for (int i=0; i<7; i++) {
                 const uint8_t tbl_track = catalog->files[i].tbl_track;
                 if (tbl_track == 0xFF || tbl_track == 0x00) {
                     dir_entry = &(catalog->files[i]);
+                    dir_pos = i;
                     extra_sector = false;
+                    // std::cout << "==> found position: " << i << std::endl;
                     return true;
                 }
             }
@@ -314,13 +321,15 @@ namespace dsk_tools {
 
     Result fsDOS33::mkdir(const UniversalFile & uf,  UniversalFile & new_dir)
     {
+        // std::cout << "mkdir: " << uf.name << std::endl;
 
         constexpr int sectors_body = 1;  // We need at least 1 sector for the new directory
 
         // Check if we need a new sector for catalog
         Apple_DOS_File * dir_entry;
         bool extra_sector;
-        if (!find_epmty_dir_entry(dir_entry, true, extra_sector))
+        int dir_pos;
+        if (!find_epmty_dir_entry(dir_entry, dir_pos, true, extra_sector))
             return Result::error(ErrorCode::DirErrorAllocateDirEntry);
         const int sectors_catalog = (extra_sector)?1:0;
 
@@ -330,10 +339,10 @@ namespace dsk_tools {
             return Result::error(ErrorCode::DirErrorSpace);
 
         // Create a directory entry
-        if (!find_epmty_dir_entry(dir_entry, false, extra_sector))
+        if (!find_epmty_dir_entry(dir_entry, dir_pos, false, extra_sector))
             return Result::error(ErrorCode::DirErrorAllocateDirEntry);
 
-        // Meatdata
+        // Metadata
         std::memset(dir_entry, 0, sizeof(Apple_DOS_File));
         dir_entry->type = 0xFF;
         dir_entry->size = sectors_total;
@@ -358,7 +367,7 @@ namespace dsk_tools {
         if (!res)
             return Result::error(ErrorCode::DirErrorAllocateSector);;
 
-        // std::cout << "NEW CATALOG: " << (int)ts.track << ":" << (int)ts.sector << std::endl;
+        // std::cout << "catalog position T:S = " << (int)ts.track << ":" << (int)ts.sector << std::endl;
 
         sector_occupy(0, ts.track, ts.sector);
 
@@ -380,14 +389,14 @@ namespace dsk_tools {
         new_dir.is_dir = true;
 
         Apple_DOS_File_Metadata metadata {};
-        std::memcpy(&metadata.dir_entry, &dir_entry, sizeof(metadata.dir_entry));
+        std::memcpy(&metadata.dir_entry, dir_entry, sizeof(metadata.dir_entry));
         std::memset(metadata.tsl, 0, sizeof(metadata.tsl));
         new_dir.metadata.resize(sizeof(Apple_DOS_File_Metadata));
         memcpy(new_dir.metadata.data(), &metadata, sizeof(metadata));
 
         new_dir.position.push_back(catalog_ts.track);
         new_dir.position.push_back(catalog_ts.sector);
-        new_dir.position.push_back(0);
+        new_dir.position.push_back(dir_pos);
 
         is_changed = true;
         return Result::ok();
@@ -531,7 +540,8 @@ namespace dsk_tools {
         // Check if we need a new sector for catalog
         Apple_DOS_File * dir_entry;
         bool extra_sector;
-        if (!find_epmty_dir_entry(dir_entry, true, extra_sector))
+        int dir_pos;
+        if (!find_epmty_dir_entry(dir_entry, dir_pos, true, extra_sector))
             return Result::error(ErrorCode::FileAddErrorAllocateDirEntry);
         const auto sectors_catalog = (extra_sector)?1:0;
         const auto sectors_total = sectors_body + ts_lists + sectors_catalog;
@@ -541,7 +551,7 @@ namespace dsk_tools {
         // ----------------   Main process
 
         // Create a directory entry
-        if (!find_epmty_dir_entry(dir_entry, false, extra_sector))
+        if (!find_epmty_dir_entry(dir_entry, dir_pos, false, extra_sector))
             return Result::error(ErrorCode::FileAddErrorAllocateDirEntry);
 
         std::memset(dir_entry, 0, sizeof(Apple_DOS_File));
@@ -850,7 +860,7 @@ namespace dsk_tools {
         for (const auto& pair : metadata) {
             const std::string& key = pair.first;
             const std::string& val = pair.second;
-            std::cout << "+ " << key << "=" << val << std::endl;
+            // std::cout << "+ " << key << "=" << val << std::endl;
             if (key == "filename") {
                 if (val != fd.name) {
                     if (!rename_file(fd, val)) return Result::error(ErrorCode::FileRenameError);
