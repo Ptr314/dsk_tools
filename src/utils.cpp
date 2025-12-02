@@ -3,13 +3,16 @@
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: Service functions
 
-#include <algorithm>
 #include <cstdint>
 #include <iomanip>
 #include <ios>
 #include <string>
 #include <unordered_map>
 #include <fstream>
+
+#ifdef _WIN32
+    #include <windows.h>
+#endif
 
 #include "utils.h"
 #include "charmaps.h"
@@ -91,7 +94,9 @@ namespace dsk_tools
             return "";
         }
         std::string ext = file_name.substr(dot_pos);
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        for (size_t i = 0; i < ext.length(); ++i) {
+            ext[i] = ::tolower(ext[i]);
+        }
         return ext;
     }
 
@@ -250,8 +255,9 @@ namespace dsk_tools
 
 
     std::string to_upper(std::string s) {
-        std::transform(s.begin(), s.end(), s.begin(),
-                       [](unsigned char c) { return std::toupper(c); });
+        for (size_t i = 0; i < s.length(); ++i) {
+            s[i] = std::toupper(static_cast<unsigned char>(s[i]));
+        }
         return s;
     }
 
@@ -306,7 +312,6 @@ namespace dsk_tools
     }
 
 #ifdef _WIN32
-    #include <windows.h>
 
     std::wstring utf8_to_wide(const std::string& utf8_str)
     {

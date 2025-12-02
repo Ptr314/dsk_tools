@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <memory>
 
 #include "definitions.h"
 
@@ -71,5 +72,11 @@ namespace dsk_tools
     // Windows-specific UTF-8 to UTF-16 conversion
     std::wstring utf8_to_wide(const std::string& utf8_str);
 #endif
+
+    // std::make_unique copy for Mingw 4.9.2 compatibility
+    template <typename T, typename... Args>
+    std::unique_ptr<T> make_unique(Args&&... args) {
+        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    }
 
 }
