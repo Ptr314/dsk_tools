@@ -129,7 +129,7 @@ namespace dsk_tools {
         TS_PAIR current_dir{};
         std::vector<TS_PAIR> current_path;
         static int attr_to_type(uint8_t a);
-        bool find_epmty_dir_entry(Apple_DOS_File *& dir_entry, bool just_check, bool &extra_sector);
+        bool find_epmty_dir_entry(Apple_DOS_File *& dir_entry, int & dir_pos, bool just_check, bool &extra_sector);
         bool find_empty_sector(uint8_t start_track, TS_PAIR & ts, bool go_forward);
         bool sector_is_free(int head, int track, int sector) override;
         void sector_free(int head, int track, int sector) override;
