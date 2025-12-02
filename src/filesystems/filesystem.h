@@ -57,6 +57,7 @@ namespace dsk_tools {
         virtual int get_volume_id() {return volume_id;};
         virtual int translate_sector(int sector) const {return sector;};
         virtual bool get_changed() {return is_changed;};
+        virtual void reset_changed() { is_changed = false; };
 
         // Directories
         virtual Result dir(std::vector<UniversalFile> & files, bool show_deleted) = 0;
