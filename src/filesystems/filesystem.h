@@ -64,6 +64,7 @@ namespace dsk_tools {
         virtual void cd(const std::string & path) {};
         virtual void cd_up() {};
         virtual Result mkdir(const std::string & dir_name) {return Result::error(ErrorCode::NotImplementedYet);};
+        virtual Result mkdir(const UniversalFile & uf) {return mkdir(uf.name);};
         virtual bool is_root() {return true;};
 
         // Files

@@ -306,6 +306,15 @@ namespace dsk_tools {
 
     Result fsDOS33::mkdir(const std::string & dir_name)
     {
+        UniversalFile uf;
+        uf.fs = FS::None;
+        uf.name = dir_name;
+        return mkdir(uf);
+    }
+
+    Result fsDOS33::mkdir(const UniversalFile & uf)
+    {
+
         constexpr int sectors_body = 1;  // We need at least 1 sector for the new directory
 
         // Check if we need a new sector for catalog
@@ -330,10 +339,17 @@ namespace dsk_tools {
         dir_entry->size = sectors_total;
 
         // Name
-        std::memset(dir_entry->name, 0xA0, sizeof(dir_entry->name));
-        const BYTES name_str = utf_to_agat(get_filename(dir_name));
-        const auto len = name_str.size();
-        std::memcpy(dir_entry->name, name_str.data(), (len <= sizeof(dir_entry->name))?len:sizeof(dir_entry->name));
+        if (uf.fs == FS::DOS33) {
+            // For native FS we take an original filename
+            const auto * metadata = reinterpret_cast<const Apple_DOS_File_Metadata *>(uf.metadata.data());
+            std::memcpy(dir_entry->name, &metadata->dir_entry, sizeof(dir_entry->name));
+        } else {
+            // For other cases we convert from universal name
+            std::memset(dir_entry->name, 0xA0, sizeof(dir_entry->name));
+            const BYTES name_str = utf_to_agat(uf.name);
+            const auto len = name_str.size();
+            std::memcpy(dir_entry->name, name_str.data(), (len <= sizeof(dir_entry->name))?len:sizeof(dir_entry->name));
+        }
 
         // Catalog body
         const TS_PAIR catalog_ts = current_path.back();
@@ -357,8 +373,9 @@ namespace dsk_tools {
         new_catalog->files[0].tbl_track = catalog_ts.track;
         new_catalog->files[0].tbl_sector = catalog_ts.sector;
         new_catalog->files[0].type = 0xFF;
-        std::memset(new_catalog->files[0].name, 0xA0, sizeof(dir_entry->name));
-        std::memcpy(new_catalog->files[0].name, name_str.data(), (len <= sizeof(dir_entry->name))?len:sizeof(dir_entry->name));
+        // std::memset(new_catalog->files[0].name, 0xA0, sizeof(dir_entry->name));
+        // std::memcpy(new_catalog->files[0].name, name_str.data(), (len <= sizeof(dir_entry->name))?len:sizeof(dir_entry->name));
+        std::memcpy(new_catalog->files[0].name, &dir_entry->name, sizeof(dir_entry->name));
 
         is_changed = true;
         return Result::ok();
