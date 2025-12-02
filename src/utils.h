@@ -62,6 +62,11 @@ namespace dsk_tools
     std::vector<uint8_t> strToBytes(const std::string& s);
     std::string bytesToString(const std::vector<uint8_t>& v);
 
+    // Path manipulation utilities
+    bool is_at_root(const std::string& path);
+    std::string get_parent_path(const std::string& path);
+    std::string join_paths(const std::string& base, const std::string& name);
+
 #ifdef _WIN32
     // Windows-specific UTF-8 to UTF-16 conversion
     std::wstring utf8_to_wide(const std::string& utf8_str);
