@@ -29,8 +29,7 @@ namespace dsk_tools {
         void cd_up() override;
         Result mkdir(const std::string & dir_name, UniversalFile & new_dir) override;
         Result mkdir(const UniversalFile & uf, UniversalFile & new_dir) override;
-
-
+        Result rename_file(const UniversalFile & fd, const std::string & new_name) override;
     };
 }
 
