@@ -207,7 +207,46 @@
         return _wmkdir(wpath.c_str());
     }
 
-#else
+    // Recycle bin / Trash functionality
+    #include <shellapi.h>
+
+    inline int utf8_trash(const std::string& path) {
+        std::wstring wpath = dsk_tools::utf8_to_wide(path);
+
+        // SHFileOperation requires double-null terminated string
+        std::vector<wchar_t> pathBuffer(wpath.size() + 2, 0);
+        std::copy(wpath.begin(), wpath.end(), pathBuffer.begin());
+
+        SHFILEOPSTRUCTW fileOp = {};
+        fileOp.hwnd = NULL;
+        fileOp.wFunc = FO_DELETE;
+        fileOp.pFrom = pathBuffer.data();
+        fileOp.pTo = NULL;
+        fileOp.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
+        fileOp.fAnyOperationsAborted = FALSE;
+
+        int result = SHFileOperationW(&fileOp);
+        return (result == 0 && !fileOp.fAnyOperationsAborted) ? 0 : -1;
+    }
+
+#elif defined(__APPLE__)
+    // On macOS, use standard classes directly
+    using UTF8_ifstream = std::ifstream;
+    using UTF8_ofstream = std::ofstream;
+
+    inline int utf8_remove(const std::string& path) {
+        return std::remove(path.c_str());
+    }
+
+    inline int utf8_mkdir(const std::string& path) {
+        return ::mkdir(path.c_str(), 0755);
+    }
+
+    // Recycle bin / Trash functionality
+    // macOS implementation in fs_host_helpers_mac.mm
+    int utf8_trash(const std::string& path);
+
+#else  // Linux
     // On non-Windows platforms, use standard classes directly
     using UTF8_ifstream = std::ifstream;
     using UTF8_ofstream = std::ofstream;
@@ -219,4 +258,80 @@
     inline int utf8_mkdir(const std::string& path) {
         return ::mkdir(path.c_str(), 0755);
     }
+
+    // Recycle bin / Trash functionality
+    #include <sys/stat.h>
+    #include <ctime>
+
+    inline std::string get_trash_dir() {
+        const char* xdg_data_home = std::getenv("XDG_DATA_HOME");
+        std::string trash_dir;
+
+        if (xdg_data_home && xdg_data_home[0] == '/') {
+            trash_dir = std::string(xdg_data_home) + "/Trash";
+        } else {
+            const char* home = std::getenv("HOME");
+            if (home) {
+                trash_dir = std::string(home) + "/.local/share/Trash";
+            } else {
+                return "";
+            }
+        }
+
+        // Ensure trash directories exist
+        utf8_mkdir(trash_dir);
+        utf8_mkdir(trash_dir + "/files");
+        utf8_mkdir(trash_dir + "/info");
+
+        return trash_dir;
+    }
+
+    inline int utf8_trash(const std::string& path) {
+        std::string trash_dir = get_trash_dir();
+        if (trash_dir.empty()) return -1;
+
+        // Extract filename from path
+        size_t last_slash = path.find_last_of("/\\");
+        std::string filename = (last_slash == std::string::npos) ? path : path.substr(last_slash + 1);
+
+        std::string trash_file = trash_dir + "/files/" + filename;
+        std::string trash_info = trash_dir + "/info/" + filename + ".trashinfo";
+
+        // Handle name collision with timestamp
+        struct stat st;
+        if (stat(trash_file.c_str(), &st) == 0) {
+            time_t now = time(nullptr);
+            char timestamp[32];
+            snprintf(timestamp, sizeof(timestamp), ".%ld", (long)now);
+            trash_file += timestamp;
+            trash_info = trash_dir + "/info/" + filename + timestamp + ".trashinfo";
+        }
+
+        // Move file to trash
+        if (std::rename(path.c_str(), trash_file.c_str()) != 0) {
+            return -1;
+        }
+
+        // Create .trashinfo file
+        UTF8_ofstream info(trash_info);
+        if (!info.good()) {
+            // Restore file on failure
+            std::rename(trash_file.c_str(), path.c_str());
+            return -1;
+        }
+
+        info.write("[Trash Info]\n", 13);
+        std::string path_line = "Path=" + path + "\n";
+        info.write(path_line.c_str(), path_line.size());
+
+        time_t now = time(nullptr);
+        struct tm* tm_info = localtime(&now);
+        char date_buf[32];
+        strftime(date_buf, sizeof(date_buf), "DeletionDate=%Y-%m-%dT%H:%M:%S\n", tm_info);
+        info.write(date_buf, strlen(date_buf));
+
+        info.close();
+        return 0;
+    }
+
 #endif
