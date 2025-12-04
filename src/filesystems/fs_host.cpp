@@ -286,8 +286,54 @@ namespace dsk_tools {
 
     Result fsHost::mkdir(const UniversalFile & uf, UniversalFile & new_dir)
     {
-
         return mkdir(uf.name, new_dir);
+    }
+
+    Result fsHost::rename_file(const UniversalFile & fd, const std::string & new_name)
+    {
+        // Validate filesystem type
+        if (fd.fs != getFS()) return Result::error(ErrorCode::FileIncorrectFS);
+
+        // Extract path from metadata
+        std::string oldPath = bytesToString(fd.metadata);
+        std::cout << "Host: rename_file " << oldPath << " -> " << new_name << std::endl;
+
+        // Get directory of the file and construct new path
+        std::string dirPath = get_parent_path(oldPath);
+        std::string newPath = join_paths(dirPath, new_name);
+
+        // Check if old file exists
+        UTF8_ifstream testFile(oldPath);
+        if (!testFile.good()) {
+            testFile.close();
+            return Result::error(ErrorCode::FileNotFound);
+        }
+        testFile.close();
+
+        // Check if new file already exists
+        UTF8_ifstream testNewFile(newPath);
+        if (testNewFile.good()) {
+            testNewFile.close();
+            return Result::error(ErrorCode::FileAlreadyExists);
+        }
+        testNewFile.close();
+
+#ifdef _WIN32
+        // Windows implementation using _wrename for UTF-8 support
+        std::wstring wOldPath = utf8_to_wide(oldPath);
+        std::wstring wNewPath = utf8_to_wide(newPath);
+
+        if (_wrename(wOldPath.c_str(), wNewPath.c_str()) != 0) {
+            return Result::error(ErrorCode::FileRenameError);
+        }
+#else
+        // POSIX implementation using rename
+        if (std::rename(oldPath.c_str(), newPath.c_str()) != 0) {
+            return Result::error(ErrorCode::FileRenameError);
+        }
+#endif
+
+        return Result::ok();
     }
 
 }
