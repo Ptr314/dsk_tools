@@ -57,6 +57,19 @@ add_library(${PROJECT_NAME} STATIC
         src/filesystems/fs_host.cpp
 )
 
+# Platform-specific sources and libraries
+if(APPLE)
+    target_sources(${PROJECT_NAME} PRIVATE
+        src/filesystems/fs_host_helpers_mac.mm
+    )
+    # macOS needs to enable Objective-C++ compilation
+    set_source_files_properties(src/filesystems/fs_host_helpers_mac.mm PROPERTIES LANGUAGE OBJCXX)
+endif()
+
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE shell32)
+endif()
+
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src/

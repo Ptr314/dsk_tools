@@ -19,6 +19,10 @@ namespace dsk_tools {
         int open() override;
         FSCaps getCaps() override;
         FS getFS() const override {return FS::Host;};
+
+        // Callback to check if recycle bin is enabled (set by MainWindow)
+        static bool (*use_recycle_bin)();
+
         Result dir(std::vector<UniversalFile> & files, bool show_deleted) override;
         std::vector<std::string> get_save_file_formats() override;
         Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;

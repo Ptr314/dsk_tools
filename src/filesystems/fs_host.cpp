@@ -21,6 +21,9 @@
 
 namespace dsk_tools {
 
+    // Initialize static callback pointer
+    bool (*fsHost::use_recycle_bin)() = nullptr;
+
     fsHost::fsHost(diskImage * image):
         fileSystem(nullptr)
     {}
@@ -124,7 +127,19 @@ namespace dsk_tools {
         }
         testFile.close();
 
-        // Delete the file
+        // Check if recycle bin is enabled
+        bool use_trash = (use_recycle_bin != nullptr && use_recycle_bin());
+
+        if (use_trash) {
+            // Try to move to trash first
+            if (utf8_trash(path) == 0) {
+                return Result::ok();
+            }
+            // Trash failed - return special error for UI to handle
+            return Result::error(ErrorCode::FileDeleteError, "TRASH_FAILED");
+        }
+
+        // Permanent deletion
         if (utf8_remove(path) != 0) {
             return Result::error(ErrorCode::FileDeleteError);
         }
