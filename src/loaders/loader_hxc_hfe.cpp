@@ -7,6 +7,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "host_helpers.h"
+
 #include "dsk_tools/dsk_tools.h"
 #include "definitions.h"
 #include "utils.h"
@@ -21,15 +23,15 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
     {
         uint8_t res = FDD_LOAD_OK;
 
-        std::ifstream file(file_name, std::ios::binary);
+        UTF8_ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
             return FDD_LOAD_ERROR;
         }
 
-        file.seekg (0, file.end);
+        file.seekg (0, std::ios::end);
         auto fsize = file.tellg();
-        file.seekg (0, file.beg);
+        file.seekg (0, std::ios::beg);
 
         BYTES in(fsize);
         bool errors = false;
@@ -107,16 +109,16 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
     {
         std::string result = "";
 
-        std::ifstream file(file_name, std::ios::binary);
+        UTF8_ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
             result += "{$ERROR_OPENING}:\n";
             return result;
         }
 
-        file.seekg (0, file.end);
+        file.seekg (0, std::ios::end);
         auto fsize = file.tellg();
-        file.seekg (0, file.beg);
+        file.seekg (0, std::ios::beg);
 
         size_t pos = file_name.find_last_of("/\\");
         std::string file_short = (pos == std::string::npos) ? file_name : file_name.substr(pos + 1);
