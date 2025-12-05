@@ -8,6 +8,7 @@
 #include <algorithm>
 
 #include "dsk_tools/dsk_tools.h"
+#include "host_helpers.h"
 
 namespace dsk_tools {
 
@@ -255,15 +256,15 @@ namespace dsk_tools {
     {
         std::string ext = get_file_ext(file_name);
 
-        std::ifstream file(file_name, std::ios::binary);
+        UTF8_ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
             return FDD_LOAD_ERROR;
         }
 
-        file.seekg (0, file.end);
+        file.seekg (0, std::ios::end);
         auto fsize = file.tellg();
-        file.seekg (0, file.beg);
+        file.seekg (0, std::ios::beg);
 
         // format_if
         if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm") {
@@ -297,7 +298,7 @@ namespace dsk_tools {
                 if (type_id == "TYPE_AGAT_840") vtoc_pos=17*21*256;
 
                 Agat_VTOC VTOC;
-                file.seekg (vtoc_pos, file.beg);
+                file.seekg (vtoc_pos, std::ios::beg);
                 file.read (reinterpret_cast<char*>(&VTOC), sizeof(Agat_VTOC));
 
                 if (buffer[0] == 0x01 && buffer[2] == 0x58) {
@@ -400,7 +401,7 @@ namespace dsk_tools {
                 return FDD_DETECT_OK;
             }
 
-            std::ifstream file(file_name, std::ios::binary);
+            UTF8_ifstream file(file_name, std::ios::binary);
 
             if (!file.good()) {
                 return FDD_LOAD_ERROR;

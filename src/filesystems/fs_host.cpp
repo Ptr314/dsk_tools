@@ -10,14 +10,17 @@
 #include <cstdio>
 #include <cerrno>
 
-#ifndef _WIN32
+#ifdef _WIN32
+    #include <windows.h>
+    #include <io.h>
+#else
     #include <dirent.h>
 #endif
 
 #include "dsk_tools/dsk_tools.h"
 #include "utils.h"
 #include "fs_host.h"
-#include "fs_host_helpers.h"
+#include "host_helpers.h"
 
 namespace dsk_tools {
 
