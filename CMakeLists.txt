@@ -55,15 +55,13 @@ add_library(${PROJECT_NAME} STATIC
     src/viewers/agat_fonts.h
         src/filesystems/fs_host.h
         src/filesystems/fs_host.cpp
+    src/host_helpers.h                 src/host_helpers.cpp
 )
 
-# Platform-specific sources and libraries
+# Platform-specific compilation settings
 if(APPLE)
-    target_sources(${PROJECT_NAME} PRIVATE
-        src/filesystems/fs_host_helpers_mac.mm
-    )
-    # macOS needs to enable Objective-C++ compilation
-    set_source_files_properties(src/filesystems/fs_host_helpers_mac.mm PROPERTIES LANGUAGE OBJCXX)
+    # macOS needs to enable Objective-C++ compilation for host_helpers
+    set_source_files_properties(src/host_helpers.cpp PROPERTIES LANGUAGE OBJCXX)
 endif()
 
 if(WIN32)
