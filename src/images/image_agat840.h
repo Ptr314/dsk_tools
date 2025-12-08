@@ -13,7 +13,7 @@ namespace dsk_tools {
     class imageAgat840: public imageAgat140
     {
     public:
-        imageAgat840(Loader * loader);
+        imageAgat840(std::unique_ptr<Loader> loader);
         virtual uint8_t *get_sector_data(int head, int track, int sector) override;
     };
 

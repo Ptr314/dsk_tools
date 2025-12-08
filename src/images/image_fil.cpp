@@ -7,8 +7,8 @@
 #include "image_fil.h"
 
 namespace dsk_tools {
-    imageFIL::imageFIL(Loader * loader):
-        diskImage(loader)
+    imageFIL::imageFIL(std::unique_ptr<Loader> loader):
+        diskImage(std::move(loader))
     {
         format_heads = 1;
         format_tracks = 1;

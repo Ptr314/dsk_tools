@@ -7,8 +7,8 @@
 #include "image_agat140.h"
 
 namespace dsk_tools {
-imageAgat140::imageAgat140(Loader * loader):
-          diskImage(loader)
+imageAgat140::imageAgat140(std::unique_ptr<Loader> loader):
+          diskImage(std::move(loader))
     {
         format_heads = 1;
         format_tracks = 35;
