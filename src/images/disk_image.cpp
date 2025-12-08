@@ -7,14 +7,14 @@
 
 namespace dsk_tools {
 
-    diskImage::diskImage(Loader * loader):
-          loader(loader)
+    diskImage::diskImage(std::unique_ptr<Loader> loader):
+          loader(std::move(loader))
         , is_loaded(false)
     {}
 
     diskImage::~diskImage()
     {
-        if (loader) delete loader;
+        // if (loader) delete loader;
     }
 
     int diskImage::load()

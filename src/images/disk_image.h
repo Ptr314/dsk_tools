@@ -5,6 +5,8 @@
 #pragma once
 
 
+#include <memory>
+
 #include "definitions.h"
 #include "loader.h"
 
@@ -37,7 +39,7 @@ namespace dsk_tools {
         protected:
             std::string type_id;
             BYTES buffer;
-            Loader * loader = nullptr;
+            std::unique_ptr<Loader> loader;
             int format_heads;
             int format_tracks;
             int format_sectors;
@@ -50,7 +52,7 @@ namespace dsk_tools {
             bool is_loaded;
 
         public:
-            diskImage(Loader * loader);
+            diskImage(std::unique_ptr<Loader> loader);
             virtual ~diskImage();
             virtual int check() = 0;                                            // Check physical image parameters
             virtual int load();

@@ -47,69 +47,45 @@ namespace dsk_tools {
         0x00,0x00,0x33,0x34,0x35,0x36,0x37,0x38,0x00,0x39,0x3a,0x3b,0x3c,0x3d,0x3e,0x3f
     };
 
-
-    dsk_tools::diskImage * prepare_image(std::string file_name, std::string format_id, std::string type_id)
+    std::unique_ptr<Loader> create_loader(const std::string& file_name, const std::string& format_id, const std::string& type_id)
     {
-        // std::cout << file_name << std::endl;
-        dsk_tools::Loader * loader;
-        if (format_id == "FILE_RAW_MSB") {
-            loader = new dsk_tools::LoaderRAW(file_name, format_id, type_id);
-        } else
-        if (format_id == "FILE_AIM") {
-            loader = new dsk_tools::LoaderAIM(file_name, format_id, type_id);
-        } else
-        if (format_id == "FILE_MFM_NIC") {
-            loader = new dsk_tools::LoaderNIC(file_name, format_id, type_id);
-        } else
-        if (format_id == "FILE_MFM_NIB") {
-            loader = new dsk_tools::LoaderNIB(file_name, format_id, type_id);
-        } else
-        if (format_id == "FILE_HXC_MFM") {
-            loader = new dsk_tools::LoaderHXC_MFM(file_name, format_id, type_id);
-        } else
-        if (format_id == "FILE_HXC_HFE") {
-            loader = new dsk_tools::LoaderHXC_HFE(file_name, format_id, type_id);
-        } else
-        if (format_id == "FILE_FIL") {
-            loader = new dsk_tools::LoaderFIL(file_name, format_id, type_id);
-        } else
-            return nullptr;
+        if (format_id == "FILE_RAW_MSB") return dsk_tools::make_unique<LoaderRAW>(file_name, format_id, type_id);
+        if (format_id == "FILE_AIM")     return dsk_tools::make_unique<LoaderAIM>(file_name, format_id, type_id);
+        if (format_id == "FILE_MFM_NIC") return dsk_tools::make_unique<LoaderNIC>(file_name, format_id, type_id);
+        if (format_id == "FILE_MFM_NIB") return dsk_tools::make_unique<LoaderNIB>(file_name, format_id, type_id);
+        if (format_id == "FILE_HXC_MFM") return dsk_tools::make_unique<LoaderHXC_MFM>(file_name, format_id, type_id);
+        if (format_id == "FILE_HXC_HFE") return dsk_tools::make_unique<LoaderHXC_HFE>(file_name, format_id, type_id);
+        if (format_id == "FILE_FIL")     return dsk_tools::make_unique<LoaderFIL>(file_name, format_id, type_id);
+        return nullptr;
+    }
 
-        if (type_id == "TYPE_AGAT_140") {
-            dsk_tools::imageAgat140 * disk_image = new dsk_tools::imageAgat140(loader);
-            return disk_image;
-        } else
-        if (type_id == "TYPE_AGAT_840") {
-            dsk_tools::imageAgat840 * disk_image = new dsk_tools::imageAgat840(loader);
-            return disk_image;
-        } else
-        if (type_id == "TYPE_FIL") {
-            dsk_tools::imageFIL * disk_image = new dsk_tools::imageFIL(loader);
-            return disk_image;
-        }
+    std::unique_ptr<diskImage> prepare_image(const std::string &file_name, const std::string &format_id, const std::string &type_id)
+    {
+        std::unique_ptr<Loader> loader = create_loader(file_name, format_id, type_id);
+        if (!loader) return nullptr;
+
+        if (type_id == "TYPE_AGAT_140") return dsk_tools::make_unique<imageAgat140>(std::move(loader));
+        if (type_id == "TYPE_AGAT_840") return dsk_tools::make_unique<imageAgat840>(std::move(loader));
+        if (type_id == "TYPE_FIL")      return dsk_tools::make_unique<imageFIL>(std::move(loader));
 
         return nullptr;
     }
 
-    dsk_tools::fileSystem * prepare_filesystem(diskImage *image, std::string filesystem_id)
+    std::unique_ptr<fileSystem> prepare_filesystem(diskImage * image, const std::string &filesystem_id)
     {
-        dsk_tools::fileSystem * fs;
         if (filesystem_id == "FILESYSTEM_DOS33") {
-            fs = new dsk_tools::fsDOS33(image);
-        } else
-        if (filesystem_id == "FILESYSTEM_SPRITE_OS") {
-            fs = new dsk_tools::fsSpriteOS(image);
-        } else
-        if (filesystem_id == "FILESYSTEM_CPM_DOS" || filesystem_id == "FILESYSTEM_CPM_PRODOS"|| filesystem_id == "FILESYSTEM_CPM_RAW") {
-            fs = new dsk_tools::fsCPM(image, filesystem_id);
-        } else
-        if (filesystem_id == "FILESYSTEM_FIL") {
-            fs = new dsk_tools::fsFIL(image);
-        } else {
-            return nullptr;
+            return dsk_tools::make_unique<fsDOS33>(image);
         }
-
-        return fs;
+        if (filesystem_id == "FILESYSTEM_SPRITE_OS") {
+            return dsk_tools::make_unique<fsSpriteOS>(image);
+        }
+        if (filesystem_id == "FILESYSTEM_CPM_DOS" || filesystem_id == "FILESYSTEM_CPM_PRODOS"|| filesystem_id == "FILESYSTEM_CPM_RAW") {
+            return dsk_tools::make_unique<fsCPM>(image, filesystem_id);
+        }
+        if (filesystem_id == "FILESYSTEM_FIL") {
+            return dsk_tools::make_unique<fsFIL>(image);
+        }
+        return nullptr;
     }
 
     BYTES code44(const BYTES & buffer)
