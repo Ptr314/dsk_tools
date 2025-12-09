@@ -19,14 +19,12 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
         Loader(file_name, format_id, type_id)
     {}
 
-    int LoaderHXC_HFE::load(BYTES &buffer)
+    Result LoaderHXC_HFE::load(BYTES &buffer)
     {
-        uint8_t res = FDD_LOAD_OK;
-
         UTF8_ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
-            return FDD_LOAD_ERROR;
+            return Result::error(ErrorCode::LoadError, "Cannot open file");
         }
 
         file.seekg (0, std::ios::end);
@@ -42,18 +40,18 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
 
         std::string signature(reinterpret_cast<char*>(&hdr->HEADERSIGNATURE), sizeof(hdr->HEADERSIGNATURE));
 
-        if (signature != "HXCPICFE") return FDD_LOAD_INCORRECT_FILE;
+        if (signature != "HXCPICFE") return Result::error(ErrorCode::LoadIncorrectFile, "Invalid HFE signature");
 
         int image_size, sectors_per_track, sector_size;
 
         if (type_id == "TYPE_AGAT_840") {
             if (hdr->number_of_side != 2 || hdr->number_of_track != 80)
-                return FDD_LOAD_INCORRECT_FILE;
+                return Result::error(ErrorCode::LoadIncorrectFile, "Invalid HFE parameters");
             sectors_per_track = 21;
             sector_size = 256;
             image_size = 2*80*sectors_per_track*sector_size;
         } else
-            return FDD_LOAD_INCORRECT_FILE;
+            return Result::error(ErrorCode::LoadIncorrectFile, "Unsupported disk type");
 
         buffer.resize(image_size);
 
@@ -99,9 +97,9 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
         }
         loaded = true;
         if (!errors) {
-            return FDD_LOAD_OK;
+            return Result::ok();
         } else {
-            return FDD_LOAD_DATA_CORRUPT;
+            return Result::error(ErrorCode::LoadDataCorrupt, "Failed to decode track data");
         }
     }
 

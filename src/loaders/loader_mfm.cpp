@@ -229,11 +229,11 @@ namespace dsk_tools {
         return result;
     }
 
-    int LoaderMFM::load(std::vector<uint8_t> &buffer)
+    Result LoaderMFM::load(std::vector<uint8_t> &buffer)
     {
         UTF8_ifstream file(file_name, std::ios::binary);
         if (!file.good()) {
-            return FDD_LOAD_ERROR;
+            return Result::error(ErrorCode::LoadError, "Cannot open file");
         }
 
         file.seekg (0, std::ios::end);
@@ -257,7 +257,7 @@ namespace dsk_tools {
             (this->*load_track_func)(track, buffer, in, track_len);
         }
         loaded = true;
-        return FDD_LOAD_OK;
+        return Result::ok();
     }
 
     std::string LoaderMFM::file_info()

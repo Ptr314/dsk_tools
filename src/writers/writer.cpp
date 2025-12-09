@@ -17,21 +17,26 @@ namespace dsk_tools {
     Writer::~Writer()
     {}
 
-    int Writer::write(const std::string & file_name)
+    Result Writer::write(const std::string & file_name)
     {
         std::ofstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
-            return FDD_WRITE_ERROR;
+            return Result::error(ErrorCode::WriteError, "Cannot create output file");
         }
 
         BYTES buffer;
 
-        write(buffer);
+        Result res = write(buffer);
+        if (!res) return res;
 
         file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
 
-        return FDD_WRITE_OK;
+        if (!file.good()) {
+            return Result::error(ErrorCode::WriteError, "Error writing to file");
+        }
+
+        return Result::ok();
 
     }
 

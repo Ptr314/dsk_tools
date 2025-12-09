@@ -18,14 +18,12 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         Loader(file_name, format_id, type_id)
     {}
 
-    int LoaderRAW::load(std::vector<uint8_t> &buffer)
+    Result LoaderRAW::load(std::vector<uint8_t> &buffer)
     {
-        uint8_t res = FDD_LOAD_OK;
-
         UTF8_ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
-            return FDD_LOAD_ERROR;
+            return Result::error(ErrorCode::LoadError, "Cannot open file");
         }
 
         file.seekg (0, std::ios::end);
@@ -39,10 +37,10 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         if (type_id == "TYPE_AGAT_140")
             image_size = 1*35*16*256;
         else
-            return FDD_LOAD_ERROR;
+            return Result::error(ErrorCode::LoadParamsMismatch, "Unknown disk type");
 
         if (fsize<image_size)
-            return FDD_LOAD_ERROR;
+            return Result::error(ErrorCode::LoadSizeMismatch, "File too small");
         else
         if (fsize == image_size + 256)
             // Image with a 256-byte header?
@@ -53,7 +51,7 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
 
         loaded = true;
 
-        return FDD_LOAD_OK;
+        return Result::ok();
     }
 
     std::string LoaderRAW::file_info()
@@ -78,7 +76,7 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
 
         if (type_id == "TYPE_AGAT_140" || type_id == "TYPE_AGAT_840") {
             BYTES buffer(fsize);
-            if (load(buffer) == FDD_LOAD_OK) {
+            if (load(buffer)) {
                 uint32_t vtoc_pos;
                 if (type_id == "TYPE_AGAT_140") vtoc_pos=17*16*256;
                 else

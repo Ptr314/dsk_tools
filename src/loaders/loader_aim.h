@@ -18,7 +18,7 @@ namespace dsk_tools {
     public:
         LoaderAIM(const std::string & file_name, const std::string & format_id, const std::string & type_id);
         virtual ~LoaderAIM() = default;
-        virtual int load(std::vector<uint8_t> &buffer) override;
+        [[nodiscard]] virtual Result load(std::vector<uint8_t> &buffer) override;
         virtual std::string file_info() override;
     };
 
