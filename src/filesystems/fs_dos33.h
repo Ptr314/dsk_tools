@@ -142,7 +142,7 @@ namespace dsk_tools {
 
     public:
         explicit fsDOS33(diskImage * image);
-        int open() override;
+        Result open() override;
         FSCaps getCaps() override;
         FS getFS() const override {return FS::DOS33;};
         void cd(const dsk_tools::UniversalFile & dir) override;

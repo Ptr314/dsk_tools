@@ -24,13 +24,13 @@ namespace dsk_tools {
         return FSCaps::Protect | FSCaps::Types | FSCaps::Rename;
     }
 
-    int fsFIL::open()
+    Result fsFIL::open()
     {
-        if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;
+        if (!image->get_loaded()) return Result::error(ErrorCode::OpenNotLoaded);
 
         is_open = true;
 
-        return FDD_OPEN_OK;
+        return Result::ok();
     }
 
     std::string fsFIL::file_info(const UniversalFile & fd) {
@@ -105,7 +105,7 @@ namespace dsk_tools {
         memcpy(f.original_name.data(), header->name, f.original_name.size());
         auto T = agat_attr_to_type(header->type);
         f.type_label = std::string(agat_file_types[T]);
-        f.type_preferred = agat_preferred_file_type_new(T);
+        f.type_preferred = agat_preferred_file_type(T);
 
         files.push_back(f);
 

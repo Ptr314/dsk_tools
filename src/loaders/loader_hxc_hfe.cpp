@@ -85,7 +85,8 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
                 decode_agat_mfm_data(track_data, track_mfm[s]);
 
                 BYTES raw_data;
-                if (decode_agat_840_track(raw_data, track_data) == FDD_LOAD_OK){
+                Result res = decode_agat_840_track(raw_data, track_data);
+                if (res){
                     std::copy(
                         raw_data.begin(),
                         raw_data.end(),
