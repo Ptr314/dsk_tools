@@ -15,14 +15,12 @@ namespace dsk_tools {
         Loader(file_name, format_id, type_id)
     {}
 
-    int LoaderFIL::load(std::vector<uint8_t> &buffer)
+    Result LoaderFIL::load(std::vector<uint8_t> &buffer)
     {
-        uint8_t res = FDD_LOAD_OK;
-
         UTF8_ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
-            return FDD_LOAD_ERROR;
+            return Result::error(ErrorCode::LoadError, "Cannot open file");
         }
 
         file.seekg (0, std::ios::end);
@@ -36,7 +34,7 @@ namespace dsk_tools {
 
         loaded = true;
 
-        return FDD_LOAD_OK;
+        return Result::ok();
     }
 
     std::string LoaderFIL::file_info()

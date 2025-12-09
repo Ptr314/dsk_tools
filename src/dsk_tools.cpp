@@ -228,14 +228,14 @@ namespace dsk_tools {
     }
 
 
-    int detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only)
+    Result detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only)
     {
         std::string ext = get_file_ext(file_name);
 
         UTF8_ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
-            return FDD_LOAD_ERROR;
+            return Result::error(ErrorCode::LoadError, "Cannot open file");
         }
 
         file.seekg (0, std::ios::end);
@@ -249,7 +249,7 @@ namespace dsk_tools {
             if (format_only) {
                 type_id = "";
                 filesystem_id = "";
-                return FDD_DETECT_OK;
+                return Result::ok();
             }
 
             // type_id
@@ -259,7 +259,7 @@ namespace dsk_tools {
             if (fsize == 860160 || fsize == 860164) {
                 type_id = "TYPE_AGAT_840";
             } else
-                return FDD_DETECT_ERROR;
+                return Result::error(ErrorCode::DetectError, "Invalid file size for DSK format");
 
             // filesystem_id
             if (type_id == "TYPE_AGAT_140" || type_id == "TYPE_AGAT_840") {
@@ -303,20 +303,20 @@ namespace dsk_tools {
 
             if (format_only) {
                 filesystem_id = "";
-                return FDD_DETECT_OK;
+                return Result::ok();
             }
 
             dsk_tools::LoaderAIM loader(file_name, format_id, type_id);
             BYTES buffer;
-            loader.load(buffer);
-            if (buffer[0] == 0x01) {
+            Result res = loader.load(buffer);
+            if (res && buffer[0] == 0x01) {
                 if (buffer[2] == 0x58) {
                     filesystem_id = "FILESYSTEM_SPRITE_OS";
                 } else {
                     filesystem_id = "FILESYSTEM_DOS33";
                 }
             } else
-                return FDD_DETECT_ERROR;
+                return Result::error(ErrorCode::DetectError, "Failed to load AIM file");
         } else
         if (ext == ".nic" || ext == ".nib" || ext == ".mfm") {
             if (ext == ".nib") {
@@ -326,31 +326,34 @@ namespace dsk_tools {
                 if (fsize == 947520)
                     type_id = "TYPE_AGAT_840";
                 else
-                    return FDD_DETECT_ERROR;
+                    return Result::error(ErrorCode::DetectError, "Invalid file size for NIB format");
             } else
                 type_id = "TYPE_AGAT_140";
 
             BYTES buffer;
+            Result res;
             if (ext == ".nic") {
                 format_id = "FILE_MFM_NIC";
                 dsk_tools::LoaderNIC loader(file_name, format_id, type_id);
-                loader.load(buffer);
+                res = loader.load(buffer);
             } else
             if (ext == ".nib") {
                 format_id = "FILE_MFM_NIB";
                 dsk_tools::LoaderNIB loader(file_name, format_id, type_id);
-                loader.load(buffer);
+                res = loader.load(buffer);
             } else
             if (ext == ".mfm") {
                 format_id = "FILE_HXC_MFM";
                 dsk_tools::LoaderHXC_MFM loader(file_name, format_id, type_id);
-                loader.load(buffer);
+                res = loader.load(buffer);
             } else
-                return FDD_DETECT_ERROR;
+                return Result::error(ErrorCode::DetectError, "Unknown MFM format");
+
+            if (!res) return Result::error(ErrorCode::DetectError, "Failed to load MFM file");
 
             if (format_only) {
                 filesystem_id = "";
-                return FDD_DETECT_OK;
+                return Result::ok();
             }
 
             if (buffer[0] == 0x01) {
@@ -366,7 +369,7 @@ namespace dsk_tools {
                     filesystem_id = "FILESYSTEM_DOS33";
                 }
             } else
-                return FDD_DETECT_ERROR;
+                return Result::error(ErrorCode::DetectError, "Invalid filesystem signature");
         } else
         if (ext == ".hfe") {
             format_id = "FILE_HXC_HFE";
@@ -374,13 +377,13 @@ namespace dsk_tools {
             if (format_only) {
                 type_id = "";
                 filesystem_id = "";
-                return FDD_DETECT_OK;
+                return Result::ok();
             }
 
             UTF8_ifstream file(file_name, std::ios::binary);
 
             if (!file.good()) {
-                return FDD_LOAD_ERROR;
+                return Result::error(ErrorCode::LoadError, "Cannot open HFE file");
             }
 
             BYTES hdr_buffer(sizeof(HXC_HFE_HEADER));
@@ -391,15 +394,15 @@ namespace dsk_tools {
                 type_id = "TYPE_AGAT_840";
                 BYTES buffer(sizeof(HXC_HFE_HEADER));
                 dsk_tools::LoaderHXC_HFE loader(file_name, format_id, type_id);
-                loader.load(buffer);
-                if (buffer[0] == 0x01) {
+                Result res = loader.load(buffer);
+                if (res && buffer[0] == 0x01) {
                     if (buffer[2] == 0x58) {
                         filesystem_id = "FILESYSTEM_SPRITE_OS";
                     } else {
                         filesystem_id = "FILESYSTEM_DOS33";
                     }
                 } else
-                    return FDD_DETECT_ERROR;
+                    return Result::error(ErrorCode::DetectError, "Invalid HFE file format");
             }
         } else
         if (ext == ".fil") {
@@ -407,9 +410,9 @@ namespace dsk_tools {
             type_id = "TYPE_FIL";
             filesystem_id = "FILESYSTEM_FIL";
         } else
-            return FDD_DETECT_ERROR;
+            return Result::error(ErrorCode::DetectError, "Unknown file format");
 
-        return FDD_DETECT_OK;
+        return Result::ok();
     }
 
     std::string agat_vtoc_info(const Agat_VTOC & VTOC)

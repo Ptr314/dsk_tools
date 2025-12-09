@@ -44,7 +44,7 @@ namespace dsk_tools {
         out.insert(out.end(), ptr, ptr + sizeof(header));
     }
 
-    int WriterHxCMFM::write(BYTES &buffer)
+    Result WriterHxCMFM::write(BYTES &buffer)
     {
         buffer.clear();
 
@@ -56,7 +56,7 @@ namespace dsk_tools {
             if (type_id == "TYPE_AGAT_140") {
                 track_size = 6400;
             } else
-                return FDD_WRITE_UNSUPPORTED;
+                return Result::error(ErrorCode::WriteUnsupported, "MFM format not supported for this disk type");
 
             buffer.reserve(buffer.size() + sizeof(HXC_MFM_HEADER));
 
@@ -92,7 +92,7 @@ namespace dsk_tools {
             if (type_id == "TYPE_AGAT_140") {
                 track_size = 6656;
             } else
-                return FDD_WRITE_UNSUPPORTED;
+                return Result::error(ErrorCode::WriteUnsupported, "NIB format not supported for this disk type");
 
             for (uint8_t track = 0; track < image->get_tracks(); track++){
                 write_gcr62_track(buffer, track, track_size);
@@ -100,21 +100,21 @@ namespace dsk_tools {
         } else
         if (format_id == "FILE_MFM_NIC") {
             if (type_id != "TYPE_AGAT_140")
-                return FDD_WRITE_UNSUPPORTED;
+                return Result::error(ErrorCode::WriteUnsupported, "NIC format not supported for this disk type");
 
             for (uint8_t track = 0; track < image->get_tracks(); track++){
                 write_gcr62_nic_track(buffer, track);
             }
 
         } else
-            return FDD_WRITE_UNSUPPORTED;
+            return Result::error(ErrorCode::WriteUnsupported, "Unknown MFM writer format");
 
-        return 0;
+        return Result::ok();
     }
 
-    int WriterHxCMFM::substitute_tracks(BYTES & buffer, BYTES & tmplt, const int numtracks)
+    Result WriterHxCMFM::substitute_tracks(BYTES & buffer, std::vector<uint8_t> & tmplt, const int numtracks)
     {
-        return -1;
+        return Result::error(ErrorCode::WriteUnsupported, "Track substitution not supported for MFM format");
     }
 
 }

@@ -17,16 +17,18 @@ namespace dsk_tools {
     }
 
 
-    int WriterRAW::write(BYTES &buffer)
+    Result WriterRAW::write(BYTES &buffer)
     {
         buffer = *image->get_buffer();
-        return FDD_WRITE_OK;
+        return Result::ok();
     }
 
-    int WriterRAW::substitute_tracks(BYTES & buffer, BYTES &tmplt, const int numtracks)
+    Result WriterRAW::substitute_tracks(BYTES & buffer, BYTES &tmplt, const int numtracks)
     {
-        if (buffer.size() != tmplt.size()) return FDD_WRITE_INCORECT_TEMPLATE;
-        if (buffer.size() != image->get_size()) return FDD_WRITE_INCORECT_SOURCE;
+        if (buffer.size() != tmplt.size())
+            return Result::error(ErrorCode::WriteIncorrectTemplate, "Template file size mismatch");
+        if (buffer.size() != image->get_size())
+            return Result::error(ErrorCode::WriteIncorrectSource, "Source file size mismatch");
         int block_size = image->get_sectors() * image->get_sector_size() * image->get_heads();
 
         BYTES out;
@@ -34,6 +36,6 @@ namespace dsk_tools {
         out.insert(out.end(), buffer.begin() + block_size, buffer.end());
 
         buffer = out;
-        return FDD_WRITE_OK;
+        return Result::ok();
     }
 }

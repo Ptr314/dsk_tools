@@ -14,17 +14,17 @@ namespace dsk_tools {
 
     diskImage::~diskImage() = default;
 
-    int diskImage::load()
+    Result diskImage::load()
     {
         type_id = loader->get_type_id();
-        int result = loader->load(buffer);
-        if (result == FDD_LOAD_OK) {
+        Result result = loader->load(buffer);
+        if (result) {
             int buffer_size = buffer.size();
             if (expected_size == 0 || (buffer_size >= expected_size && buffer_size <= expected_size + 4)) {
                 is_loaded = true;
-                return FDD_LOAD_OK;
+                return Result::ok();
             } else {
-                return FDD_LOAD_SIZE_MISMATCH;
+                return Result::error(ErrorCode::LoadSizeMismatch, "Buffer size mismatch");
             }
         }
         return result;
