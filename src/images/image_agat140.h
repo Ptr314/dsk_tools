@@ -16,6 +16,6 @@ namespace dsk_tools {
 
         public:
             imageAgat140(std::unique_ptr<Loader> loader);
-            virtual int check() override;
+            [[nodiscard]] virtual Result check() override;
     };
 }

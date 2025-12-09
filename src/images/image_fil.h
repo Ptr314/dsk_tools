@@ -15,7 +15,7 @@ namespace dsk_tools {
 
     public:
         imageFIL(std::unique_ptr<Loader> loader);
-        virtual int load() override;
-        virtual int check() override;
+        [[nodiscard]] virtual Result load() override;
+        [[nodiscard]] virtual Result check() override;
     };
 }

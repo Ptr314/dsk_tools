@@ -21,15 +21,15 @@ namespace dsk_tools {
         format_floppyinterfacemode = GENERIC_SHUGGART_DD_FLOPPYMODE;
     }
 
-    int imageFIL::check()
+    Result imageFIL::check()
     {
-        return FDD_LOAD_OK;
+        return Result::ok();
     }
 
-    int imageFIL::load()
+    Result imageFIL::load()
     {
-        int res = diskImage::load();
-        if (res == FDD_LOAD_OK)
+        Result res = diskImage::load();
+        if (res)
             expected_size = buffer.size();
         return res;
     }

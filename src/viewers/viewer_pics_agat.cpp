@@ -541,13 +541,17 @@ namespace dsk_tools {
                     file_name = file_path + font_name + ".fil";
                     if (file_exists(file_name)) {
                         LoaderFIL loader(file_name, "", "");
-                        loader.load(buffer);
-                        FIL_header * header = reinterpret_cast<FIL_header*>(buffer.data());
-                        std::string internal_name = to_upper(trim(agat_to_utf(header->name, 30)));
-                        if (internal_name.substr(0, 2) == "ZG") {
-                            m_custom_reverse = internal_name.substr(2, 1) == "9";
-                            std::memcpy(&m_custom_font, buffer.data()+44, 2048);
-                            return PREPARE_PIC_OK;
+                        const auto load_res = loader.load(buffer);
+                        if (load_res) {
+                            auto * header = reinterpret_cast<FIL_header*>(buffer.data());
+                            std::string internal_name = to_upper(trim(agat_to_utf(header->name, 30)));
+                            if (internal_name.substr(0, 2) == "ZG") {
+                                m_custom_reverse = internal_name.substr(2, 1) == "9";
+                                std::memcpy(&m_custom_font, buffer.data()+44, 2048);
+                                return PREPARE_PIC_OK;
+                            }
+                        } else {
+                            return PREPARE_PIC_ERROR;
                         }
                     }
                     error_msg = "{$FONT_LOADING_ERROR}: " + font_name;

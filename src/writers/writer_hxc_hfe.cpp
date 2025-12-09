@@ -66,7 +66,7 @@ WriterHxCHFE::WriterHxCHFE(const std::string & format_id, diskImage * image_to_s
         out.insert(out.end(), HFE_BLOCK_SIZE - sizeof(track) * image->get_tracks(), 0xFF);
     }
 
-    int WriterHxCHFE::write(BYTES &buffer)
+    Result WriterHxCHFE::write(BYTES &buffer)
     {
         buffer.clear();
         buffer.reserve(buffer.size() + 512);
@@ -93,12 +93,12 @@ WriterHxCHFE::WriterHxCHFE(const std::string & format_id, diskImage * image_to_s
                 }
             }
         }
-        return 0;
+        return Result::ok();
     }
 
-    int WriterHxCHFE::substitute_tracks(BYTES & buffer, std::vector<uint8_t> &tmplt, const int numtracks)
+    Result WriterHxCHFE::substitute_tracks(BYTES & buffer, BYTES & tmplt, const int numtracks)
     {
-        return -1;
+        return Result::error(ErrorCode::WriteUnsupported, "Track substitution not supported for HFE format");
     }
 
 }

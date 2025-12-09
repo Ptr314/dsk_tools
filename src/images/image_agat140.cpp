@@ -21,10 +21,10 @@ imageAgat140::imageAgat140(std::unique_ptr<Loader> loader):
         format_floppyinterfacemode = GENERIC_SHUGGART_DD_FLOPPYMODE;
     }
 
-    int imageAgat140::check()
+    Result imageAgat140::check()
     {
-        // TODO: Implement
-        return FDD_LOAD_OK;
+        // TODO: Implement validation
+        return Result::ok();
     }
 
 }

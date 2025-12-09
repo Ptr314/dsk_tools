@@ -54,8 +54,8 @@ namespace dsk_tools {
         public:
             diskImage(std::unique_ptr<Loader> loader);
             virtual ~diskImage();
-            virtual int check() = 0;                                            // Check physical image parameters
-            virtual int load();
+            [[nodiscard]] virtual Result check() = 0;                                            // Check physical image parameters
+            [[nodiscard]] virtual Result load();
             virtual uint8_t *get_sector_data(int head, int track, int sector);      // Uses sector starnslation
 
             std::string file_name() {return loader->get_file_name();};
