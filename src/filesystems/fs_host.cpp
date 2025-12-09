@@ -15,6 +15,7 @@
     #include <io.h>
 #else
     #include <dirent.h>
+    #include <sys/stat.h>
 #endif
 
 #include "dsk_tools/dsk_tools.h"
