@@ -12,10 +12,7 @@ namespace dsk_tools {
         , is_loaded(false)
     {}
 
-    diskImage::~diskImage()
-    {
-        // if (loader) delete loader;
-    }
+    diskImage::~diskImage() = default;
 
     int diskImage::load()
     {
@@ -36,6 +33,10 @@ namespace dsk_tools {
     uint8_t * diskImage::get_sector_data(int head, int track, int sector)
     {
         long offset = ((track * format_heads  + head) * format_sectors + sector) * format_sector_size;
+        // Bounds check: ensure offset + sector_size doesn't exceed buffer
+        if (offset < 0 || offset + format_sector_size > static_cast<long>(buffer.size())) {
+            return nullptr;
+        }
         return reinterpret_cast<uint8_t *>(&buffer[offset]);
     }
 
