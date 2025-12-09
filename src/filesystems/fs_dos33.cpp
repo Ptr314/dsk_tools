@@ -27,7 +27,12 @@ namespace dsk_tools {
     {
         if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;
 
-        VTOC = reinterpret_cast<dsk_tools::Agat_VTOC *>(image->get_sector_data(0, 0x11, 0));
+        uint8_t* vtoc_data = image->get_sector_data(0, 0x11, 0);
+        if (!vtoc_data) {
+            return FDD_OPEN_BAD_FORMAT;
+        }
+
+        VTOC = reinterpret_cast<dsk_tools::Agat_VTOC *>(vtoc_data);
         const int sector_size = static_cast<int>(VTOC->bytes_per_sector);
 
         // Also: https://retrocomputing.stackexchange.com/questions/15054/how-can-i-programmatically-determine-whether-an-apple-ii-dsk-disk-image-is-a-do
@@ -84,6 +89,9 @@ namespace dsk_tools {
     }
 
     std::string fsDOS33::file_info(const UniversalFile & fd) {
+        if (fd.metadata.size() < sizeof(Apple_DOS_File_Metadata)) {
+            return "{$ERROR_INVALID_METADATA}";
+        }
         const auto * metadata = reinterpret_cast<const Apple_DOS_File_Metadata *>(fd.metadata.data());
         const auto * dir_entry = &metadata->dir_entry;
 
@@ -107,7 +115,11 @@ namespace dsk_tools {
 
         Apple_DOS_TS_List * ts_list;
 
-        ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+        uint8_t* ts_list_data = image->get_sector_data(0, list_track, list_sector);
+        if (!ts_list_data) {
+            return "{$ERROR_CANNOT_READ_TS_LIST}";
+        }
+        ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(ts_list_data);
         BYTES ts_custom(fd.is_dir?8:9);
         void * from = &(ts_list->_not_used_03);
         std::memcpy(ts_custom.data(), from, ts_custom.size());
@@ -123,7 +135,12 @@ namespace dsk_tools {
         do {
             result += "T/S "  + std::to_string(list_track) + ":" + std::to_string(list_sector) + "\n";
             if (list_track < (image->get_tracks()*image->get_heads()) && list_sector < image->get_sectors()) {
-                ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+                uint8_t* ts_list_data2 = image->get_sector_data(0, list_track, list_sector);
+                if (!ts_list_data2) {
+                    result += "{$ERROR_CANNOT_READ_TS_LIST}!!!\n";
+                    break;
+                }
+                ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(ts_list_data2);
 
 
                 for (int i = 0; i < VTOC->pairs_on_sector; i++){
@@ -182,11 +199,19 @@ namespace dsk_tools {
             return &(VTOC->free_sectors[track]);
         else
         if (track < 0x72 && tracks_count > 0x32) {
-            VTOCEx = reinterpret_cast<Agat_VTOC_Ex *>(image->get_sector_data(0, 0x32, 0));
+            uint8_t* vtoc_ex_data = image->get_sector_data(0, 0x32, 0);
+            if (!vtoc_ex_data) {
+                throw std::runtime_error("Cannot read VTOC extension sector (0x32, 0)");
+            }
+            VTOCEx = reinterpret_cast<Agat_VTOC_Ex *>(vtoc_ex_data);
             return &(VTOCEx->free_sectors[track-0x32]);
         } else
         if (track < 0xB2 && tracks_count > 0x72) {
-            VTOCEx = reinterpret_cast<Agat_VTOC_Ex *>(image->get_sector_data(0, 0x72, 0));
+            uint8_t* vtoc_ex_data = image->get_sector_data(0, 0x72, 0);
+            if (!vtoc_ex_data) {
+                throw std::runtime_error("Cannot read VTOC extension sector (0x72, 0)");
+            }
+            VTOCEx = reinterpret_cast<Agat_VTOC_Ex *>(vtoc_ex_data);
             return &(VTOCEx->free_sectors[track-0x72]);
         } else
             throw std::runtime_error("Incorrect track");
@@ -272,7 +297,11 @@ namespace dsk_tools {
         TS_PAIR last_ts{};
 
         do {
-            catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
+            uint8_t* catalog_data = image->get_sector_data(0, catalog_ts.track, catalog_ts.sector);
+            if (!catalog_data) {
+                return false;  // Cannot read catalog sector
+            }
+            catalog = reinterpret_cast<Apple_DOS_Catalog *>(catalog_data);
             // std::cout << "find_epmty_dir_entry" <<  std::endl;
             // std::cout << "==> catalog T:S = " << unsigned(catalog_ts.track) << ":" << unsigned(catalog_ts.sector) << std::endl;
 
@@ -301,7 +330,11 @@ namespace dsk_tools {
                 catalog->next_track = new_ts.track;
                 catalog->next_sector = new_ts.sector;
 
-                auto * new_catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, new_ts.track, new_ts.sector));
+                uint8_t* new_catalog_data = image->get_sector_data(0, new_ts.track, new_ts.sector);
+                if (!new_catalog_data) {
+                    return false;  // Cannot read new catalog sector
+                }
+                auto * new_catalog = reinterpret_cast<Apple_DOS_Catalog *>(new_catalog_data);
                 std::memset(new_catalog, 0, sizeof(Apple_DOS_Catalog));
                 dir_entry = &(new_catalog->files[0]);
                 return true;
