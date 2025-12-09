@@ -235,18 +235,7 @@ namespace dsk_tools
         return 0;
     }
 
-    int agat_preferred_file_type(int t)
-    {
-        if (t == 0)
-            return PREFERRED_TEXT;
-        else
-        if (t == 2)
-            return PREFERRED_AGATBASIC;
-        else
-            return PREFERRED_BINARY;
-    }
-
-    PreferredType agat_preferred_file_type_new(const int t)
+    PreferredType agat_preferred_file_type(const int t)
     {
         if (t == 0) return PreferredType::Text;
         if (t == 2) return PreferredType::AgatBASIC;

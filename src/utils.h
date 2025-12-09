@@ -53,8 +53,7 @@ namespace dsk_tools
     bool iterate_until(const std::vector<uint8_t> & in, int & p, const uint8_t v);
 
     int agat_attr_to_type(uint8_t a);
-    int agat_preferred_file_type(int t);
-    PreferredType agat_preferred_file_type_new(int t);
+    PreferredType agat_preferred_file_type(int t);
     std::string to_upper(std::string s);
     bool file_exists(const std::string& filename);
     std::string pad_number(int num, size_t width = 4);

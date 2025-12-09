@@ -572,7 +572,7 @@ namespace dsk_tools {
         return result;
     }
 
-    int decode_agat_840_track(BYTES &out, const BYTES & in)
+    Result decode_agat_840_track(BYTES &out, const BYTES & in)
     {
         out.resize(21*256);
         int track_len = in.size();
@@ -643,13 +643,13 @@ namespace dsk_tools {
         }
 
         if (!errors) {
-            return FDD_LOAD_OK;
+            return Result::ok();
         } else {
-            return FDD_LOAD_DATA_CORRUPT;
+            return Result::error(ErrorCode::LoadDataCorrupt, "Agat 840 track decode error");
         }
     }
 
-    int decode_agat_840_image(BYTES &out, const BYTES & in)
+    Result decode_agat_840_image(BYTES &out, const BYTES & in)
     {
         out.resize(160*21*256);
         int encoded_track_size = in.size() / 160;
@@ -657,19 +657,20 @@ namespace dsk_tools {
         for (int i=0; i<160; i++) {
             BYTES track_in(in.begin() + i*encoded_track_size, in.begin() + (i+1)*encoded_track_size);
             BYTES track_out;
-            if (decode_agat_840_track(track_out, track_in) != FDD_LOAD_OK) return FDD_LOAD_DATA_CORRUPT;
+            Result res = decode_agat_840_track(track_out, track_in);
+            if (!res) return Result::error(ErrorCode::LoadDataCorrupt, "Failed to decode Agat 840 track");
             if (track_out.size() == raw_track_size) {
                 std::copy(
                     track_out.begin(),
                     track_out.end(),
                     out.begin() + i*raw_track_size
                 );
-            } else  return FDD_LOAD_DATA_CORRUPT;
+            } else  return Result::error(ErrorCode::LoadDataCorrupt, "Decoded track size mismatch");
         };
-        return FDD_LOAD_OK;
+        return Result::ok();
     }
 
-    int load_agat140_track(int track, BYTES & buffer, const BYTES & in, int track_len)
+    Result load_agat140_track(int track, BYTES & buffer, const BYTES & in, int track_len)
     {
         int in_p = 0;
         bool errors = false;
@@ -735,21 +736,22 @@ namespace dsk_tools {
         }
 
         if (!errors) {
-            return FDD_LOAD_OK;
+            return Result::ok();
         } else {
-            return FDD_LOAD_DATA_CORRUPT;
+            return Result::error(ErrorCode::LoadDataCorrupt, "Agat 140 track decode error");
         }
 
     }
 
-    int decode_agat_140_image(BYTES &out, const BYTES & in, const int track_len)
+    Result decode_agat_140_image(BYTES &out, const BYTES & in, const int track_len)
     {
         out.resize(35*16*256);
         for (int i=0; i<35; i++) {
             BYTES track_in(in.begin() + i*track_len, in.begin() + (i+1)*track_len);
-            if (load_agat140_track(i, out, track_in, track_len) != FDD_LOAD_OK) return FDD_LOAD_DATA_CORRUPT;
+            Result res = load_agat140_track(i, out, track_in, track_len);
+            if (!res) return Result::error(ErrorCode::LoadDataCorrupt, "Failed to decode Agat 140 track");
         };
-        return FDD_LOAD_OK;
+        return Result::ok();
     }
 
     void register_all_viewers() {

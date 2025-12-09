@@ -16,7 +16,7 @@ namespace dsk_tools {
 
     public:
         explicit fsHost(diskImage * image);
-        int open() override;
+        Result open() override;
         FSCaps getCaps() override;
         FS getFS() const override {return FS::Host;};
 

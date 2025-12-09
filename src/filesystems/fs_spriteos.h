@@ -49,7 +49,7 @@ namespace dsk_tools {
 
     public:
         explicit fsSpriteOS(diskImage * image);
-        int open() override;
+        Result open() override;
         FSCaps getCaps() override;
         FS getFS() const override {return FS::Sprite;};
         void cd(const dsk_tools::UniversalFile & dir) override;
