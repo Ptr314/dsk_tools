@@ -24,9 +24,9 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         return FSCaps::Protect | FSCaps::Types;
     }
 
-    int fsCPM::open()
+    Result fsCPM::open()
     {
-        if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;
+        if (!image->get_loaded()) return Result::error(ErrorCode::OpenNotLoaded);
 
         if (image->get_type_id() == "TYPE_AGAT_140") {
             // n = 10, BLS = 1024 (2**n)
@@ -44,10 +44,10 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
                 3            // OFF
             };
         } else
-            return FDD_OPEN_BAD_FORMAT;
+            return Result::error(ErrorCode::OpenBadFormat, "Unsupported disk type for CP/M");
 
         is_open = true;
-        return FDD_OPEN_OK;
+        return Result::ok();
     }
 
     std::string fsCPM::make_file_name(CPM_DIR_ENTRY & di)

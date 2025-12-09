@@ -24,9 +24,9 @@ namespace dsk_tools {
         return FSCaps::Protect | FSCaps::Dirs;
     }
 
-    int fsSpriteOS::open()
+    Result fsSpriteOS::open()
     {
-        if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;
+        if (!image->get_loaded()) return Result::error(ErrorCode::OpenNotLoaded);
 
         memcpy(&CURRENT_DIR, image->get_sector_data(0, 0, 0), sizeof(CURRENT_DIR));
         memcpy(&DPB, &CURRENT_DIR, sizeof(DPB));
@@ -38,7 +38,7 @@ namespace dsk_tools {
 
         volume_id = DPB.VOLUME;
 
-        return FDD_OPEN_OK;
+        return Result::ok();
     }
 
     void fsSpriteOS::load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out) const

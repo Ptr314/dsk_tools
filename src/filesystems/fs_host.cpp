@@ -37,11 +37,11 @@ namespace dsk_tools {
         return FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename| FSCaps::MkDir;
     }
 
-    int fsHost::open()
+    Result fsHost::open()
     {
-        if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;
+        if (!image->get_loaded()) return Result::error(ErrorCode::OpenNotLoaded);
         is_open = true;
-        return FDD_OPEN_OK;
+        return Result::ok();
     }
 
     std::vector<std::string> fsHost::get_save_file_formats()

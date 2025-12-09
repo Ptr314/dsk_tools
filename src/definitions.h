@@ -14,57 +14,6 @@
 
 namespace dsk_tools {
 
-    #define FDD_LOAD_OK                 0
-    #define FDD_LOAD_ERROR              1
-    #define FDD_LOAD_SIZE_MISMATCH      2
-    #define FDD_LOAD_PARAMS_MISMATCH    4
-    #define FDD_LOAD_INCORRECT_FILE     5
-    #define FDD_LOAD_FILE_CORRUPT       6
-    #define FDD_LOAD_DATA_CORRUPT       7
-
-    #define FDD_OPEN_OK                 0
-    #define FDD_OPEN_NOT_LOADED         1
-    #define FDD_OPEN_BAD_FORMAT         2
-
-    #define FDD_OP_OK                   0
-    #define FDD_OP_ERROR                1
-    #define FDD_OP_NOT_OPEN             2
-
-    #define FDD_WRITE_OK                0
-    #define FDD_WRITE_ERROR             1
-    #define FDD_WRITE_UNSUPPORTED       2
-    #define FDD_WRITE_ERROR_READING     3
-    #define FDD_WRITE_INCORECT_TEMPLATE 4
-    #define FDD_WRITE_INCORECT_SOURCE   5
-
-    #define FDD_DIR_OK                  0
-    #define FDD_DIR_ERROR               1
-    #define FDD_DIR_ERROR_SPACE         2
-    #define FDD_DIR_NOT_EMPTY           3
-
-    #define FILE_DELETE_OK              0
-    #define FILE_DELETE_ERROR           1
-
-    #define FILE_ADD_OK                 0
-    #define FILE_ADD_ERROR              1
-    #define FILE_ADD_ERROR_IO           2
-    #define FILE_ADD_ERROR_SPACE        3
-
-    #define FILE_RENAME_OK              0
-    #define FILE_RENAME_ERROR           1
-
-    #define FILE_METADATA_OK            0
-    #define FILE_METADATA_ERROR         1
-
-    #define FDD_DETECT_OK               0
-    #define FDD_DETECT_ERROR            1
-
-    #define PREFERRED_BINARY            0
-    #define PREFERRED_TEXT              1
-    #define PREFERRED_AGATBASIC         2
-    #define PREFERRED_ABS               3
-    #define PREFERRED_MBASIC            4
-
     typedef std::vector<uint8_t> BYTES;
 
     enum class FSCaps : unsigned int {

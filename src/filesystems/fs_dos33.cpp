@@ -23,13 +23,13 @@ namespace dsk_tools {
         return FSCaps::Protect | FSCaps::Types | FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename | FSCaps::MkDir;
     }
 
-    int fsDOS33::open()
+    Result fsDOS33::open()
     {
-        if (!image->get_loaded()) return FDD_OPEN_NOT_LOADED;
+        if (!image->get_loaded()) return Result::error(ErrorCode::OpenNotLoaded);
 
         uint8_t* vtoc_data = image->get_sector_data(0, 0x11, 0);
         if (!vtoc_data) {
-            return FDD_OPEN_BAD_FORMAT;
+            return Result::error(ErrorCode::OpenBadFormat, "Cannot read VTOC");
         }
 
         VTOC = reinterpret_cast<dsk_tools::Agat_VTOC *>(vtoc_data);
@@ -37,7 +37,7 @@ namespace dsk_tools {
 
         // Also: https://retrocomputing.stackexchange.com/questions/15054/how-can-i-programmatically-determine-whether-an-apple-ii-dsk-disk-image-is-a-do
         if (VTOC->sectors_on_track != image->get_sectors() || sector_size != 256) {
-            return FDD_OPEN_BAD_FORMAT;
+            return Result::error(ErrorCode::OpenBadFormat, "VTOC sector count or size mismatch");
         }
 
         const TS_PAIR root_ts = {
@@ -49,7 +49,7 @@ namespace dsk_tools {
 
         is_open = true;
         volume_id = VTOC->volume_id;
-        return FDD_OPEN_OK;
+        return Result::ok();
     }
 
     int fsDOS33::attr_to_type(const uint8_t a)
@@ -794,7 +794,7 @@ namespace dsk_tools {
                             f.name = trim(agat_to_utf(catalog->files[i].name, 30));
 
                         const auto T = attr_to_type(catalog->files[i].type);
-                        f.type_preferred = agat_preferred_file_type_new(T);
+                        f.type_preferred = agat_preferred_file_type(T);
                         f.size = catalog->files[i].size * 256;
 
                         f.original_name.resize(30);
