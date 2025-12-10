@@ -32,7 +32,7 @@ namespace dsk_tools {
         fileSystem(nullptr)
     {}
 
-    FSCaps fsHost::getCaps()
+    FSCaps fsHost::get_caps()
     {
         return FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename| FSCaps::MkDir;
     }
@@ -51,7 +51,7 @@ namespace dsk_tools {
 
     Result fsHost::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
-        if (uf.fs != getFS()) return Result::error(ErrorCode::FileIncorrectFS);
+        if (uf.fs != get_fs()) return Result::error(ErrorCode::FileIncorrectFS);
 
         std::string path = bytesToString(uf.metadata);
         std::cout << "Host: get_file " << path << std::endl;
@@ -118,7 +118,7 @@ namespace dsk_tools {
     Result fsHost::delete_file(const UniversalFile & uf)
     {
         // Validate filesystem type
-        if (uf.fs != getFS()) return Result::error(ErrorCode::FileIncorrectFS);
+        if (uf.fs != get_fs()) return Result::error(ErrorCode::FileIncorrectFS);
 
         // Extract path from metadata
         std::string path = bytesToString(uf.metadata);
@@ -301,7 +301,7 @@ namespace dsk_tools {
             return Result::error(ErrorCode::DirError);
         }
 
-        new_dir.fs = getFS();
+        new_dir.fs = get_fs();
         new_dir.name = dir_name;
         new_dir.is_dir = true;
         new_dir.metadata = strToBytes(fullPath);
@@ -317,7 +317,7 @@ namespace dsk_tools {
     Result fsHost::rename_file(const UniversalFile & fd, const std::string & new_name)
     {
         // Validate filesystem type
-        if (fd.fs != getFS()) return Result::error(ErrorCode::FileIncorrectFS);
+        if (fd.fs != get_fs()) return Result::error(ErrorCode::FileIncorrectFS);
 
         // Extract path from metadata
         std::string oldPath = bytesToString(fd.metadata);

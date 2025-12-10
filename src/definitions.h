@@ -25,7 +25,8 @@ namespace dsk_tools {
         Add         = 1 << 4,       // Files can be added
         Rename      = 1 << 5,       // Files can be renamed
         MkDir       = 1 << 6,       // Creating directories
-        All         = Dirs | Protect | Types | Delete | Add | Rename
+        Metadata    = 1 << 7,       // Editing file metadata
+        All         = Dirs | Protect | Types | Delete | Add | Rename | MkDir | Metadata
     };
 
     ENABLE_ENUM_FLAG_OPERATORS(FSCaps);

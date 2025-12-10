@@ -52,9 +52,9 @@ namespace dsk_tools {
 
     public:
         fsCPM(diskImage * image, const std::string & filesystem_id);
-        FS getFS() const override {return FS::CPM;};
+        FS get_fs() const override {return FS::CPM;};
         Result open() override;
-        FSCaps getCaps() override;
+        FSCaps get_caps() override;
         Result dir(std::vector<UniversalFile> & files, bool show_deleted) override;
         Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;
         std::string file_info(const UniversalFile & fd) override;

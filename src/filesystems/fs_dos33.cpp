@@ -18,9 +18,10 @@ namespace dsk_tools {
         fileSystem(image)
     {}
 
-    FSCaps fsDOS33::getCaps()
+    FSCaps fsDOS33::get_caps()
     {
-        return FSCaps::Protect | FSCaps::Types | FSCaps::Delete | FSCaps::Add | FSCaps::Dirs | FSCaps::Rename | FSCaps::MkDir;
+        return  FSCaps::Protect | FSCaps::Types  | FSCaps::Delete | FSCaps::Add
+                | FSCaps::Dirs  | FSCaps::Rename | FSCaps::MkDir  | FSCaps::Metadata;
     }
 
     Result fsDOS33::open()
@@ -779,7 +780,7 @@ namespace dsk_tools {
                     } else {
                         UniversalFile f;
 
-                        f.fs = getFS();
+                        f.fs = get_fs();
                         f.is_dir = catalog->files[i].type == 0xFF;
                         f.is_deleted = is_deleted;
                         f.is_protected = (catalog->files[i].type & 0x80) != 0;
