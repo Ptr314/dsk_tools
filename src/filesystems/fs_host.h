@@ -17,8 +17,8 @@ namespace dsk_tools {
     public:
         explicit fsHost(diskImage * image);
         Result open() override;
-        FSCaps getCaps() override;
-        FS getFS() const override {return FS::Host;};
+        FSCaps get_caps() override;
+        FS get_fs() const override {return FS::Host;};
 
         // Callback to check if recycle bin is enabled (set by MainWindow)
         static bool (*use_recycle_bin)();

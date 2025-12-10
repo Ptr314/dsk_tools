@@ -16,8 +16,8 @@ namespace dsk_tools {
     public:
         explicit fsFIL(diskImage * image);
         Result open() override;
-        FSCaps getCaps() override;
-        FS getFS() const override {return FS::DOS33;};
+        FSCaps get_caps() override;
+        FS get_fs() const override {return FS::DOS33;};
         Result dir(std::vector<UniversalFile> & files, bool show_deleted) override;
         Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;
         std::string file_info(const UniversalFile & fd) override;
