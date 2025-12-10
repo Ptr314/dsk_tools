@@ -28,6 +28,36 @@ namespace dsk_tools {
     // Initialize static callback pointer
     bool (*fsHost::use_recycle_bin)() = nullptr;
 
+    // Helper function to sanitize filenames by replacing invalid characters
+    static std::string sanitize_filename(const std::string& filename)
+    {
+        std::string sanitized = filename;
+
+#ifdef _WIN32
+        // Windows invalid characters: < > : " / \ | ? *
+        const std::string invalid_chars = "<>:\"/\\|?*";
+#else
+        // POSIX: mainly / is invalid, but we also avoid control characters
+        const std::string invalid_chars = "/";
+#endif
+
+        // Replace invalid characters with underscores
+        for (size_t i = 0; i < sanitized.length(); ++i) {
+            unsigned char c = static_cast<unsigned char>(sanitized[i]);
+
+            // Check for invalid characters in the predefined set
+            if (invalid_chars.find(c) != std::string::npos) {
+                sanitized[i] = '_';
+            }
+            // Also replace control characters (0-31) on all platforms
+            else if (c < 32) {
+                sanitized[i] = '_';
+            }
+        }
+
+        return sanitized;
+    }
+
     fsHost::fsHost(diskImage * image):
         fileSystem(nullptr)
     {}
@@ -80,10 +110,13 @@ namespace dsk_tools {
 
     Result fsHost::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
     {
-        std::cout << "Host: put_file " << m_path << " + " << uf.name << std::endl;
+        // Sanitize filename to remove invalid characters for the target OS
+        std::string sanitized_name = sanitize_filename(uf.name);
+
+        std::cout << "Host: put_file " << m_path << " + " << sanitized_name << std::endl;
 
         // Construct full file path
-        std::string fullPath = join_paths(m_path, uf.name);
+        std::string fullPath = join_paths(m_path, sanitized_name);
 
         if (format == "FILE_FIL") {
             fullPath += ".fil";
@@ -101,7 +134,7 @@ namespace dsk_tools {
         // Open file in binary write mode
         UTF8_ofstream file(fullPath, std::ios::binary);
         if (!file.is_open()) {
-            return Result::error(ErrorCode::WriteError);
+            return Result::error(ErrorCode::CreateError);
         }
 
         // Write data to file
@@ -287,8 +320,11 @@ namespace dsk_tools {
 
     Result fsHost::mkdir(const std::string & dir_name, UniversalFile & new_dir)
     {
+        // Sanitize directory name to remove invalid characters for the target OS
+        std::string sanitized_name = sanitize_filename(dir_name);
+
         // Construct full path
-        std::string fullPath = join_paths(m_path, dir_name);
+        std::string fullPath = join_paths(m_path, sanitized_name);
 
         // Platform-specific directory creation with UTF-8 support
         int result = utf8_mkdir(fullPath);
@@ -297,6 +333,9 @@ namespace dsk_tools {
             // Check if directory already exists
             if (errno == EEXIST) {
                 return Result::error(ErrorCode::DirAlreadyExists);
+            }
+            if (errno == EINVAL) {
+                return Result::error(ErrorCode::InvalidName);
             }
             return Result::error(ErrorCode::DirError);
         }
@@ -349,11 +388,17 @@ namespace dsk_tools {
         std::wstring wNewPath = utf8_to_wide(newPath);
 
         if (_wrename(wOldPath.c_str(), wNewPath.c_str()) != 0) {
+            if (errno == EINVAL) {
+                return Result::error(ErrorCode::InvalidName);
+            }
             return Result::error(ErrorCode::FileRenameError);
         }
 #else
         // POSIX implementation using rename
         if (std::rename(oldPath.c_str(), newPath.c_str()) != 0) {
+            if (errno == EINVAL) {
+                return Result::error(ErrorCode::InvalidName);
+            }
             return Result::error(ErrorCode::FileRenameError);
         }
 #endif
