@@ -19,7 +19,7 @@ namespace dsk_tools {
         fileSystem(image)
     {}
 
-    FSCaps fsSpriteOS::getCaps()
+    FSCaps fsSpriteOS::get_caps()
     {
         return FSCaps::Protect | FSCaps::Dirs;
     }

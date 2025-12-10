@@ -19,7 +19,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         , m_filesystem_id(filesystem_id)
     {}
 
-    FSCaps fsCPM::getCaps()
+    FSCaps fsCPM::get_caps()
     {
         return FSCaps::Protect | FSCaps::Types;
     }

@@ -19,7 +19,7 @@ namespace dsk_tools {
         fileSystem(image)
     {}
 
-    FSCaps fsFIL::getCaps()
+    FSCaps fsFIL::get_caps()
     {
         return FSCaps::Protect | FSCaps::Types | FSCaps::Rename;
     }
