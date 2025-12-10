@@ -66,21 +66,16 @@ namespace dsk_tools {
         LoadSizeMismatch,
         LoadParamsMismatch,
         LoadIncorrectFile,
-        LoadFileCorrupt,
         LoadDataCorrupt,
 
         // Open errors (FDD_OPEN_*)
         OpenNotLoaded,
         OpenBadFormat,
 
-        // Operation errors (FDD_OP_*)
-        OperationError,
-        OperationNotOpen,
-
         // Write errors (FDD_WRITE_*)
+        CreateError,
         WriteError,
         WriteUnsupported,
-        WriteErrorReading,
         WriteIncorrectTemplate,
         WriteIncorrectSource,
 
@@ -96,15 +91,14 @@ namespace dsk_tools {
         FileAddError,
         FileAddErrorAllocateDirEntry,
         FileAddErrorAllocateSector,
-        FileAddErrorIO,
         FileAddErrorSpace,
         FileRenameError,
-        FileMetadataError,
         FileIncorrectFS,
         ReadError,
         FileNotFound,
         FileAlreadyExists,
         DirAlreadyExists,
+        InvalidName,
 
         // Detection errors (FDD_DETECT_*)
         DetectError
