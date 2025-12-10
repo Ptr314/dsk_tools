@@ -91,13 +91,15 @@ namespace dsk_tools {
         }
     }
 
-    void fsSpriteOS::cd(const dsk_tools::UniversalFile & dir)
+    void fsSpriteOS::cd(const dsk_tools::UniversalFile & dir, bool & updir)
     {
         if (dir.name == "..") {
             cd_up();
+            updir = true;
         } else {
             memcpy(&CURRENT_DIR, dir.metadata.data(), sizeof(CURRENT_DIR));
             current_path.push_back(CURRENT_DIR);
+            updir = false;
         }
     }
 

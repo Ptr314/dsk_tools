@@ -266,10 +266,16 @@ namespace dsk_tools {
         return Result::ok();
     }
 
-    void fsHost::cd(const UniversalFile & dir)
+    void fsHost::cd(const std::string & path, bool & updir)
+    {
+        m_path = path;
+        updir = false;
+    }
+
+    void fsHost::cd(const UniversalFile & dir, bool & updir)
     {
         std::string fullPath = join_paths(m_path, dir.name);
-        cd(fullPath);
+        cd(fullPath, updir);
     }
 
     void fsHost::cd_up()
