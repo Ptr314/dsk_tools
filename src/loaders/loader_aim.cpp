@@ -65,7 +65,7 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
                 if (!iterate_until(in, in_p, 0x95)) return Result::error(ErrorCode::LoadDataCorrupt, "Invalid data mark");
                 // Data
                 for (int i=0; i<256; i++) {
-                    if (in_p > in.size()) return Result::error(ErrorCode::LoadDataCorrupt, "Unexpected end of data");
+                    if (in_p >= in.size()) return Result::error(ErrorCode::LoadDataCorrupt, "Unexpected end of data");
                     uint16_t b = in.at(in_p++);
                     uint8_t  d = b & 0xFF;
                     buffer[out_p++] = d;
