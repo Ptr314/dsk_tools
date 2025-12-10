@@ -69,10 +69,11 @@ namespace dsk_tools {
         if (current_path.size() > 1) current_path.pop_back();
     }
 
-    void fsDOS33::cd(const dsk_tools::UniversalFile & dir)
+    void fsDOS33::cd(const dsk_tools::UniversalFile & dir, bool & updir)
     {
         if (dir.name == "..") {
             cd_up();
+            updir = true;
         } else {
             Apple_DOS_File_Metadata f{};
             memcpy(&f, dir.metadata.data(), sizeof(f));
@@ -85,6 +86,7 @@ namespace dsk_tools {
                     f.dir_entry.tbl_sector
                 }
             );
+            updir = false;
         }
     }
 
