@@ -94,6 +94,7 @@ namespace dsk_tools {
         FileAddErrorSpace,
         FileRenameError,
         FileIncorrectFS,
+        FileMetadataError,
         ReadError,
         FileNotFound,
         FileAlreadyExists,

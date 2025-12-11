@@ -29,9 +29,7 @@ namespace dsk_tools {
         if (!image->get_loaded()) return Result::error(ErrorCode::OpenNotLoaded);
 
         uint8_t* vtoc_data = image->get_sector_data(0, 0x11, 0);
-        if (!vtoc_data) {
-            return Result::error(ErrorCode::OpenBadFormat, "Cannot read VTOC");
-        }
+        if (!vtoc_data) return Result::error(ErrorCode::OpenBadFormat, "Cannot read VTOC");
 
         VTOC = reinterpret_cast<dsk_tools::Agat_VTOC *>(vtoc_data);
         const int sector_size = static_cast<int>(VTOC->bytes_per_sector);
@@ -119,9 +117,8 @@ namespace dsk_tools {
         Apple_DOS_TS_List * ts_list;
 
         uint8_t* ts_list_data = image->get_sector_data(0, list_track, list_sector);
-        if (!ts_list_data) {
-            return "{$ERROR_CANNOT_READ_TS_LIST}";
-        }
+        if (!ts_list_data) return "{$ERROR_CANNOT_READ_TS_LIST}";
+
         ts_list = reinterpret_cast<dsk_tools::Apple_DOS_TS_List *>(ts_list_data);
         BYTES ts_custom(fd.is_dir?8:9);
         void * from = &(ts_list->_not_used_03);
@@ -203,17 +200,17 @@ namespace dsk_tools {
         else
         if (track < 0x72 && tracks_count > 0x32) {
             uint8_t* vtoc_ex_data = image->get_sector_data(0, 0x32, 0);
-            if (!vtoc_ex_data) {
+            if (!vtoc_ex_data)
                 throw std::runtime_error("Cannot read VTOC extension sector (0x32, 0)");
-            }
+
             VTOCEx = reinterpret_cast<Agat_VTOC_Ex *>(vtoc_ex_data);
             return &(VTOCEx->free_sectors[track-0x32]);
         } else
         if (track < 0xB2 && tracks_count > 0x72) {
             uint8_t* vtoc_ex_data = image->get_sector_data(0, 0x72, 0);
-            if (!vtoc_ex_data) {
+            if (!vtoc_ex_data)
                 throw std::runtime_error("Cannot read VTOC extension sector (0x72, 0)");
-            }
+
             VTOCEx = reinterpret_cast<Agat_VTOC_Ex *>(vtoc_ex_data);
             return &(VTOCEx->free_sectors[track-0x72]);
         } else
@@ -408,6 +405,8 @@ namespace dsk_tools {
         sector_occupy(0, ts.track, ts.sector);
 
         auto * new_catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, ts.track, ts.sector));
+        if (!new_catalog) return Result::error(ErrorCode::DirErrorAllocateSector);
+
         std::memset(new_catalog, 0, sizeof(Apple_DOS_Catalog));
 
         dir_entry->tbl_track = ts.track;
@@ -466,12 +465,14 @@ namespace dsk_tools {
 
         do {
             const auto * ts_list = reinterpret_cast<const Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+            if (!ts_list) return Result::error(ErrorCode::ReadError);
 
             for (int i = 0; i < VTOC->pairs_on_sector; i++){
                 const int file_track = ts_list->ts[i][0];
                 const int file_sector = ts_list->ts[i][1];
                 if (file_track == 0) break;
                 std::uint8_t * sector = image->get_sector_data(0, file_track, file_sector);
+                if (!sector) return Result::error(ErrorCode::ReadError);
                 data.insert(data.end(),&sector[0],&sector[256]);
             }
 
@@ -504,6 +505,7 @@ namespace dsk_tools {
 
                 if (list_track != 0xFF) {
                     auto * ts_list = reinterpret_cast<Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+                    if (!ts_list) return Result::error(ErrorCode::ReadError);
                     const void * from = &(ts_list->_not_used_03);
                     std::memcpy(header.tsl, from, 9);
                 } else
@@ -612,6 +614,8 @@ namespace dsk_tools {
 
             sector_occupy(0, ts.track, ts.sector);
             auto * ts_list = reinterpret_cast<Apple_DOS_TS_List *>(image->get_sector_data(0, ts.track, ts.sector));
+            if (!ts_list) return Result::error(ErrorCode::WriteError);
+
             std::memset(ts_list, 0, sizeof(Apple_DOS_TS_List));
             if (i==0) {
                 // Store first T/S to a catalog entry
@@ -648,6 +652,8 @@ namespace dsk_tools {
                     ts_list->ts[j][1] = file_ts.sector;
 
                     uint8_t * disk_data = image->get_sector_data(0, file_ts.track, file_ts.sector);
+                    if (!disk_data) return Result::error(ErrorCode::WriteError);
+
                     std::memcpy(disk_data, data.data() + data_offset + ts_pair * image->get_sector_size(), image->get_sector_size());
 
                     start_track = file_ts.track;
@@ -670,6 +676,7 @@ namespace dsk_tools {
         if (!uf.is_dir) {
             // ----- File
             const auto * catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, uf.position[0], uf.position[1]));
+            if (!catalog) return Result::error(ErrorCode::FileDeleteError);
             auto * dir_entry = const_cast<Apple_DOS_File *>(&(catalog->files[uf.position[2]]));
 
             int list_track = dir_entry->tbl_track;
@@ -680,6 +687,8 @@ namespace dsk_tools {
             do {
                 if (list_track < (image->get_tracks()*image->get_heads()) && list_sector < image->get_sectors()) {
                     const auto * ts_list = reinterpret_cast<Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+                    if (!ts_list) return Result::error(ErrorCode::FileDeleteError);
+
                     for (int i = 0; i < VTOC->pairs_on_sector; i++){
                         const int file_track = ts_list->ts[i][0];
                         const int file_sector = ts_list->ts[i][1];
@@ -706,6 +715,8 @@ namespace dsk_tools {
 
             // Checking if it is empty
             auto * catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, uf.position[0], uf.position[1]));
+            if (!catalog) return Result::error(ErrorCode::FileDeleteError);
+
             Apple_DOS_File * dir_entry = &catalog->files[uf.position[2]];
 
             TS_PAIR catalog_ts {};
@@ -718,6 +729,7 @@ namespace dsk_tools {
 
             do {
                 catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
+                if (!catalog) return Result::error(ErrorCode::FileDeleteError);
 
                 for (int i=0; i<7; i++) {
                     uint8_t t = catalog->files[i].tbl_track;
@@ -742,6 +754,8 @@ namespace dsk_tools {
                 catalog_ts.sector = dir_entry->tbl_sector;
                 do {
                     catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
+                    if (!catalog) return Result::error(ErrorCode::FileDeleteError);
+
                     sector_free(0, catalog_ts.track, catalog_ts.sector);
                     catalog_ts.track = catalog->next_track;
                     catalog_ts.sector = catalog->next_sector;
@@ -768,6 +782,7 @@ namespace dsk_tools {
 
         do {
             const auto catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
+            if (!catalog) return Result::error(ErrorCode::ReadError);
 
             // std::cout << "CATALOG: " << (int)catalog_ts.track << ":" << (int)catalog_ts.sector << std::endl;
 
@@ -815,6 +830,8 @@ namespace dsk_tools {
 
                         if (list_track != 0xFF) {
                             const auto * ts_list = reinterpret_cast<Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+                            if (!ts_list) return Result::error(ErrorCode::ReadError);
+
                             const void * from = &(ts_list->_not_used_03);
                             std::memcpy(metadata.tsl, from, 9);
                         } else
@@ -861,6 +878,8 @@ namespace dsk_tools {
         const int list_sector = metadata->dir_entry.tbl_sector;
 
         const auto * ts_list = reinterpret_cast<Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+        if (!ts_list) return params;
+
         BYTES ts_custom(fd.is_dir?8:9);
         const void * from = &(ts_list->_not_used_03);
         std::memcpy(ts_custom.data(), from, ts_custom.size());
@@ -874,6 +893,8 @@ namespace dsk_tools {
     Result fsDOS33::rename_file(const UniversalFile & fd, const std::string & new_name)
     {
         auto * catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, fd.position[0], fd.position[1]));
+        if (!catalog) return Result::error(ErrorCode::FileRenameError);
+
         auto * dir_entry = &(catalog->files[fd.position[2]]);
 
         const BYTES name_str = utf_to_agat(new_name);
@@ -927,6 +948,8 @@ namespace dsk_tools {
 
         if (is_protected) new_type |= 0x80;
         auto * catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, fd.position[0], fd.position[1]));
+        if (!catalog) return Result::error(ErrorCode::FileMetadataError);
+
         auto * dir_entry = &(catalog->files[fd.position[2]]);
 
         dir_entry->type = new_type;
@@ -935,6 +958,7 @@ namespace dsk_tools {
         const int list_sector = dir_entry->tbl_sector;
 
         auto * ts_list = reinterpret_cast<Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+        if (!ts_list) return Result::error(ErrorCode::FileMetadataError);
 
         void * copy_to = &(ts_list->_not_used_03);
         std::memcpy(copy_to, ts_custom.data(), ts_custom.size());
