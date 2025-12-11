@@ -26,7 +26,8 @@ namespace dsk_tools {
         Rename      = 1 << 5,       // Files can be renamed
         MkDir       = 1 << 6,       // Creating directories
         Metadata    = 1 << 7,       // Editing file metadata
-        All         = Dirs | Protect | Types | Delete | Add | Rename | MkDir | Metadata
+        Restore     = 1 << 8,       // Restore deleted files
+        All         = Dirs | Protect | Types | Delete | Add | Rename | MkDir | Metadata | Restore
     };
 
     ENABLE_ENUM_FLAG_OPERATORS(FSCaps);
@@ -88,6 +89,7 @@ namespace dsk_tools {
 
         // File operation errors (FILE_*)
         FileDeleteError,
+        FileRestoreError,
         FileAddError,
         FileAddErrorAllocateDirEntry,
         FileAddErrorAllocateSector,

@@ -76,6 +76,7 @@ namespace dsk_tools {
         virtual Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace) {return Result::error(ErrorCode::NotImplementedYet);};
         virtual Result rename_file(const UniversalFile & fd, const std::string & new_name) {return Result::error(ErrorCode::NotImplementedYet);};
         virtual Result delete_file(const UniversalFile & uf) {return Result::error(ErrorCode::NotImplementedYet);};
+        virtual Result restore_file(const UniversalFile & uf) {return Result::error(ErrorCode::NotImplementedYet);};
         virtual std::string file_info(const UniversalFile & fd) {return "";};
         virtual std::vector<ParameterDescription> file_get_metadata(const UniversalFile & fd) {std::vector<ParameterDescription> params; return params;};
         virtual Result file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata) {return Result::error(ErrorCode::NotImplementedYet);};
