@@ -21,7 +21,7 @@ namespace dsk_tools {
 
     FSCaps fsFIL::get_caps()
     {
-        return FSCaps::Protect | FSCaps::Types | FSCaps::Rename;
+        return FSCaps::Protect | FSCaps::Types | FSCaps::Rename | FSCaps::Metadata;
     }
 
     Result fsFIL::open()
