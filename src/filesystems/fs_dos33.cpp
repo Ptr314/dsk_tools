@@ -21,7 +21,8 @@ namespace dsk_tools {
     FSCaps fsDOS33::get_caps()
     {
         return  FSCaps::Protect | FSCaps::Types  | FSCaps::Delete | FSCaps::Add
-                | FSCaps::Dirs  | FSCaps::Rename | FSCaps::MkDir  | FSCaps::Metadata;
+                | FSCaps::Dirs  | FSCaps::Rename | FSCaps::MkDir  | FSCaps::Metadata
+                | FSCaps::Restore;
     }
 
     Result fsDOS33::open()
@@ -964,6 +965,88 @@ namespace dsk_tools {
         std::memcpy(copy_to, ts_custom.data(), ts_custom.size());
 
         is_changed = true;
+        return Result::ok();
+    }
+
+    Result fsDOS33::restore_file(const UniversalFile & uf)
+    {
+        if (!uf.is_dir) {
+            // ----- File
+            const auto * catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, uf.position[0], uf.position[1]));
+            if (!catalog) return Result::error(ErrorCode::FileDeleteError);
+            auto * dir_entry = const_cast<Apple_DOS_File *>(&(catalog->files[uf.position[2]]));
+
+            int list_track = dir_entry->tbl_track;
+            int list_sector = dir_entry->tbl_sector;
+
+            if (list_track != 0xFF) return Result::ok();
+
+            const uint8_t restored_track = dir_entry->name[29];
+
+            if (restored_track < (image->get_tracks()*image->get_heads()) && list_sector < image->get_sectors()) {
+                dir_entry->tbl_track = list_track = restored_track;
+                dir_entry->name[29] = 0xA0;
+
+                do {
+                    if (list_track < (image->get_tracks()*image->get_heads()) && list_sector < image->get_sectors()) {
+                        const auto * ts_list = reinterpret_cast<Apple_DOS_TS_List *>(image->get_sector_data(0, list_track, list_sector));
+                        if (!ts_list) return Result::error(ErrorCode::FileRestoreError);
+
+                        for (int i = 0; i < VTOC->pairs_on_sector; i++){
+                            const int file_track = ts_list->ts[i][0];
+                            const int file_sector = ts_list->ts[i][1];
+                            if (file_track == 0 && file_sector == 0) break;
+                            if (!sector_occupy(0, file_track, file_sector))
+                                return Result::error(ErrorCode::FileRestoreError, "Sector is not free");
+                        }
+                        if (!sector_occupy(0, list_track, list_sector))
+                                return Result::error(ErrorCode::FileRestoreError, "Sector is not free");
+                        list_track = ts_list->next_track;
+                        list_sector = ts_list->next_sector;
+                    } else {
+                        return Result::error(ErrorCode::FileRestoreError, "Incorrect track/sector data");
+                    }
+
+                } while (list_track != 0);
+                is_changed = true;
+                return Result::ok();
+            } else {
+                return Result::error(ErrorCode::FileRestoreError);
+            }
+        } else {
+            // ----- Directory
+
+            auto * catalog = reinterpret_cast<Apple_DOS_Catalog *>(image->get_sector_data(0, uf.position[0], uf.position[1]));
+            if (!catalog) return Result::error(ErrorCode::FileRestoreError);
+
+            Apple_DOS_File * dir_entry = &catalog->files[uf.position[2]];
+
+            TS_PAIR catalog_ts {};
+
+            catalog_ts.track = dir_entry->tbl_track;
+            catalog_ts.sector = dir_entry->tbl_sector;
+
+            if (catalog_ts.track != 0xFF) return Result::ok();
+
+            const uint8_t restored_track = dir_entry->name[29];
+
+            if (restored_track < (image->get_tracks()*image->get_heads()) && catalog_ts.sector < image->get_sectors()) {
+                dir_entry->tbl_track = catalog_ts.track = restored_track;
+                dir_entry->name[29] = 0xA0;
+                do {
+                    catalog = reinterpret_cast<dsk_tools::Apple_DOS_Catalog *>(image->get_sector_data(0, catalog_ts.track, catalog_ts.sector));
+                    if (!catalog) return Result::error(ErrorCode::FileRestoreError);
+
+                    if (!sector_occupy(0, catalog_ts.track, catalog_ts.sector))
+                        return Result::error(ErrorCode::FileRestoreError, "Sector is not free");
+                    catalog_ts.track = catalog->next_track;
+                    catalog_ts.sector = catalog->next_sector;
+                } while (catalog_ts.track != 0);
+
+                is_changed = true;
+            }
+
+        }
         return Result::ok();
     }
 
