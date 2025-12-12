@@ -21,7 +21,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
 
     FSCaps fsCPM::get_caps()
     {
-        return FSCaps::Protect | FSCaps::Types;
+        return FSCaps::Protect | FSCaps::Types | FSCaps::Export;
     }
 
     Result fsCPM::open()

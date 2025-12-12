@@ -21,7 +21,7 @@ namespace dsk_tools {
 
     FSCaps fsSpriteOS::get_caps()
     {
-        return FSCaps::Protect | FSCaps::Dirs;
+        return FSCaps::Protect | FSCaps::Dirs | FSCaps::Export;
     }
 
     Result fsSpriteOS::open()

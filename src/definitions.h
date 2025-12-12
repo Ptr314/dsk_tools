@@ -27,6 +27,7 @@ namespace dsk_tools {
         MkDir       = 1 << 6,       // Creating directories
         Metadata    = 1 << 7,       // Editing file metadata
         Restore     = 1 << 8,       // Restore deleted files
+        Export      = 1 << 9,       // Export is enabled
         All         = Dirs | Protect | Types | Delete | Add | Rename | MkDir | Metadata | Restore
     };
 
