@@ -5,9 +5,11 @@
 
 #include <cstring>
 #include <algorithm>
+#include <fstream>
 #include "agat_base.h"
 
 #include "utils.h"
+#include "host_helpers.h"
 
 namespace dsk_tools {
 
@@ -39,10 +41,42 @@ namespace dsk_tools {
             std::memcpy(&exif, data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR), sizeof(AGAT_EXIF_SECTOR));
             if (exif.SIGNATURE[0] == 0xD6 && exif.SIGNATURE[1] == 0xD2) {
                 exif_found = true;
-                const std::string pal_id = m_selectors[AGAT_PALETTE_SELECTOR_ID];
-                if (!pal_id.empty())
-                    m_palette = std::stoi(pal_id);
             }
+            const std::string pal_id = m_selectors[AGAT_PALETTE_SELECTOR_ID];
+            if (!pal_id.empty()) {
+                // Check if this is a custom palette file
+                if (pal_id.size() > 7 && pal_id.substr(0, 7) == "custom:") {
+                    // Handle custom palette file
+                    std::string file_path = pal_id.substr(7);  // Remove "custom:" prefix
+                    UTF8_ifstream file(file_path, std::ios::binary);
+                    if (file.is_open()) {
+                        // Get file size
+                        file.seekg(0, std::ios::end);
+                        std::streampos file_size = file.tellg();
+
+                        // Read EXIF data from the very end of the file
+                        if (file_size > static_cast<std::streampos>(sizeof(AGAT_EXIF_SECTOR))) {
+                            file.seekg(-static_cast<std::streamoff>(sizeof(AGAT_EXIF_SECTOR)), std::ios::end);
+                            char buffer[sizeof(AGAT_EXIF_SECTOR)];
+                            file.read(buffer, sizeof(AGAT_EXIF_SECTOR));
+
+                            // Copy the read data into exif
+                            std::memcpy(&exif, buffer, sizeof(AGAT_EXIF_SECTOR));
+                            m_palette = 15;  // 0xF - custom palette
+                            exif_found = true;
+                        }
+                        file.close();
+                    }
+                } else {
+                    // Handle numeric palette ID
+                    try {
+                        m_palette = std::stoi(pal_id);
+                    } catch (...) {
+                        m_palette = 0;
+                    }
+                }
+            }
+
         };
     }
 

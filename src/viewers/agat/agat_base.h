@@ -19,7 +19,7 @@ namespace dsk_tools {
         std::string get_id() override {return AGAT_PALETTE_SELECTOR_ID;}
         std::string get_title() override {return "{$SELECTOR_AGAT_PALETTE}";}
         std::string get_icon() override {return "palette";}
-        bool has_customs() override {return false;}
+        bool has_customs() override {return true;}
         ViewerSelectorOptions get_options() override
         {
             ViewerSelectorOptions options;

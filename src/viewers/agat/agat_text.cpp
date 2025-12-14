@@ -20,8 +20,16 @@ namespace dsk_tools {
 
         const std::string font = m_selectors[AGAT_FONT_SELECTOR_ID];
         const std::string pal_id = m_selectors[AGAT_PALETTE_SELECTOR_ID];
-        if (!pal_id.empty())
-            m_palette = std::stoi(pal_id);
+        if (!pal_id.empty()) {
+            // Skip overwriting m_palette if it's a custom palette file (handled by parent)
+            if (pal_id.size() <= 7 || pal_id.substr(0, 7) != "custom:") {
+                try {
+                    m_palette = std::stoi(pal_id);
+                } catch (...) {
+                    m_palette = 0;
+                }
+            }
+        }
 
         if (font == "a7_enhanced") {
             m_font = &A7_font_svt;
