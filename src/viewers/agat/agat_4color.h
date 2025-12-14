@@ -22,7 +22,7 @@ namespace dsk_tools {
 
         std::string get_type() const override {return "PICTURE_AGAT";}
         std::string get_subtype() const override {return "256x256x4";}
-        std::string get_subtype_text() const override {return "256х256 ЦГВР";}
+        std::string get_subtype_text() const override {return "256х256x4 ЦГВР";}
     };
 
 }

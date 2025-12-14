@@ -13,56 +13,31 @@
 
 namespace dsk_tools {
 
-    PicOptions ViewerPicAgatText::get_options()
-    {
-        return {
-            {0, "{$AGAT_FONT_A7_CLASSIC}"},
-            {1, "{$AGAT_FONT_A7_ENCHANCED}"},
-            {2, "{$AGAT_FONT_A9_CLASSIC}"},
-            {100, "{$AGAT_FONT_CUSTOM_LOADED}"}
-        };
-    }
-
-    int ViewerPicAgatText::suggest_option(const std::string file_name, const BYTES & data)
-    {
-        if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
-            std::memcpy(&exif, data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR), sizeof(AGAT_EXIF_SECTOR));
-            if (exif.SIGNATURE[0] == 0xD6 && exif.SIGNATURE[1] == 0xD2) {
-                exif_found = true;
-                int font = exif.FONT >> 4;
-                if (font == 7) return 0;
-                if (font == 8) return 1;
-                if (font == 9) return 2;
-                if (font == 0xF) return 100;
-            }
-        }
-        return -1;
-    }
-
-    void ViewerPicAgatText::start(const BYTES & data, const int opt, const int frame)
+    void ViewerPicAgatText::start(const BYTES & data, const int frame)
     {
         current_line = -1;
-        ViewerPicAgat::start(data, opt, frame);
+        ViewerPicAgat::start(data, frame);
 
-        if (exif_found) m_palette = exif.PALETTE >> 4;
+        const std::string font = m_selectors[AGAT_FONT_SELECTOR_ID];
+        const std::string pal_id = m_selectors[AGAT_PALETTE_SELECTOR_ID];
+        if (!pal_id.empty())
+            m_palette = std::stoi(pal_id);
 
-        switch (opt) {
-            case 1:
-                m_font = &A7_font_svt;
-                m_font_reverse = false;
-                break;
-            case 2:
-                m_font = &A9_font;
-                m_font_reverse = true;
-                break;
-            case 100:
-                m_font = &m_custom_font;
-                m_font_reverse = m_custom_reverse;
-                break;
-            default:
-                m_font = &A7_font;
-                m_font_reverse = false;
-                break;
+        if (font == "a7_enhanced") {
+            m_font = &A7_font_svt;
+            m_font_reverse = false;
+        } else
+        if (font == "a9_classic") {
+            m_font = &A9_font;
+            m_font_reverse = true;
+        } else
+        if (font == "loaded") {
+            m_font = &m_custom_font;
+            m_font_reverse = m_custom_reverse;
+        } else {
+            // a7_classic
+            m_font = &A7_font;
+            m_font_reverse = false;
         }
     }
 
@@ -143,6 +118,34 @@ namespace dsk_tools {
         return line_data[x];
     }
 
+    ViewerSelectors ViewerPicAgatText::get_selectors()
+    {
+        std::vector<std::unique_ptr<ViewerSelector>> result;
+        result.push_back(make_unique<ViewerSelectorAgatFont>());
+        result.push_back(make_unique<ViewerSelectorAgatPalette>());
+        return result;
+    }
+
+    ViewerSelectorValues ViewerPicAgatText::suggest_selectors(const std::string file_name, const BYTES & data)
+    {
+        ViewerSelectorValues result;
+        if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
+            std::memcpy(&exif, data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR), sizeof(AGAT_EXIF_SECTOR));
+            if (exif.SIGNATURE[0] == 0xD6 && exif.SIGNATURE[1] == 0xD2) {
+                exif_found = true;
+                const int font = exif.FONT >> 4;
+                if (font == 7) result[AGAT_FONT_SELECTOR_ID] = "a7_classic";
+                if (font == 8) result[AGAT_FONT_SELECTOR_ID] = "a7_enhanced";
+                if (font == 9) result[AGAT_FONT_SELECTOR_ID] = "a9_classic";
+                if (font == 0xF) result[AGAT_FONT_SELECTOR_ID] = "loaded";
+
+                result[AGAT_PALETTE_SELECTOR_ID] = std::to_string(exif.PALETTE >> 4);
+            }
+        }
+        return result;
+    }
+
+
     void ViewerPicAgatTextT32::process_line(int y)
     {
         static uint32_t black = 0xFF000000;
@@ -193,22 +196,20 @@ namespace dsk_tools {
             line_data[i+480] = black;
         }
 
-        int file_offset = 4;
-
-        int line_num = y >> 3;
-        int font_lin = y & 7;
+        const int line_num = y >> 3;
+        const int font_lin = y & 7;
         for (int char_num = 0; char_num < 64; char_num++) {
-            int index = file_offset + line_num*64 + char_num;
+            constexpr int file_offset = 4;
+            const int index = file_offset + line_num*64 + char_num;
             if (index < m_data->size()) {
-                uint8_t v1 = m_data->at(index);
+                const uint8_t v1 = m_data->at(index);
                 for (int k = 0; k < 7; k++) {
                     uint8_t font_val = (*m_font)[v1*8+font_lin] ;
                     if (!m_font_reverse)
                         font_val = ~font_val;
-                    uint8_t c = (((m_font_reverse)?(font_val >> (7-k)):(font_val >> k)) & 0x01) * 15;
-                    uint32_t color = black;
-                    std::memcpy(&color, &(Agat_16_color[c]), 3);
-                    int pi = char_num*7 + k;
+                    const uint8_t c = (((m_font_reverse)?(font_val >> (7-k)):(font_val >> k)) & 0x01);
+                    const uint32_t color = convert_color(2, m_palette, c);
+                    const int pi = char_num*7 + k;
                     line_data[32 + pi] = color;
                 }
             }

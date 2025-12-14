@@ -10,6 +10,24 @@
 
 namespace dsk_tools {
 
+    #define AGAT_FONT_SELECTOR_ID "agat_font_type"
+
+    class ViewerSelectorAgatFont: public ViewerSelector {
+        std::string get_id() override {return AGAT_FONT_SELECTOR_ID;}
+        std::string get_title() override {return "{$SELECTOR_AGAT_FONT}";}
+        std::string get_icon() override {return "font";}
+        bool has_customs() override {return false;}
+        ViewerSelectorOptions get_options() override
+        {
+            ViewerSelectorOptions options;
+            options.push_back({"a7_classic", "{$AGAT_FONT_A7_CLASSIC}", ""});
+            options.push_back({"a7_enhanced", "{$AGAT_FONT_A7_ENCHANCED}", ""});
+            options.push_back({"a9_classic", "{$AGAT_FONT_A9_CLASSIC}", ""});
+            options.push_back({"loaded", "{$AGAT_FONT_CUSTOM_LOADED}", ""});
+            return options;
+        };
+    };
+
     // Agat T32 color & T64 bw superclass
     class ViewerPicAgatText : public ViewerPicAgat {
     protected:
@@ -19,14 +37,15 @@ namespace dsk_tools {
         bool m_font_reverse = false;
         uint8_t m_custom_font[2048];
         bool m_custom_reverse;
-        virtual void start(const BYTES & data, const int opt, const int frame = 0) override;
+        virtual void start(const BYTES & data, const int frame = 0) override;
         virtual void process_line(int y = 0) = 0;
         virtual bool load_custom_font();
     public:
         uint32_t get_pixel(int x, int y) override;
-        PicOptions get_options() override;
-        int suggest_option(const std::string file_name, const BYTES & data) override;
         int prepare_data(const BYTES & data, dsk_tools::diskImage & image, dsk_tools::fileSystem & filesystem, std::string & error_msg) override;
+
+        ViewerSelectors get_selectors() override;
+        ViewerSelectorValues suggest_selectors(const std::string file_name, const BYTES & data) override;
     };
 
     class ViewerPicAgatTextT32 : public ViewerPicAgatText {

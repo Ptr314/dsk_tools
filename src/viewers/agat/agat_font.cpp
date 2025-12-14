@@ -7,30 +7,29 @@
 #include <cctype>
 #include "agat_font.h"
 #include "agat_fonts.h"
+#include "utils.h"
 
 namespace dsk_tools {
 
-    PicOptions ViewerPicAgatFont::get_options()
+    ViewerSelectorValues ViewerPicAgatFont::suggest_selectors(const std::string file_name, const BYTES & data)
     {
-        return {
-            {0,  "{$FONT_A9}"},
-            {1,  "{$FONT_A7}"},
-        };
-    }
-
-    int ViewerPicAgatFont::suggest_option(const std::string file_name, const BYTES & data)
-    {
+        ViewerSelectorValues result;
         std::string prefix = file_name.substr(0, 4);
         std::transform(prefix.begin(), prefix.end(), prefix.begin(), ::toupper);
-        if (prefix == "ZG9_" || prefix == "ZG9:") return 0;
-        if (prefix == "ZG7_" || prefix == "ZG7:") return 1;
-        return -1;
+        if (prefix == "ZG9_" || prefix == "ZG9:") result[AGAT_FONT_TYPE_SELECTOR_ID] = "9";
+        if (prefix == "ZG7_" || prefix == "ZG7:") result[AGAT_FONT_TYPE_SELECTOR_ID] = "7";
+        return result;
     }
 
     bool ViewerPicAgatFont::fits(const BYTES & data)
     {
         std::vector<int> sizes_to_fit = {2048, 2048+256};
         return std::find(sizes_to_fit.begin(), sizes_to_fit.end(), data.size()) != sizes_to_fit.end();
+    }
+
+    void ViewerPicAgatFont::set_selectors(const ViewerSelectorValues& selectors) {
+        ViewerPic::set_selectors(selectors);
+        m_font_type = m_selectors[AGAT_FONT_TYPE_SELECTOR_ID] == "9" ? 0 : 1;
     }
 
     uint32_t ViewerPicAgatFont::get_pixel(int x, int y)
@@ -61,12 +60,19 @@ namespace dsk_tools {
                     return back;
             } else {
                 // Character
-                if (m_opt == 0) pix = 7 - pix;
+                if (m_font_type == 0) pix = 7 - pix;
                 int code = (high << 4) + low;
                 int v = (m_data->at(file_offset + code*8 + line ) >> pix) & 1;
-                return (v ^ m_opt) ? sign : back;
+                return (v ^ m_font_type) ? sign : back;
             }
         }
+    }
+
+    ViewerSelectors ViewerPicAgatFont::get_selectors()
+    {
+        std::vector<std::unique_ptr<ViewerSelector>> result;
+        result.push_back(make_unique<ViewerSelectorAgatFontType>());
+        return result;
     }
 
     // Static registrar instantiation

@@ -13,6 +13,7 @@
 #include <iostream>
 
 #include "definitions.h"
+#include "viewer_selectors.h"
 
 namespace dsk_tools {
 
@@ -20,14 +21,19 @@ namespace dsk_tools {
     #define VIEWER_OUTPUT_PICTURE     1
 
     class Viewer {
+    protected:
+        ViewerSelectorValues m_selectors = {};
     public:
         virtual ~Viewer() {}
-        virtual std::string process_as_text(const BYTES & data, const std::string & cm_name) {return "";};
-        virtual int get_output_type() const {return VIEWER_OUTPUT_TEXT;};
-        virtual bool fits(const BYTES & data) {return true;};
+        virtual std::string process_as_text(const BYTES & data, const std::string & cm_name) {return "";}
+        virtual int get_output_type() const {return VIEWER_OUTPUT_TEXT;}
+        virtual bool fits(const BYTES & data) {return true;}
         virtual std::string get_type() const = 0;
         virtual std::string get_subtype() const = 0;
         virtual std::string get_subtype_text() const = 0;
+        virtual ViewerSelectors get_selectors() { return {}; }
+        virtual void set_selectors(const ViewerSelectorValues& selectors) {m_selectors = selectors;}
+        virtual ViewerSelectorValues suggest_selectors(const std::string file_name, const BYTES & data) {return {};}
     };
 
     class ViewerManager {

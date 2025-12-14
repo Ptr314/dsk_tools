@@ -22,7 +22,7 @@ namespace dsk_tools {
 
         std::string get_type() const override {return "PICTURE_AGAT";}
         std::string get_subtype() const override {return "256x256x1";}
-        std::string get_subtype_text() const override {return "256х256 МГВР";}
+        std::string get_subtype_text() const override {return "256х256x2 МГВР";}
     };
 
     class ViewerPicAgat_512x256x1 : public ViewerPicAgatMono {
@@ -33,7 +33,7 @@ namespace dsk_tools {
 
         std::string get_type() const override {return "PICTURE_AGAT";}
         std::string get_subtype() const override {return "512x256x1";}
-        std::string get_subtype_text() const override {return "512х256 МГДП";}
+        std::string get_subtype_text() const override {return "512х256x2 МГДП";}
     };
 
 }

@@ -7,44 +7,41 @@
 #include <algorithm>
 #include "agat_base.h"
 
+#include "utils.h"
+
 namespace dsk_tools {
 
-    PicOptions ViewerPicAgat::get_options()
+    ViewerSelectors ViewerPicAgat::get_selectors()
     {
-        return {
-            {0,  "{$PALETTE} #1"},
-            {1,  "{$PALETTE} #2"},
-            {2,  "{$PALETTE} #3"},
-            {3,  "{$PALETTE} #4"},
-            {8,  "{$PALETTE} #1 {$BW}"},
-            {9,  "{$PALETTE} #2 {$BW}"},
-            {10, "{$PALETTE} #3 {$BW}"},
-            {11, "{$PALETTE} #4 {$BW}"},
-            {15, "{$CUSTOM_PALETTE}"},
-        };
+        std::vector<std::unique_ptr<ViewerSelector>> result;
+        result.push_back(make_unique<ViewerSelectorAgatPalette>());
+        return result;
     }
 
-    int ViewerPicAgat::suggest_option(const std::string file_name, const BYTES & data)
+    ViewerSelectorValues ViewerPicAgat::suggest_selectors(const std::string file_name, const BYTES & data)
     {
+        ViewerSelectorValues result;
         if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
             std::memcpy(&exif, data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR), sizeof(AGAT_EXIF_SECTOR));
             if (exif.SIGNATURE[0] == 0xD6 && exif.SIGNATURE[1] == 0xD2) {
-                return exif.PALETTE >> 4;
+                result[AGAT_PALETTE_SELECTOR_ID] = std::to_string(exif.PALETTE >> 4);
             }
         }
-        return -1;
+        return result;
     }
 
-    void ViewerPicAgat::start(const BYTES & data, const int opt, const int frame)
+    void ViewerPicAgat::start(const BYTES & data, const int frame)
     {
-        ViewerPic::start(data, opt, frame);
+        ViewerPic::start(data, frame);
 
         // Process Agat "EXIF"
         if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
             std::memcpy(&exif, data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR), sizeof(AGAT_EXIF_SECTOR));
             if (exif.SIGNATURE[0] == 0xD6 && exif.SIGNATURE[1] == 0xD2) {
                 exif_found = true;
-                m_palette = opt;
+                const std::string pal_id = m_selectors[AGAT_PALETTE_SELECTOR_ID];
+                if (!pal_id.empty())
+                    m_palette = std::stoi(pal_id);
             }
         };
     }

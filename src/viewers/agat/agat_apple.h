@@ -9,11 +9,46 @@
 
 namespace dsk_tools {
 
+    #define APPLE_HIRES_AGAT_SELECTOR_ID "apple_hires_agat"
+
+    class ViewerSelectorAgatHiresAgat: public ViewerSelector {
+        std::string get_id() override {return APPLE_HIRES_AGAT_SELECTOR_ID;}
+        std::string get_title() override {return "{$SELECTOR_APPLE_HIRES_AGAT}";}
+        std::string get_icon() override {return "palette";}
+        bool has_customs() override {return false;}
+        ViewerSelectorOptions get_options() override
+        {
+            ViewerSelectorOptions options;
+            options.push_back({"color", "{$COLOR}", ""});
+            options.push_back({"mono", "{$MONOCHROME}", ""});
+            options.push_back({"custom", "{$CUSTOM_PALETTE}", ""});
+            return options;
+        };
+    };
+
+    #define APPLE_HIRES_APPLE_SELECTOR_ID "apple_hires_apple"
+
+    class ViewerSelectorAgatHiresApple: public ViewerSelector {
+        std::string get_id() override {return APPLE_HIRES_APPLE_SELECTOR_ID;}
+        std::string get_title() override {return "{$SELECTOR_APPLE_HIRES_APPLE}";}
+        std::string get_icon() override {return "palette";}
+        bool has_customs() override {return false;}
+        ViewerSelectorOptions get_options() override
+        {
+            ViewerSelectorOptions options;
+            options.push_back({"ntsc_imp", "{$NTSC_APPLE_IMPROVED}", ""});
+            options.push_back({"ntsc_orig", "{$NTSC_APPLE_ORIGINAL}", ""});
+            options.push_back({"bw", "{$BW}", ""});
+            return options;
+        };
+    };
+
     class ViewerPicAgatApple : public ViewerPicAgat {
     protected:
         uint32_t line_data[560];
         int current_line = -1;
-        virtual void start(const BYTES & data, const int opt, const int frame = 0) override;
+        int m_mode = 0;
+        virtual void start(const BYTES & data, const int frame = 0) override;
         virtual void process_line(int line_offset, int y = 0) = 0;
     public:
         uint32_t get_pixel(int x, int y) override;
@@ -31,7 +66,7 @@ namespace dsk_tools {
         std::string get_subtype() const override {return "280x192HiRes";}
         std::string get_subtype_text() const override {return "280x192 HGR";}
 
-        PicOptions get_options() override;
+        ViewerSelectors get_selectors() override;
     };
 
     class ViewerPicAgat_280x192HiRes_Apple : public ViewerPicAgatApple {
@@ -46,7 +81,7 @@ namespace dsk_tools {
         std::string get_subtype() const override {return "280x192HiRes";}
         std::string get_subtype_text() const override {return "280x192 HiRes";}
 
-        PicOptions get_options() override;
+        ViewerSelectors get_selectors() override;
     };
 
     class ViewerPicAgat_140x192DblHiRes : public ViewerPicAgatApple {
@@ -60,7 +95,7 @@ namespace dsk_tools {
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "140x192DblHiRes";}
         std::string get_subtype_text() const override {return "140x192 Dbl HiRes Color";}
-        PicOptions get_options() override;
+        ViewerSelectors get_selectors() override;
     };
 
     class ViewerPicAgat_560x192DblHiResBW : public ViewerPicAgatApple {
@@ -74,7 +109,8 @@ namespace dsk_tools {
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "560x192DblHiResBW";}
         std::string get_subtype_text() const override {return "560x192 Dbl HiRes B/W";}
-        PicOptions get_options() override;
+        ViewerSelectors get_selectors() override;
+
     };
 
     class ViewerPicAgat_40x48LoRes : public ViewerPicAgatApple {
@@ -88,7 +124,7 @@ namespace dsk_tools {
         std::string get_type() const override {return "PICTURE_APPLE";}
         std::string get_subtype() const override {return "40x48LoRes";}
         std::string get_subtype_text() const override {return "40x48 LoRes";}
-        PicOptions get_options() override;
+        ViewerSelectors get_selectors() override;
         uint32_t get_pixel(int x, int y) override;
     };
 
