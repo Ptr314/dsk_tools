@@ -49,11 +49,25 @@ add_library(${PROJECT_NAME} STATIC
     src/viewers/viewer_basic_mbasic.h
     src/viewers/viewer_basic_mbasic.cpp
     src/viewers/viewer_pics_agat.h
-    src/viewers/viewer_pics_agat.cpp
-    src/viewers/viewer_pics.h
+        src/viewers/viewer_pics.h
     src/viewers/viewer_pics.cpp
-    src/viewers/agat_fonts.h
-        src/filesystems/fs_host.h
+    src/viewers/agat/agat_common.h
+    src/viewers/agat/agat_base.h
+    src/viewers/agat/agat_base.cpp
+    src/viewers/agat/agat_16color.h
+    src/viewers/agat/agat_16color.cpp
+    src/viewers/agat/agat_4color.h
+    src/viewers/agat/agat_4color.cpp
+    src/viewers/agat/agat_mono.h
+    src/viewers/agat/agat_mono.cpp
+    src/viewers/agat/agat_apple.h
+    src/viewers/agat/agat_apple.cpp
+    src/viewers/agat/agat_text.h
+    src/viewers/agat/agat_text.cpp
+    src/viewers/agat/agat_font.h
+    src/viewers/agat/agat_font.cpp
+    src/viewers/agat/agat_fonts.h
+    src/filesystems/fs_host.h
         src/filesystems/fs_host.cpp
     src/host_helpers.h                 src/host_helpers.cpp
 )

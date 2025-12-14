@@ -10,6 +10,7 @@
 #include <string>
 #include <functional>
 #include <vector>
+#include <iostream>
 
 #include "definitions.h"
 

@@ -498,7 +498,7 @@ namespace dsk_tools {
         if (std::find(sizes_to_fit.begin(), sizes_to_fit.end(), data.size()) != sizes_to_fit.end()) {
             std::string prefix = file_name.substr(0, 4);
             std::transform(prefix.begin(), prefix.end(), prefix.begin(), ::toupper);
-            if ((prefix == "ZG9_") || (prefix == "ZG7_")) return {"PICTURE_AGAT", "FONT"};
+            if ((prefix == "ZG9_") || (prefix == "ZG7_") || (prefix == "ZG9:") || (prefix == "ZG7:")) return {"PICTURE_AGAT", "FONT"};
         }
 
         return {"BINARY", ""};
@@ -755,27 +755,29 @@ namespace dsk_tools {
     }
 
     void register_all_viewers() {
-        dsk_tools::ViewerBinary viewer_binary;
-        dsk_tools::ViewerText viewer_text;
-        dsk_tools::ViewerBASIC_Agat viewer_basic_agat;
-        dsk_tools::ViewerBASIC_Apple viewer_basic_apple;
-        dsk_tools::ViewerBASIC_MBASIC viewer_basic_mbasic;
-        dsk_tools::ViewerPicAgat_256x256x1 viewer_pic_agat_256x256x1;
-        dsk_tools::ViewerPicAgat_512x256x1 viewer_pic_agat_512x256x1;
-        dsk_tools::ViewerPicAgat_64x64x16 viewer_pic_agat_64x64x16;
-        dsk_tools::ViewerPicAgat_128x128x16 viewer_pic_agat_128x128x16;
-        dsk_tools::ViewerPicAgat_256x256x4 viewer_pic_agat_256x256x4;
-        dsk_tools::ViewerPicAgat_128x256x16 viewer_pic_agat_128x256x16;
+        ViewerBinary viewer_binary;
+        ViewerText viewer_text;
+        ViewerBASIC_Agat viewer_basic_agat;
+        ViewerBASIC_Apple viewer_basic_apple;
+        ViewerBASIC_MBASIC viewer_basic_mbasic;
+        ViewerPicAgat_256x256x1 viewer_pic_agat_256x256x1;
+        ViewerPicAgat_512x256x1 viewer_pic_agat_512x256x1;
+        ViewerPicAgat_64x64x16 viewer_pic_agat_64x64x16;
+        ViewerPicAgat_128x128x16 viewer_pic_agat_128x128x16;
+        ViewerPicAgat_256x256x4 viewer_pic_agat_256x256x4;
+        ViewerPicAgat_128x256x16 viewer_pic_agat_128x256x16;
 
-        dsk_tools::ViewerPicAgatTextT32 viewer_pic_agat_TextT32;
-        dsk_tools::ViewerPicAgatTextT64 viewer_pic_agat_TextT64;
+        ViewerPicAgatTextT32 viewer_pic_agat_TextT32;
+        ViewerPicAgatTextT64 viewer_pic_agat_TextT64;
 
-        dsk_tools::ViewerPicAgat_280x192HiRes_Agat viewer_pic_agat_280x192HiRes_Agat;
-        dsk_tools::ViewerPicAgat_280x192HiRes_Apple viewer_pic_agat_280x192HiRes_Apple;
-        dsk_tools::ViewerPicAgat_140x192DblHiRes viewer_pic_agat_140x192DblHiRes;
-        dsk_tools::ViewerPicAgat_560x192DblHiResBW viewer_pic_agat_560x192DblHiResBW;
-        dsk_tools::ViewerPicAgat_80x48DblLoRes viewer_pic_agat_80x48DblLoRes;
-        dsk_tools::ViewerPicAgat_40x48LoRes viewer_pic_agat_40x48LoRes;
+        ViewerPicAgatFont viewer_pic_agat_font;
+
+        ViewerPicAgat_280x192HiRes_Agat viewer_pic_agat_280x192HiRes_Agat;
+        ViewerPicAgat_280x192HiRes_Apple viewer_pic_agat_280x192HiRes_Apple;
+        ViewerPicAgat_140x192DblHiRes viewer_pic_agat_140x192DblHiRes;
+        ViewerPicAgat_560x192DblHiResBW viewer_pic_agat_560x192DblHiResBW;
+        ViewerPicAgat_80x48DblLoRes viewer_pic_agat_80x48DblLoRes;
+        ViewerPicAgat_40x48LoRes viewer_pic_agat_40x48LoRes;
     }
 
 } // namespace
