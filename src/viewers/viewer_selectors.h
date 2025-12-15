@@ -29,8 +29,8 @@ namespace dsk_tools {
         virtual std::string get_title() = 0;
         virtual std::string get_type() {return "dropdown";}
         virtual std::string get_icon() = 0;
-        virtual bool has_customs() = 0;
-        virtual ViewerSelectorOptions get_options() = 0;
+        virtual bool has_customs() {return false;}
+        virtual ViewerSelectorOptions get_options() {return {};}
     };
 
     typedef std::vector<std::unique_ptr<ViewerSelector>> ViewerSelectors;

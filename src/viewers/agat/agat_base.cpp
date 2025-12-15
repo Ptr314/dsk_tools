@@ -17,6 +17,7 @@ namespace dsk_tools {
     {
         std::vector<std::unique_ptr<ViewerSelector>> result;
         result.push_back(make_unique<ViewerSelectorAgatPalette>());
+        result.push_back(make_unique<ViewerSelectorAgatInfo>());
         return result;
     }
 

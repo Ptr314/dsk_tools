@@ -36,6 +36,15 @@ namespace dsk_tools {
         };
     };
 
+    #define AGAT_INFO_SELECTOR_ID "agat_info"
+
+    class ViewerSelectorAgatInfo: public ViewerSelector {
+        std::string get_id() override {return AGAT_INFO_SELECTOR_ID;}
+        std::string get_type() override {return "info";}
+        std::string get_title() override {return "{$SELECTOR_AGAT_INFO}";}
+        std::string get_icon() override {return "comment";}
+    };
+
     class ViewerPicAgat : public ViewerPic {
     public:
         ViewerSelectors get_selectors() override;

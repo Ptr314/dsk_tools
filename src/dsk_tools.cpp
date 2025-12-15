@@ -504,21 +504,24 @@ namespace dsk_tools {
         return {"BINARY", ""};
     }
 
-    std::string agat_vr_info(const BYTES & data)
+    std::string agat_vr_info(const BYTES & data, bool comment_only)
     {
         std::string result = "";
 
         if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
             const AGAT_EXIF_SECTOR * exif = reinterpret_cast<const AGAT_EXIF_SECTOR*>(data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR));
             if (exif->SIGNATURE[0] == 0xD6 && exif->SIGNATURE[1] == 0xD2) {
-                result += "{$AGAT_VR_FOUND}:\n";
-
-                // Comment
                 std::string comment = "";
                 for (int i=0; i<12; i++) {
                     std::string line = agat_to_utf(&(exif->COMMENT[i*16]), 16);
                     comment += line + "\n";
                 }
+
+                if (comment_only) return trim(comment, " \t\n");
+
+                result += "{$AGAT_VR_FOUND}:\n";
+
+                // Comment
                 result += "    {$AGAT_VR_COMMENT}:\n";
                 result += "----------------\n";
                 result += trim(comment, " \t\n") + "\n";

@@ -66,7 +66,7 @@ namespace dsk_tools {
     std::string agat_vtoc_info(const Agat_VTOC & VTOC);
     std::string agat_sos_info(const SPRITE_OS_DPB_DISK & DPB);
     std::pair<std::string, std::string> suggest_file_type(const std::string file_name, const BYTES & data);
-    std::string agat_vr_info(const BYTES & data);
+    std::string agat_vr_info(const BYTES & data, bool comment_only = false);
 
     [[nodiscard]] Result load_agat140_track(int track, BYTES & buffer, const BYTES & in, int track_len);
     [[nodiscard]] Result decode_agat_140_image(BYTES &out, const BYTES & in, const int track_len);

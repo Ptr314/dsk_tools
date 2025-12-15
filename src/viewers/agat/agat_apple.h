@@ -15,7 +15,6 @@ namespace dsk_tools {
         std::string get_id() override {return APPLE_HIRES_AGAT_SELECTOR_ID;}
         std::string get_title() override {return "{$SELECTOR_APPLE_HIRES_AGAT}";}
         std::string get_icon() override {return "palette";}
-        bool has_customs() override {return false;}
         ViewerSelectorOptions get_options() override
         {
             ViewerSelectorOptions options;
@@ -32,7 +31,6 @@ namespace dsk_tools {
         std::string get_id() override {return APPLE_HIRES_APPLE_SELECTOR_ID;}
         std::string get_title() override {return "{$SELECTOR_APPLE_HIRES_APPLE}";}
         std::string get_icon() override {return "palette";}
-        bool has_customs() override {return false;}
         ViewerSelectorOptions get_options() override
         {
             ViewerSelectorOptions options;

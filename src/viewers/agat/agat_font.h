@@ -16,7 +16,6 @@ namespace dsk_tools {
         std::string get_id() override {return AGAT_FONT_TYPE_SELECTOR_ID;}
         std::string get_title() override {return "{$SELECTOR_AGAT_FONT_TYPE}";}
         std::string get_icon() override {return "font";}
-        bool has_customs() override {return false;}
         ViewerSelectorOptions get_options() override
         {
             ViewerSelectorOptions options;
