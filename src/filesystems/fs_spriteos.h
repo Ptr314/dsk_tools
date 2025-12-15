@@ -45,7 +45,7 @@ namespace dsk_tools {
         SPRITE_OS_DPB_DISK DPB{};
         SPRITE_OS_DIR_ENTRY CURRENT_DIR{};
         std::vector<SPRITE_OS_DIR_ENTRY> current_path;
-        void load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out) const;
+        Result load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out, bool strict_size = true) const;
 
     public:
         explicit fsSpriteOS(diskImage * image);

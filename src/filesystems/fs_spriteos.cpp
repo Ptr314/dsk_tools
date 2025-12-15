@@ -41,7 +41,7 @@ namespace dsk_tools {
         return Result::ok();
     }
 
-    void fsSpriteOS::load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out) const
+    Result fsSpriteOS::load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out, const bool strict_size) const
     {
         std::vector<uint8_t> buffer;
         int tr;
@@ -62,7 +62,7 @@ namespace dsk_tools {
             int i = 0;
             std::vector<uint8_t> block;
             block.resize(256);
-            while (BLOCKS_LIST[i] != 0 && i<256) {
+            while (BLOCKS_LIST[i] != 0 && i<128) {
                 tr = BLOCKS_LIST[i] / image->get_sectors();
                 p = image->get_sector_data(0, tr, BLOCKS_LIST[i] % image->get_sectors());
 
@@ -71,16 +71,20 @@ namespace dsk_tools {
                 i++;
             }
         } else
-            throw std::runtime_error("Unknown DIR_ENTRY.LEVEL value: " + std::to_string(dir_entry.LEVEL));
+            return Result::error(ErrorCode::ReadError, "Unknown DIR_ENTRY.LEVEL value: " + std::to_string(dir_entry.LEVEL));
 
-        int expected_size = dir_entry.FILELEN[0] + (dir_entry.FILELEN[1]<<8) + (dir_entry.FILELEN[2]<<16);
-        if (expected_size > buffer.size()) {
-            throw std::runtime_error("File is shorter than expected");
-        } else {
-            buffer.resize(expected_size);
+        if (strict_size) {
+            const int expected_size = dir_entry.FILELEN[0] + (dir_entry.FILELEN[1]<<8) + (dir_entry.FILELEN[2]<<16);
+            if (expected_size > buffer.size()) {
+                return Result::error(ErrorCode::ReadError, "File is smaller than expected");
+            }
+            if (expected_size < buffer.size()) {
+                buffer.resize(expected_size);
+            }
         }
 
         out = buffer;
+        return Result::ok();
     }
 
     void fsSpriteOS::cd_up()
@@ -156,8 +160,8 @@ namespace dsk_tools {
     Result fsSpriteOS::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
         const auto * dir_entry = reinterpret_cast<const SPRITE_OS_DIR_ENTRY*>(uf.metadata.data());
-        load_file(*dir_entry, data);
-        return Result::ok();
+        auto res = load_file(*dir_entry, data);
+        return res;
     }
 
     Result fsSpriteOS::dir(std::vector<UniversalFile> & files, bool show_deleted)
@@ -175,7 +179,8 @@ namespace dsk_tools {
         }
 
         BYTES buffer;
-        load_file(CURRENT_DIR, buffer);
+        auto res = load_file(CURRENT_DIR, buffer, false);
+        if (!res) return res;
 
         for (int i=0; i < buffer.size() / sizeof(SPRITE_OS_DIR_ENTRY); i++) {
             auto * dir_entry = reinterpret_cast<SPRITE_OS_DIR_ENTRY*>(buffer.data() + i*sizeof(SPRITE_OS_DIR_ENTRY));
@@ -187,7 +192,7 @@ namespace dsk_tools {
                 file.is_dir = (dir_entry->STATUS & 0x01) != 0;
                 file.is_deleted = is_deleted;
 
-                std::set<std::string> txts = {".txt", ".doc", ".pas", ".cmd", ".def", ".hlp", ".gid"};
+                std::set<std::string> txts = {".txt", ".doc", ".pas", ".cmd", ".def", ".hlp", ".gid", ".asm"};
                 std::string ext = get_file_ext(file.name);
                 file.type_preferred = (txts.find(ext) != txts.end())?PreferredType::Text:PreferredType::Binary;
 
