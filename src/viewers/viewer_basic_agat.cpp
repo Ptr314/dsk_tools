@@ -246,8 +246,8 @@ namespace dsk_tools {
             while (a < data.size() && c != 0) {
                 if (c == 0x01 || c == 0x02) {
                     // Long variable link
-                    int var_n = (c-1)*256 + data[a++];
-                    if (var_n <= vars.size())
+                    const int var_n = (c-1)*256 + data[a++];
+                    if (var_n > 0 && var_n <= vars.size())
                         add_entity(EntityType::VAR, vars[var_n-1]);
                     else
                         add_entity(EntityType::VAR, "?VAR"+std::to_string(var_n)+"?");
