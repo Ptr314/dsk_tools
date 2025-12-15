@@ -5,7 +5,7 @@
 
 #include "viewer_text.h"
 #include "charmaps.h"
-
+#include "utils.h"
 
 namespace dsk_tools {
     ViewerRegistrar<ViewerText> ViewerText::registrar;
@@ -60,7 +60,7 @@ namespace dsk_tools {
                             out += (*charmap)[c];
             }
         }
-        return out;
+        return escapeHtml(out);
     }
 
 }

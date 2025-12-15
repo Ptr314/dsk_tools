@@ -26,7 +26,7 @@ std::string ViewerBinary::process_as_text(const BYTES & data, const std::string 
         }
         out += text;
 
-        return out;
+        return escapeHtml(out);
     }
 
 }
