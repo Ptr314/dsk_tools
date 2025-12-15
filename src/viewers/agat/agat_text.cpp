@@ -31,6 +31,10 @@ namespace dsk_tools {
             }
         }
 
+        if (font == "a7_classic") {
+            m_font = &A7_font;
+            m_font_reverse = false;
+        } else
         if (font == "a7_enhanced") {
             m_font = &A7_font_svt;
             m_font_reverse = false;
@@ -43,9 +47,31 @@ namespace dsk_tools {
             m_font = &m_custom_font;
             m_font_reverse = m_custom_reverse;
         } else {
-            // a7_classic
-            m_font = &A7_font;
-            m_font_reverse = false;
+            if (font.size() > 7 && font.substr(0, 7) == "custom:") {
+                const std::string file_name = font.substr(7);
+                if (m_external_font_file != file_name) {
+                    std::memset(&m_external_font, 0xAA, sizeof(m_external_font));
+                    BYTES buffer;
+                    if (file_exists(file_name)) {
+                        LoaderFIL loader(file_name, "", "");
+                        const auto load_res = loader.load(buffer);
+                        if (load_res) {
+                            const auto * header = reinterpret_cast<FIL_header*>(buffer.data());
+                            std::string internal_name = to_upper(trim(agat_to_utf(header->name, 30)));
+                            if (internal_name.substr(0, 2) == "ZG") {
+                                m_external_reverse = internal_name.substr(2, 1) == "9";
+                                std::memcpy(&m_external_font, buffer.data()+44, 2048);
+                            }
+                        }
+                    }
+                    m_external_font_file = file_name;
+                }
+                m_font = &m_external_font;
+                m_font_reverse = m_external_reverse;
+            } else {
+                m_font = &A7_font;
+                m_font_reverse = false;
+            }
         }
     }
 

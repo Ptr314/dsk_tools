@@ -16,7 +16,7 @@ namespace dsk_tools {
         std::string get_id() override {return AGAT_FONT_SELECTOR_ID;}
         std::string get_title() override {return "{$SELECTOR_AGAT_FONT}";}
         std::string get_icon() override {return "font";}
-        bool has_customs() override {return false;}
+        bool has_customs() override {return true;}
         ViewerSelectorOptions get_options() override
         {
             ViewerSelectorOptions options;
@@ -36,7 +36,10 @@ namespace dsk_tools {
         const uint8_t (*m_font)[2048];
         bool m_font_reverse = false;
         uint8_t m_custom_font[2048];
+        uint8_t m_external_font[2048];
         bool m_custom_reverse;
+        bool m_external_reverse;
+        std::string m_external_font_file;
         virtual void start(const BYTES & data, const int frame = 0) override;
         virtual void process_line(int y = 0) = 0;
         virtual bool load_custom_font();
