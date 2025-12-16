@@ -132,10 +132,10 @@ namespace dsk_tools {
         bool find_epmty_dir_entry(Apple_DOS_File *& dir_entry, int & dir_pos, bool just_check, bool &extra_sector);
         bool find_empty_sector(uint8_t start_track, TS_PAIR & ts, bool go_forward);
         bool sector_is_free(int head, int track, int sector) override;
-        void sector_free(int head, int track, int sector) override;
-        bool sector_occupy(int head, int track, int sector) override;
+        Result sector_free(int head, int track, int sector) override;
+        Result sector_occupy(int head, int track, int sector) override;
         int free_sectors() override;
-        virtual uint32_t * track_map(int track);
+        virtual Result track_map(int track, uint32_t*& mapped);
 
     private:
         Result get_file_contents(const Apple_DOS_File * dir_entry, BYTES & data) const;

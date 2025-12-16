@@ -192,30 +192,34 @@ namespace dsk_tools {
         return result;
     }
 
-    uint32_t * fsDOS33::track_map(const int track)
+    Result fsDOS33::track_map(const int track, uint32_t*& mapped)
     {
         Agat_VTOC_Ex * VTOCEx;
+        mapped = nullptr;
         const int tracks_count = image->get_tracks()*image->get_heads();
-        if (track < 0x32)
-            return &(VTOC->free_sectors[track]);
-        else
+        if (track < 0x32) {
+            mapped = &(VTOC->free_sectors[track]);
+            return Result::ok();
+        }
         if (track < 0x72 && tracks_count > 0x32) {
             uint8_t* vtoc_ex_data = image->get_sector_data(0, 0x32, 0);
             if (!vtoc_ex_data)
-                throw std::runtime_error("Cannot read VTOC extension sector (0x32, 0)");
+                return Result::error(ErrorCode::IncorrectRequest, "Cannot read VTOC extension sector (0x32, 0)");
 
             VTOCEx = reinterpret_cast<Agat_VTOC_Ex *>(vtoc_ex_data);
-            return &(VTOCEx->free_sectors[track-0x32]);
-        } else
+            mapped = &(VTOCEx->free_sectors[track-0x32]);
+            return Result::ok();
+        }
         if (track < 0xB2 && tracks_count > 0x72) {
             uint8_t* vtoc_ex_data = image->get_sector_data(0, 0x72, 0);
             if (!vtoc_ex_data)
-                throw std::runtime_error("Cannot read VTOC extension sector (0x72, 0)");
+                return Result::error(ErrorCode::IncorrectRequest, "Cannot read VTOC extension sector (0x72, 0)");
 
             VTOCEx = reinterpret_cast<Agat_VTOC_Ex *>(vtoc_ex_data);
-            return &(VTOCEx->free_sectors[track-0x72]);
-        } else
-            throw std::runtime_error("Incorrect track");
+            mapped = &(VTOCEx->free_sectors[track-0x72]);
+            return Result::ok();
+        }
+        return Result::error(ErrorCode::IncorrectRequest, "Incorrect track number for mapping");
     }
 
     int fsDOS33::free_sectors()
@@ -227,33 +231,47 @@ namespace dsk_tools {
         return free_sectors;
     }
 
-    bool fsDOS33::sector_is_free(int head, int track, int sector)
-    {
-        // std::cout << "? " << track << ":" << sector << std::endl;
-
-        if (image->get_sectors() == 16)
-            return *track_map(track) & VTOCMask140[sector];
-        else
-        if (image->get_sectors() == 21)
-            return *track_map(track) & VTOCMask840[sector];
-        else
-            throw std::runtime_error("Incorrect disk type");
+    bool fsDOS33::sector_is_free(int head, int track, int sector) {
+        const auto sectors = image->get_sectors();
+        if (sectors == 16 || sectors == 21) {
+            uint32_t * mapped = nullptr;
+            const Result res = track_map(track, mapped);
+            if (res && mapped) {
+                if (image->get_sectors() == 16) {
+                    return *mapped & VTOCMask140[sector];
+                }
+                if (image->get_sectors() == 21) {
+                    return *mapped & VTOCMask840[sector];
+                }
+            }
+        }
+        return false; // "Incorrect disk type"
     }
 
-    void fsDOS33::sector_free(int head, int track, int sector)
+    Result fsDOS33::sector_free(int head, int track, int sector)
     {
         // std::cout << "sector_free: " << track << ":" << sector << std::endl;
-
-        *track_map(track) |= (image->get_sectors()==16)?VTOCMask140[sector]:VTOCMask840[sector];
+        uint32_t * mapped = nullptr;
+        const Result res = track_map(track, mapped);
+        if (res && mapped) {
+            *mapped |= (image->get_sectors()==16)?VTOCMask140[sector]:VTOCMask840[sector];
+            return Result::ok();
+        }
+        return Result::error(ErrorCode::IncorrectRequest);
     }
 
-    bool fsDOS33::sector_occupy(int head, int track, int sector)
+    Result fsDOS33::sector_occupy(int head, int track, int sector)
     {
         // std::cout << "sector_occupy: " << track << ":" << sector << std::endl;
 
-        if (!sector_is_free(0, track, sector)) return false;
-        *track_map(track) &= ~((image->get_sectors()==16)?VTOCMask140[sector]:VTOCMask840[sector]);
-        return true;
+        if (!sector_is_free(0, track, sector)) return Result::error(ErrorCode::IncorrectRequest);
+        uint32_t * mapped = nullptr;
+        const Result res = track_map(track, mapped);
+        if (res && mapped) {
+            *mapped &= ~((image->get_sectors()==16)?VTOCMask140[sector]:VTOCMask840[sector]);
+            return Result::ok();
+        }
+        return Result::error(ErrorCode::IncorrectRequest);
     }
 
     bool fsDOS33::find_empty_sector(uint8_t start_track, TS_PAIR &ts, bool go_forward)

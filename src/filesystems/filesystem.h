@@ -36,8 +36,8 @@ namespace dsk_tools {
         bool is_changed = false;
 
         virtual bool sector_is_free(int head, int track, int sector) { return false;};
-        virtual void sector_free(int head, int track, int sector) {};
-        virtual bool sector_occupy(int head, int track, int sector) {return false;};
+        virtual Result sector_free(int head, int track, int sector) {return Result::error(ErrorCode::NotImplementedYet);}
+        virtual Result sector_occupy(int head, int track, int sector) {return Result::error(ErrorCode::NotImplementedYet);}
         virtual int free_sectors() {return 0;};
 
     public:

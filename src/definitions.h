@@ -62,6 +62,7 @@ namespace dsk_tools {
 
         NotImplementedYet,
         NotFound,
+        IncorrectRequest,
 
         // Load errors (FDD_LOAD_*)
         LoadError,
