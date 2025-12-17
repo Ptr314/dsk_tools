@@ -75,13 +75,13 @@ namespace dsk_tools {
         }
     }
 
-    int ViewerPicAgatText::prepare_data(const BYTES & data, dsk_tools::diskImage & image, dsk_tools::fileSystem & filesystem, std::string & error_msg)
+    Result ViewerPicAgatText::prepare_data(const BYTES & data, dsk_tools::diskImage & image, dsk_tools::fileSystem & filesystem, std::string & error_msg)
     {
         error_msg = "";
         std::memset(&m_custom_font, 0xAA, sizeof(m_custom_font));
 
-        int res = ViewerPicAgat::prepare_data(data, image, filesystem, error_msg);
-        if (res != PREPARE_PIC_OK) return res;
+        auto res = ViewerPicAgat::prepare_data(data, image, filesystem, error_msg);
+        if (!res) return res;
 
         if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
             std::memcpy(&exif, data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR), sizeof(AGAT_EXIF_SECTOR));
@@ -101,14 +101,14 @@ namespace dsk_tools {
                         filesystem.get_file(fd, "", buffer);
                         m_custom_reverse = true;
                         std::memcpy(&m_custom_font, buffer.data()+4, 2048);
-                        return PREPARE_PIC_OK;
+                        return Result::ok();
                     }
                     file_name = "ZG7_"+font_name;
                     if (filesystem.find_file(file_name,fd)) {
                         filesystem.get_file(fd, "", buffer);
                         m_custom_reverse = false;
                         std::memcpy(&m_custom_font, buffer.data()+4, 2048);
-                        return PREPARE_PIC_OK;
+                        return Result::ok();
                     }
 
                     // Trying to find on a host
@@ -123,18 +123,18 @@ namespace dsk_tools {
                             if (internal_name.substr(0, 2) == "ZG") {
                                 m_custom_reverse = internal_name.substr(2, 1) == "9";
                                 std::memcpy(&m_custom_font, buffer.data()+44, 2048);
-                                return PREPARE_PIC_OK;
+                                return Result::ok();
                             }
                         } else {
-                            return PREPARE_PIC_ERROR;
+                            return Result::error(ErrorCode::PreparePicError);
                         }
                     }
                     error_msg = "{$FONT_LOADING_ERROR}: " + font_name;
-                    return PREPARE_PIC_ERROR;
+                    return Result::error(ErrorCode::PreparePicError);
                 }
             }
         }
-        return PREPARE_PIC_OK;
+        return Result::ok();
     }
 
     bool ViewerPicAgatText::load_custom_font()

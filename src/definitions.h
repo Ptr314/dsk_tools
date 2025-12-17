@@ -106,7 +106,9 @@ namespace dsk_tools {
         InvalidName,
 
         // Detection errors (FDD_DETECT_*)
-        DetectError
+        DetectError,
+
+        PreparePicError
     };
 
     struct Result {
