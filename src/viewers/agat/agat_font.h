@@ -35,7 +35,7 @@ namespace dsk_tools {
         std::string get_subtype_text() const override {return "{$FONT_FILE}";}
 
         ViewerSelectors get_selectors() override;
-        ViewerSelectorValues suggest_selectors(std::string file_name, const BYTES & data) override;
+        ViewerSelectorValues suggest_selectors(const std::string & file_name, const BYTES & data) override;
         void set_selectors(const ViewerSelectorValues& selectors) override;
     protected:
         bool fits(const BYTES & data) override;

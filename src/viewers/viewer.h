@@ -20,11 +20,13 @@ namespace dsk_tools {
     #define VIEWER_OUTPUT_TEXT        0
     #define VIEWER_OUTPUT_PICTURE     1
 
+    enum class ViewerOutput {Text, Picture};
+
     class Viewer {
     protected:
         ViewerSelectorValues m_selectors = {};
     public:
-        virtual ~Viewer() {}
+        virtual ~Viewer() = default;
         virtual std::string process_as_text(const BYTES & data, const std::string & cm_name) {return "";}
         virtual int get_output_type() const {return VIEWER_OUTPUT_TEXT;}
         virtual bool fits(const BYTES & data) {return true;}
@@ -33,7 +35,7 @@ namespace dsk_tools {
         virtual std::string get_subtype_text() const = 0;
         virtual ViewerSelectors get_selectors() { return {}; }
         virtual void set_selectors(const ViewerSelectorValues& selectors) {m_selectors = selectors;}
-        virtual ViewerSelectorValues suggest_selectors(const std::string file_name, const BYTES & data) {return {};}
+        virtual ViewerSelectorValues suggest_selectors(const std::string & file_name, const BYTES & data) {return {};}
     };
 
     class ViewerManager {

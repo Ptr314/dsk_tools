@@ -11,7 +11,7 @@
 
 namespace dsk_tools {
 
-    ViewerSelectorValues ViewerPicAgatFont::suggest_selectors(const std::string file_name, const BYTES & data)
+    ViewerSelectorValues ViewerPicAgatFont::suggest_selectors(const std::string & file_name, const BYTES & data)
     {
         ViewerSelectorValues result;
         std::string prefix = file_name.substr(0, 4);

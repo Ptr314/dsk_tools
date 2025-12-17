@@ -161,7 +161,7 @@ namespace dsk_tools {
         return result;
     }
 
-    ViewerSelectorValues ViewerPicAgatText::suggest_selectors(const std::string file_name, const BYTES & data)
+    ViewerSelectorValues ViewerPicAgatText::suggest_selectors(const std::string & file_name, const BYTES & data)
     {
         ViewerSelectorValues result;
         if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {

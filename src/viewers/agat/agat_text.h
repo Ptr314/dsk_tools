@@ -48,7 +48,7 @@ namespace dsk_tools {
         int prepare_data(const BYTES & data, dsk_tools::diskImage & image, dsk_tools::fileSystem & filesystem, std::string & error_msg) override;
 
         ViewerSelectors get_selectors() override;
-        ViewerSelectorValues suggest_selectors(const std::string file_name, const BYTES & data) override;
+        ViewerSelectorValues suggest_selectors(const std::string & file_name, const BYTES & data) override;
     };
 
     class ViewerPicAgatTextT32 : public ViewerPicAgatText {

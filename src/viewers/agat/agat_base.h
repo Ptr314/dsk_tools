@@ -48,7 +48,7 @@ namespace dsk_tools {
     class ViewerPicAgat : public ViewerPic {
     public:
         ViewerSelectors get_selectors() override;
-        ViewerSelectorValues suggest_selectors(std::string file_name, const BYTES & data) override;
+        ViewerSelectorValues suggest_selectors(const std::string & file_name, const BYTES & data) override;
     protected:
         bool exif_found = false;
         AGAT_EXIF_SECTOR exif;
