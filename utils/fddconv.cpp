@@ -25,8 +25,13 @@ void setupConsole() {
 
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD mode;
-    GetConsoleMode(hOut, &mode);
-    SetConsoleMode(hOut, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    if (GetConsoleMode(hOut, &mode)) {
+        // ENABLE_VIRTUAL_TERMINAL_PROCESSING not available in older Windows SDK versions
+        #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+            #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+        #endif
+        SetConsoleMode(hOut, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    }
 #endif
 }
 
@@ -36,7 +41,7 @@ int main(int argc, char** argv)
 {
     setupConsole();
 
-    auto command {CLICommand::none};
+    CLICommand command = CLICommand::none;
     std::vector<std::string> add_values;
     bool output_expected = true;
     bool verbose = false;
@@ -184,7 +189,11 @@ int main(int argc, char** argv)
             std::cout  << std::endl;
         }
         std::cout << "Writing to output: " << output_file << std::endl;
-        auto writer = make_unique<WriterRAW>(format_id, image.get());
+        #ifdef _MSC_VER
+            auto writer = std::make_unique<WriterRAW>(format_id, image.get());
+        #else
+            auto writer = make_unique<WriterRAW>(format_id, image.get());
+        #endif
         BYTES buffer;
         Result write_res = writer->write(buffer);
         if (!write_res) return bail("Can't get data: %s", write_res.message.c_str());

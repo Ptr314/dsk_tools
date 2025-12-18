@@ -25,3 +25,19 @@ mkdir "%_RELEASE_DIR%"
 
 copy "%_BUILD_DIR%\utils\Release\fddconv.exe" "%_RELEASE_DIR%"
 
+set SEVENZIP="7z"
+%SEVENZIP% >nul 2>&1
+if errorlevel 9009 (
+    if exist "C:\Program Files\7-Zip\7z.exe" (
+        set SEVENZIP="C:\Program Files\7-Zip\7z.exe"
+    ) else if exist "C:\Program Files (x86)\7-Zip\7z.exe" (
+        set SEVENZIP="C:\Program Files (x86)\7-Zip\7z.exe"
+    ) else (
+        echo ERROR: 7z.exe not found. Please install 7-Zip or add it to PATH.
+        exit /b 1
+    )
+)
+
+pushd "%_RELEASE_DIR%"
+%SEVENZIP% a "..\\%_RELEASE_NAME%.zip" * -mx9
+popd
