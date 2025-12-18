@@ -69,7 +69,27 @@ if [ -f "$BUILD_DIR/utils/fddconv" ]; then
     echo "✓ Build successful!"
     echo "  Binary: $RELEASE_DIR/fddconv"
     echo ""
-    echo "To distribute, use: $RELEASE_DIR"
+
+    # Create zip file
+    ZIP_FILE="$SCRIPT_DIR/release/dsk_tools-${VERSION}-linux-${ARCH}.zip"
+    if command -v zip &> /dev/null; then
+        echo "Creating zip archive..."
+        cd "$SCRIPT_DIR/release"
+        rm -f "$ZIP_FILE"
+        zip -r "$(basename "$ZIP_FILE")" "dsk_tools-${VERSION}-linux-${ARCH}" > /dev/null
+        if [ -f "$ZIP_FILE" ]; then
+            ZIP_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
+            echo "✓ Archive created!"
+            echo "  Archive: $ZIP_FILE ($ZIP_SIZE)"
+            echo ""
+            echo "To distribute, use: $ZIP_FILE"
+        else
+            echo "⚠ Warning: Failed to create zip file"
+        fi
+    else
+        echo "⚠ Warning: 'zip' command not found. Skipping archive creation."
+        echo "To distribute, use: $RELEASE_DIR"
+    fi
 else
     echo "✗ Build failed: fddconv executable not found"
     exit 1
