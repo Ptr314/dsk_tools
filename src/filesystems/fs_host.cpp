@@ -84,7 +84,7 @@ namespace dsk_tools {
         if (uf.fs != get_fs()) return Result::error(ErrorCode::FileIncorrectFS);
 
         std::string path = bytesToString(uf.metadata);
-        std::cout << "Host: get_file " << path << std::endl;
+        // std::cout << "Host: get_file " << path << std::endl;
 
         // Open file in binary mode
         UTF8_ifstream file(path, std::ios::binary);
@@ -113,7 +113,7 @@ namespace dsk_tools {
         // Sanitize filename to remove invalid characters for the target OS
         std::string sanitized_name = sanitize_filename(uf.name);
 
-        std::cout << "Host: put_file " << m_path << " + " << sanitized_name << std::endl;
+        // std::cout << "Host: put_file " << m_path << " + " << sanitized_name << std::endl;
 
         // Construct full file path
         std::string fullPath = join_paths(m_path, sanitized_name);
@@ -155,7 +155,7 @@ namespace dsk_tools {
 
         // Extract path from metadata
         std::string path = bytesToString(uf.metadata);
-        std::cout << "Host: delete_file " << path << std::endl;
+        // std::cout << "Host: delete_file " << path << std::endl;
 
         // Check if file exists
         UTF8_ifstream testFile(path);
@@ -360,7 +360,7 @@ namespace dsk_tools {
 
         // Extract path from metadata
         std::string oldPath = bytesToString(fd.metadata);
-        std::cout << "Host: rename_file " << oldPath << " -> " << new_name << std::endl;
+        // std::cout << "Host: rename_file " << oldPath << " -> " << new_name << std::endl;
 
         // Get directory of the file and construct new path
         std::string dirPath = get_parent_path(oldPath);

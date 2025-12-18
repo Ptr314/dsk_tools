@@ -4,18 +4,15 @@
 // Description: A class which represents a .FIL as a single-file contaiter - image part
 #pragma once
 
-
 #include "disk_image.h"
 
 namespace dsk_tools {
 
     class imageFIL: public diskImage
     {
-    protected:
-
     public:
-        imageFIL(std::unique_ptr<Loader> loader);
-        [[nodiscard]] virtual Result load() override;
-        [[nodiscard]] virtual Result check() override;
+        explicit imageFIL(std::unique_ptr<Loader> loader);
+        Result load() override;
+        Result check() override;
     };
 }

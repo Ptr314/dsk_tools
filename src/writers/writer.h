@@ -21,10 +21,10 @@ namespace dsk_tools {
         Writer(const std::string & format_id, diskImage *image_to_save);
         virtual ~Writer();
 
-        [[nodiscard]] virtual Result write(const std::string & file_name);
-        [[nodiscard]] virtual Result write(BYTES & buffer) = 0;
+        virtual Result write(const std::string & file_name);
+        virtual Result write(BYTES & buffer) = 0;
         virtual std::string get_default_ext() = 0;
-        [[nodiscard]] virtual Result substitute_tracks(BYTES & buffer, BYTES & tmplt, const int numtracks) = 0;
+        virtual Result substitute_tracks(BYTES & buffer, BYTES & tmplt, const int numtracks) = 0;
     };
 
 }

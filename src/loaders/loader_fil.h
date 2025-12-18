@@ -13,8 +13,8 @@ namespace dsk_tools {
     {
     public:
         LoaderFIL(const std::string & file_name, const std::string & format_id, const std::string & type_id);
-        [[nodiscard]] virtual Result load(BYTES & buffer) override;
-        virtual std::string file_info() override;
+        Result load(BYTES & buffer) override;
+        std::string file_info() override;
     };
 
 }

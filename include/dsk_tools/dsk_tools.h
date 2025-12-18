@@ -49,7 +49,7 @@
 
 namespace dsk_tools {
 
-    [[nodiscard]] Result detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only = false);
+    Result detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only = false);
     std::unique_ptr<diskImage> prepare_image(const std::string &file_name, const std::string &format_id, const std::string &type_id);
     std::unique_ptr<fileSystem> prepare_filesystem(diskImage * image, const std::string &filesystem_id);
     BYTES code44(const BYTES & buffer);
@@ -61,15 +61,15 @@ namespace dsk_tools {
     void encode_agat_mfm_array(BYTES &out, uint8_t data, uint16_t count, uint8_t & last_byte);
     uint8_t encode_agat_mfm_data(BYTES &out, uint8_t * data, uint16_t count, uint8_t & last_byte);
     void decode_agat_mfm_data(BYTES &out, const BYTES & in);
-    [[nodiscard]] Result decode_agat_840_track(BYTES &out, const BYTES & in);
-    [[nodiscard]] Result decode_agat_840_image(BYTES &out, const BYTES & in);
+    Result decode_agat_840_track(BYTES &out, const BYTES & in);
+    Result decode_agat_840_image(BYTES &out, const BYTES & in);
     std::string agat_vtoc_info(const Agat_VTOC & VTOC);
     std::string agat_sos_info(const SPRITE_OS_DPB_DISK & DPB);
     std::pair<std::string, std::string> suggest_file_type(const std::string file_name, const BYTES & data);
     std::string agat_vr_info(const BYTES & data, bool comment_only = false);
 
-    [[nodiscard]] Result load_agat140_track(int track, BYTES & buffer, const BYTES & in, int track_len);
-    [[nodiscard]] Result decode_agat_140_image(BYTES &out, const BYTES & in, const int track_len);
+    Result load_agat140_track(int track, BYTES & buffer, const BYTES & in, int track_len);
+    Result decode_agat_140_image(BYTES &out, const BYTES & in, const int track_len);
 
     void register_all_viewers();
     std::unique_ptr<Loader> create_loader(const std::string& file_name, const std::string& format_id, const std::string& type_id);

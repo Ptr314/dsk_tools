@@ -52,23 +52,23 @@ namespace dsk_tools {
             bool is_loaded;
 
         public:
-            diskImage(std::unique_ptr<Loader> loader);
+            explicit diskImage(std::unique_ptr<Loader> loader);
             virtual ~diskImage();
-            [[nodiscard]] virtual Result check() = 0;                                            // Check physical image parameters
-            [[nodiscard]] virtual Result load();
+            virtual Result check() = 0;                                            // Check physical image parameters
+            virtual Result load();
             virtual uint8_t *get_sector_data(int head, int track, int sector);      // Uses sector starnslation
 
             std::string file_name() {return loader->get_file_name();};
-            bool get_loaded() {return is_loaded;};
-            int get_heads() {return format_heads;};
-            int get_tracks() {return format_tracks;};
-            int get_sectors() {return format_sectors;};
-            int get_sector_size() {return format_sector_size;};
-            int get_size() {return expected_size;};
-            int get_bitrate() {return format_bitrate;};
-            int get_rpm() {return format_rpm;};
-            int get_track_encoding() {return format_track_encoding;};
-            int get_floppyinterfacemode() {return format_floppyinterfacemode;};
+            bool get_loaded() const {return is_loaded;};
+            int get_heads() const {return format_heads;};
+            int get_tracks() const {return format_tracks;};
+            int get_sectors() const {return format_sectors;};
+            int get_sector_size() const {return format_sector_size;};
+            int get_size() const {return expected_size;};
+            int get_bitrate() const {return format_bitrate;};
+            int get_rpm() const {return format_rpm;};
+            int get_track_encoding() const {return format_track_encoding;};
+            int get_floppyinterfacemode() const {return format_floppyinterfacemode;};
             std::string get_type_id() {return type_id;};
             BYTES * get_buffer() {return &buffer;};
     };

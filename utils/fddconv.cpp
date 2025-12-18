@@ -4,38 +4,19 @@
 // Description: FDD image conversion utility command-line tool
 
 #include <iostream>
-#include <cstdarg>
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 #include "cxxopts/cxxopts.hpp"
 #include "bail.hpp"
-#include  "fddconv.h"
+#include "cli_helpers.h"
 
 #include "fs_host.h"
 #include "host_helpers.h"
 #include "dsk_tools/dsk_tools.h"
 
-void setupConsole() {
-#ifdef _WIN32
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    DWORD mode;
-    if (GetConsoleMode(hOut, &mode)) {
-        // ENABLE_VIRTUAL_TERMINAL_PROCESSING not available in older Windows SDK versions
-        #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-            #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
-        #endif
-        SetConsoleMode(hOut, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-    }
-#endif
-}
-
 using namespace dsk_tools;
+
+
+
 
 int main(int argc, char** argv)
 {
@@ -43,6 +24,7 @@ int main(int argc, char** argv)
 
     CLICommand command = CLICommand::none;
     std::vector<std::string> add_values;
+    std::vector<std::string> delete_values;
     bool output_expected = true;
     bool verbose = false;
     std::string input_file;
@@ -53,10 +35,11 @@ int main(int argc, char** argv)
 
         opts.add_options()
             ("v,verbose", "Print detailed information", cxxopts::value<bool>()->default_value("false"))
-            ("input", "Input file", cxxopts::value<std::vector<std::string>>())
-            ("o,output", "Output file", cxxopts::value<std::vector<std::string>>())
+            ("input", "Input file", cxxopts::value<std::string>())
+            ("o,output", "Output file", cxxopts::value<std::string>())
             ("l,ls", "List files", cxxopts::value<bool>()->default_value("false"))
             ("a,add", "File to add", cxxopts::value<std::vector<std::string>>())
+            ("d,delete", "File to delete", cxxopts::value<std::vector<std::string>>())
             ("h,help", "Help");
 
         opts.parse_positional({"input"});
@@ -73,17 +56,10 @@ int main(int argc, char** argv)
         }
 
         if (res.count("input")) {
-            if (verbose) {
-                std::cout << "Input: ";
-                for (const auto& input : res["input"].as<std::vector<std::string>>()) {
-                    std::cout << "  " << input;
-                }
-                std::cout << std::endl;
-            }
-            input_file = res["input"].as<std::vector<std::string>>()[0];
-        } else {
+            input_file = res["input"].as<std::string>();
+            if (verbose) std::cout << "Input: " << input_file << std::endl;
+        } else
             return bail("No input file");
-        }
 
         if (res["ls"].as<bool>()) {
             command = CLICommand::ls;
@@ -92,23 +68,23 @@ int main(int argc, char** argv)
 
         if (output_expected) {
             if (res.count("output")) {
-                if (verbose) {
-                    std::cout << "Output:";
-                    for (const auto& output : res["output"].as<std::vector<std::string>>()) {
-                        std::cout << "  " << output;
-                    }
-                    std::cout << std::endl;
-                }
-            } else {
-                bail("No output file");
-            }
-            output_file = res["output"].as<std::vector<std::string>>()[0];
+                output_file = res["output"].as<std::string>();
+                if (verbose) std::cout << "Output: " << output_file << std::endl;
+            } else
+                return bail("No output file");
         }
 
         if (res.count("add")) {
             add_values = res["add"].as<std::vector<std::string>>();
             if (!add_values.empty()) {
                 command = CLICommand::add;
+            }
+        }
+
+        if (res.count("delete")) {
+            delete_values = res["delete"].as<std::vector<std::string>>();
+            if (!delete_values.empty()) {
+                command = CLICommand::del;
             }
         }
     }
@@ -132,19 +108,19 @@ int main(int argc, char** argv)
             std::cout << "    Filesystem = " << filesystem_id << std::endl;
         }
     } else {
-        return bail("Can't detect file type");
+        return bail("Input file error : %s : %s", decode_error(res).c_str(), res.message.c_str());
     }
     auto image = prepare_image(input_file, format_id, type_id);
     if (!image) return bail("Can't open image");
 
     auto load_res = image->load();
-    if (!load_res) return bail("Can't load image");
+    if (!load_res) return bail("Can't load image : %s : %s", decode_error(load_res).c_str(), load_res.message.c_str());
 
     auto filesystem = prepare_filesystem(image.get(), filesystem_id);
     if (!filesystem) return bail("Can't prepare filesystem");
 
     auto open_res = filesystem->open();
-    if (!open_res) return bail("Can't open filesystem");
+    if (!open_res) return bail("Can't open filesystem : %s : %s", decode_error(open_res).c_str(), open_res.message.c_str());
 
     if (command == CLICommand::ls) {
         if (verbose) {
@@ -154,7 +130,7 @@ int main(int argc, char** argv)
         Files files;
         auto dir_res = filesystem->dir(files, true);
         if (!dir_res) {
-            return bail("Can't list directory: %s", dir_res.message.c_str());
+            return bail("Can't list directory : %s : %s", decode_error(dir_res).c_str(), dir_res.message.c_str());
         }
         for (const auto& f : files) {
             std::cout << f.type_label << "\t" << f.size << "\t" << f.name << std::endl;
@@ -162,13 +138,12 @@ int main(int argc, char** argv)
         if (verbose) {
             std::cout << "<<<<<<<<--------------------------" << std::endl;
         }
-
     }
 
     if (command == CLICommand::add) {
         if (verbose) {
             std::cout << "Command: add" << std::endl;
-            std::cout << "add_values: ";
+            std::cout << "adding: ";
         }
         auto host_fs = make_unique<fsHost>(nullptr);
         for (const auto& file_to_add : add_values) {
@@ -188,19 +163,28 @@ int main(int argc, char** argv)
         if (verbose) {
             std::cout  << std::endl;
         }
-        std::cout << "Writing to output: " << output_file << std::endl;
-        #ifdef _MSC_VER
-            auto writer = std::make_unique<WriterRAW>(format_id, image.get());
-        #else
-            auto writer = make_unique<WriterRAW>(format_id, image.get());
-        #endif
-        BYTES buffer;
-        Result write_res = writer->write(buffer);
-        if (!write_res) return bail("Can't get data: %s", write_res.message.c_str());
-        UTF8_ofstream file(output_file, std::ios::binary);
-        if (file.good()) {
-            file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
+        write_output_file(output_file, format_id, image.get(), verbose);
+    }
+
+    if (command == CLICommand::del) {
+        if (verbose) {
+            std::cout << "Command: delete" << std::endl;
+            std::cout << "deleting: ";
         }
+        for (const auto& file_to_delete : delete_values) {
+            if (verbose) {
+                std::cout << "  " << file_to_delete;
+            }
+            UniversalFile f;
+            auto find_res = filesystem->find_file(to_upper(file_to_delete), f);
+            if (!find_res) {return bail("Can't find file: %s", file_to_delete.c_str());}
+            auto del_res = filesystem->delete_file(f);
+            if (!del_res) {return bail("Can't delete file: %s", file_to_delete.c_str());}
+        }
+        if (verbose) {
+            std::cout  << std::endl;
+        }
+        write_output_file(output_file, format_id, image.get(), verbose);
     }
 
     return EXIT_SUCCESS;

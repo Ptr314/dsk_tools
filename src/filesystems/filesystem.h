@@ -45,7 +45,7 @@ namespace dsk_tools {
         virtual ~fileSystem() = default;
 
         // Service functions
-        [[nodiscard]] virtual Result open() = 0;
+        virtual Result open() = 0;
         virtual FSCaps get_caps() = 0;
         virtual FS get_fs() const = 0;
         virtual std::string get_delimiter();

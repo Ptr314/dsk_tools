@@ -15,7 +15,7 @@ namespace dsk_tools {
         protected:
 
         public:
-            imageAgat140(std::unique_ptr<Loader> loader);
-            [[nodiscard]] virtual Result check() override;
+            explicit imageAgat140(std::unique_ptr<Loader> loader);
+            Result check() override;
     };
 }
