@@ -74,9 +74,8 @@ if [ -f "$BUILD_DIR/utils/fddconv" ]; then
     ZIP_FILE="$SCRIPT_DIR/release/dsk_tools-${VERSION}-linux-${ARCH}.zip"
     if command -v zip &> /dev/null; then
         echo "Creating zip archive..."
-        cd "$SCRIPT_DIR/release"
         rm -f "$ZIP_FILE"
-        zip -r "$(basename "$ZIP_FILE")" "dsk_tools-${VERSION}-linux-${ARCH}" > /dev/null
+        (cd "$RELEASE_DIR" && zip -r "../$(basename "$ZIP_FILE")" . > /dev/null)
         if [ -f "$ZIP_FILE" ]; then
             ZIP_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
             echo "✓ Archive created!"
