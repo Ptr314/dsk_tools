@@ -29,6 +29,9 @@ int main(int argc, char** argv)
     bool verbose = false;
     std::string input_file;
     std::string output_file;
+    uint8_t volume_id = 254;
+
+    // Parsing parameters ----------------------------------------------------
 
     try {
         cxxopts::Options opts("fddconv", "FDD images conversion utility.");
@@ -40,6 +43,7 @@ int main(int argc, char** argv)
             ("l,ls", "List files", cxxopts::value<bool>()->default_value("false"))
             ("a,add", "File to add", cxxopts::value<std::vector<std::string>>())
             ("d,delete", "File to delete", cxxopts::value<std::vector<std::string>>())
+            ("m,volume", "Volume id - decimal (i.e. 254) or hex (i.e. $FE)", cxxopts::value<std::string>())
             ("h,help", "Help");
 
         opts.parse_positional({"input"});
@@ -87,14 +91,23 @@ int main(int argc, char** argv)
                 command = CLICommand::del;
             }
         }
+
+        if (res.count("volume")) {
+            const std::string vid_str = res["volume"].as<std::string>();
+            volume_id = parse_number(vid_str) & 0xFF;
+            if (verbose) std::cout << "Volume id: " << std::to_string(volume_id) << " ($" << int_to_hex(volume_id) << ")" <<std::endl;
+        }
     }
     catch (const cxxopts::exceptions::exception& e) {
         return bail("Bad options: %s", e.what());
     }
 
     if (command == CLICommand::none) {
-        return bail("No any command given");
+        if (verbose) std::cout << "No any command given, just converting" << std::endl;
+        // return bail("No any command given");
     }
+
+    // Loading input file ----------------------------------------------------
 
     std::string format_id;
     std::string type_id;
@@ -122,6 +135,10 @@ int main(int argc, char** argv)
     auto open_res = filesystem->open();
     if (!open_res) return bail("Can't open filesystem : %s : %s", decode_error(open_res).c_str(), open_res.message.c_str());
 
+    // Performing commands ----------------------------------------------------
+
+    // LS
+
     if (command == CLICommand::ls) {
         if (verbose) {
             std::cout << "Command: ls" << std::endl;
@@ -139,6 +156,8 @@ int main(int argc, char** argv)
             std::cout << "<<<<<<<<--------------------------" << std::endl;
         }
     }
+
+    // ADD
 
     if (command == CLICommand::add) {
         if (verbose) {
@@ -163,8 +182,9 @@ int main(int argc, char** argv)
         if (verbose) {
             std::cout  << std::endl;
         }
-        write_output_file(output_file, format_id, image.get(), verbose);
     }
+
+    // DELETE
 
     if (command == CLICommand::del) {
         if (verbose) {
@@ -184,7 +204,13 @@ int main(int argc, char** argv)
         if (verbose) {
             std::cout  << std::endl;
         }
-        write_output_file(output_file, format_id, image.get(), verbose);
+    }
+
+    // Writing results ----------------------------------------------------
+
+    if (output_expected) {
+        Result write_res = write_output_file(output_file, format_id, volume_id, image.get(), verbose);
+        if (!write_res) return bail("Can't write output file : %s : %s", decode_error(write_res).c_str(), write_res.message.c_str());
     }
 
     return EXIT_SUCCESS;

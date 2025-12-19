@@ -73,5 +73,6 @@ namespace dsk_tools {
 
     void register_all_viewers();
     std::unique_ptr<Loader> create_loader(const std::string& file_name, const std::string& format_id, const std::string& type_id);
+    std::unique_ptr<Writer> create_writer(const std::string & format_id, const uint8_t volume_id, diskImage * image);
 
 } // namespace

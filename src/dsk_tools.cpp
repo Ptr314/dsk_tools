@@ -232,15 +232,20 @@ namespace dsk_tools {
     {
         std::string ext = get_file_ext(file_name);
 
-        UTF8_ifstream file(file_name, std::ios::binary);
+        std::unique_ptr<UTF8_ifstream> file = nullptr;
+        unsigned fsize = 0;
 
-        if (!file.good()) {
-            return Result::error(ErrorCode::LoadError, "Cannot open file");
+        if (!format_only) {
+            file = make_unique<UTF8_ifstream>(file_name, std::ios::binary);
+
+            if (!file->good()) {
+                return Result::error(ErrorCode::LoadError, "Cannot open file");
+            }
+
+            file->seekg (0, std::ios::end);
+            fsize = file->tellg();
+            file->seekg (0, std::ios::beg);
         }
-
-        file.seekg (0, std::ios::end);
-        auto fsize = file.tellg();
-        file.seekg (0, std::ios::beg);
 
         // format_if
         if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm") {
@@ -264,7 +269,7 @@ namespace dsk_tools {
             // filesystem_id
             if (type_id == "TYPE_AGAT_140" || type_id == "TYPE_AGAT_840") {
                 BYTES buffer(256);
-                file.read (reinterpret_cast<char*>(buffer.data()), buffer.size());
+                file->read (reinterpret_cast<char*>(buffer.data()), buffer.size());
                 std::string ms = "MICROSOFT";
                 std::string _ms(buffer.begin() + 0x74, buffer.begin() + 0x74 + ms.size());
 
@@ -274,8 +279,8 @@ namespace dsk_tools {
                 if (type_id == "TYPE_AGAT_840") vtoc_pos=17*21*256;
 
                 Agat_VTOC VTOC;
-                file.seekg (vtoc_pos, std::ios::beg);
-                file.read (reinterpret_cast<char*>(&VTOC), sizeof(Agat_VTOC));
+                file->seekg (vtoc_pos, std::ios::beg);
+                file->read (reinterpret_cast<char*>(&VTOC), sizeof(Agat_VTOC));
 
                 if (buffer[0] == 0x01 && buffer[2] == 0x58) {
                     filesystem_id = "FILESYSTEM_SPRITE_OS";
@@ -334,17 +339,29 @@ namespace dsk_tools {
             Result res;
             if (ext == ".nic") {
                 format_id = "FILE_MFM_NIC";
-                dsk_tools::LoaderNIC loader(file_name, format_id, type_id);
+                if (format_only) {
+                    filesystem_id = "";
+                    return Result::ok();
+                }
+                LoaderNIC loader(file_name, format_id, type_id);
                 res = loader.load(buffer);
             } else
             if (ext == ".nib") {
                 format_id = "FILE_MFM_NIB";
-                dsk_tools::LoaderNIB loader(file_name, format_id, type_id);
+                if (format_only) {
+                    filesystem_id = "";
+                    return Result::ok();
+                }
+                LoaderNIB loader(file_name, format_id, type_id);
                 res = loader.load(buffer);
             } else
             if (ext == ".mfm") {
                 format_id = "FILE_HXC_MFM";
-                dsk_tools::LoaderHXC_MFM loader(file_name, format_id, type_id);
+                if (format_only) {
+                    filesystem_id = "";
+                    return Result::ok();
+                }
+                LoaderHXC_MFM loader(file_name, format_id, type_id);
                 res = loader.load(buffer);
             } else
                 return Result::error(ErrorCode::DetectError, "Unknown MFM format");
@@ -785,6 +802,17 @@ namespace dsk_tools {
         ViewerPicAgat_560x192DblHiResBW viewer_pic_agat_560x192DblHiResBW;
         ViewerPicAgat_80x48DblLoRes viewer_pic_agat_80x48DblLoRes;
         ViewerPicAgat_40x48LoRes viewer_pic_agat_40x48LoRes;
+    }
+
+    std::unique_ptr<Writer> create_writer(const std::string & format_id, const uint8_t volume_id, diskImage * image) {
+        std::set<std::string> mfm_formats = {"FILE_HXC_MFM", "FILE_MFM_NIB", "FILE_MFM_NIC"};
+
+        if (mfm_formats.find(format_id) != mfm_formats.end())
+           return make_unique<WriterHxCMFM>(format_id, image, volume_id);
+        if (format_id == "FILE_HXC_HFE") return make_unique<dsk_tools::WriterHxCHFE>(format_id, image, volume_id);
+        if (format_id == "FILE_RAW_MSB") return dsk_tools::make_unique<dsk_tools::WriterRAW>(format_id, image);
+
+        return nullptr;
     }
 
 } // namespace
