@@ -76,6 +76,8 @@ add_library(${PROJECT_NAME} STATIC
         src/filesystems/fs_host.cpp
     src/host_helpers.h                 src/host_helpers.cpp
         src/viewers/viewer_selectors.h
+        src/viewers/agat/agat_font_bft.h
+        src/viewers/agat/agat_font_bft.cpp
 )
 
 # Platform-specific compilation settings

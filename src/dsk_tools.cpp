@@ -795,6 +795,7 @@ namespace dsk_tools {
         ViewerPicAgatTextT64 viewer_pic_agat_TextT64;
 
         ViewerPicAgatFont viewer_pic_agat_font;
+        ViewerPicAgatFontBFT viewer_pic_agat_font_bft;
 
         ViewerPicAgat_280x192HiRes_Agat viewer_pic_agat_280x192HiRes_Agat;
         ViewerPicAgat_280x192HiRes_Apple viewer_pic_agat_280x192HiRes_Apple;

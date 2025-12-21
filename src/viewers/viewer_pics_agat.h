@@ -14,3 +14,4 @@
 #include "agat/agat_apple.h"
 #include "agat/agat_text.h"
 #include "agat/agat_font.h"
+#include "agat/agat_font_bft.h"
