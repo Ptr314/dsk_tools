@@ -28,7 +28,7 @@ namespace dsk_tools {
         ViewerPicAgatFontBFT() {m_sx = 100; m_sy = 100;}
 
         std::string get_type() const override {return "PICTURE_AGAT";}
-        std::string get_subtype() const override {return "FONT_BFT";}
+        std::string get_subtype() const override {return "AGAT_BFT";}
         std::string get_subtype_text() const override {return "{$FONT_FILE_BFT}";}
 
         Result prepare_data(const BYTES & data, diskImage & image, fileSystem & filesystem, std::string & error_msg) override;

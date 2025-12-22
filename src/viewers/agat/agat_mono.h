@@ -12,6 +12,7 @@ namespace dsk_tools {
     class ViewerPicAgatMono : public ViewerPicAgat {
     protected:
         uint32_t get_pixel(int x, int y) override;
+        int m_data_offset = 4;
     };
 
     class ViewerPicAgat_256x256x1 : public ViewerPicAgatMono {
@@ -23,6 +24,17 @@ namespace dsk_tools {
         std::string get_type() const override {return "PICTURE_AGAT";}
         std::string get_subtype() const override {return "256x256x1";}
         std::string get_subtype_text() const override {return "256х256x2 МГВР";}
+    };
+
+    class ViewerPicAgat_BMP : public ViewerPicAgatMono {
+    public:
+        static ViewerRegistrar<ViewerPicAgat_BMP> registrar;
+
+        ViewerPicAgat_BMP() {m_sx = 256; m_sy = 256; m_sizes_to_fit = {8192}; m_data_offset=0;}
+
+        std::string get_type() const override {return "PICTURE_AGAT";}
+        std::string get_subtype() const override {return "AGAT_BMP";}
+        std::string get_subtype_text() const override {return "256х256x2 BMP";}
     };
 
     class ViewerPicAgat_512x256x1 : public ViewerPicAgatMono {

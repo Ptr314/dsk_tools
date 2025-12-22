@@ -785,6 +785,7 @@ namespace dsk_tools {
         ViewerBASIC_Apple viewer_basic_apple;
         ViewerBASIC_MBASIC viewer_basic_mbasic;
         ViewerPicAgat_256x256x1 viewer_pic_agat_256x256x1;
+        ViewerPicAgat_BMP viewer_pic_agat_bmp;
         ViewerPicAgat_512x256x1 viewer_pic_agat_512x256x1;
         ViewerPicAgat_64x64x16 viewer_pic_agat_64x64x16;
         ViewerPicAgat_128x128x16 viewer_pic_agat_128x128x16;

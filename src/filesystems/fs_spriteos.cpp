@@ -192,9 +192,12 @@ namespace dsk_tools {
                 file.is_dir = (dir_entry->STATUS & 0x01) != 0;
                 file.is_deleted = is_deleted;
 
+                file.type_preferred = PreferredType::Binary;
                 std::set<std::string> txts = {".txt", ".doc", ".pas", ".cmd", ".def", ".hlp", ".gid", ".asm"};
                 std::string ext = get_file_ext(file.name);
-                file.type_preferred = (txts.find(ext) != txts.end())?PreferredType::Text:PreferredType::Binary;
+                if (txts.find(ext) != txts.end()) file.type_preferred = PreferredType::Text;
+                if (ext == ".bft") file.type_preferred = PreferredType::AgatBFT;
+                if (ext == ".bmp") file.type_preferred = PreferredType::AgatBMP;
 
                 file.metadata.resize(sizeof(SPRITE_OS_DIR_ENTRY));
                 memcpy(file.metadata.data(), dir_entry, sizeof(SPRITE_OS_DIR_ENTRY));
