@@ -26,8 +26,10 @@ int main(int argc, char** argv)
     CLICommand command = CLICommand::none;
     std::vector<std::string> add_values;
     std::vector<std::string> delete_values;
+    std::vector<std::string> extract_values;
     bool output_expected = true;
     bool verbose = false;
+    bool is_bin = false;
     std::string input_file;
     std::string output_file;
     uint8_t volume_id = 254;
@@ -49,6 +51,8 @@ int main(int argc, char** argv)
             ("o,output", "Output file", cxxopts::value<std::string>())
             ("l,ls", "List files", cxxopts::value<bool>()->default_value("false"))
             ("a,add", "File to add", cxxopts::value<std::vector<std::string>>())
+            ("e,extract", "File to extract from the disk", cxxopts::value<std::vector<std::string>>())
+            ("b,binary", "Save extracted files as binary, not FIL (For Apple DOS)", cxxopts::value<bool>()->default_value("false"))
             ("d,delete", "File to delete", cxxopts::value<std::vector<std::string>>())
             ("m,volume", "Volume id - decimal (i.e. 254) or hex (i.e. $FE)", cxxopts::value<std::string>())
             ("f,input_format", "Input file format DDD:FFF \n"
@@ -69,9 +73,8 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
-        if (res["verbose"].as<bool>()) {
-            verbose = true;
-        }
+        verbose = res["verbose"].as<bool>();
+        is_bin = res["binary"].as<bool>();
 
         if (res.count("input")) {
             input_file = res["input"].as<std::string>();
@@ -82,14 +85,6 @@ int main(int argc, char** argv)
         if (res["ls"].as<bool>()) {
             command = CLICommand::ls;
             output_expected = false;
-        }
-
-        if (output_expected) {
-            if (res.count("output")) {
-                output_file = res["output"].as<std::string>();
-                if (verbose) std::cout << "Output: " << output_file << std::endl;
-            } else
-                return bail("No output file");
         }
 
         if (res.count("add")) {
@@ -103,6 +98,14 @@ int main(int argc, char** argv)
             delete_values = res["delete"].as<std::vector<std::string>>();
             if (!delete_values.empty()) {
                 command = CLICommand::del;
+            }
+        }
+
+        if (res.count("extract")) {
+            extract_values = res["extract"].as<std::vector<std::string>>();
+            if (!extract_values.empty()) {
+                command = CLICommand::extract;
+                output_expected = false;
             }
         }
 
@@ -122,6 +125,15 @@ int main(int argc, char** argv)
                 std::transform(fs_str.begin(), fs_str.end(), fs_str.begin(), ::tolower);
             } else return bail("Incorrect input format");
         }
+
+        if (output_expected) {
+            if (res.count("output")) {
+                output_file = res["output"].as<std::string>();
+                if (verbose) std::cout << "Output: " << output_file << std::endl;
+            } else
+                return bail("No output file");
+        }
+
 
     }
     catch (const cxxopts::exceptions::exception& e) {
@@ -246,6 +258,32 @@ int main(int argc, char** argv)
             if (!find_res) {return bail("Can't find file: %s", file_to_delete.c_str());}
             auto del_res = filesystem->delete_file(f);
             if (!del_res) {return bail("Can't delete file: %s", file_to_delete.c_str());}
+        }
+        if (verbose) {
+            std::cout  << std::endl;
+        }
+    }
+
+    if (command == CLICommand::extract) {
+        if (verbose) {
+            std::cout << "Command: extract" << std::endl;
+            std::cout << "extracting: ";
+        }
+        auto host_fs = make_unique<fsHost>(nullptr);
+        for (const auto& file_to_extract : extract_values) {
+            if (verbose) std::cout << "  " << file_to_extract;
+            UniversalFile f;
+            const auto find_res = filesystem->find_file(to_upper(file_to_extract), f);
+            if (!find_res) {return bail("Can't find file '%s': %s : %s", file_to_extract.c_str(), decode_error(find_res).c_str(), find_res.message.c_str());}
+            BYTES buffer;
+            std::string out_format;
+            if (filesystem_id == "FILESYSTEM_DOS33") out_format = is_bin ? "FILE_BINARY" : "FILE_FIL";
+            const auto get_res = filesystem->get_file(f, out_format, buffer);
+            if (!get_res) {return bail("Can't read file '%s': %s : %s", file_to_extract.c_str(), decode_error(get_res).c_str(), get_res.message.c_str());}
+            if (out_format == "FILE_FIL") f.name += ".fil";
+            if (verbose) std::cout << " -> " << f.name;
+            const auto put_res = host_fs->put_file(f, "", buffer, true);
+            if (!put_res) {return bail("Can't write file '%s': %s : %s", file_to_extract.c_str(), decode_error(put_res).c_str(), put_res.message.c_str());}
         }
         if (verbose) {
             std::cout  << std::endl;

@@ -8,7 +8,7 @@
 #include "dsk_tools/dsk_tools.h"
 
 namespace dsk_tools {
-    enum class CLICommand {none, ls, add, del};
+    enum class CLICommand {none, ls, add, del, extract};
     void setupConsole();
     std::string decode_error(const Result& result);
     Result write_output_file(const std::string & output_file, const std::string & format_id, const uint8_t volume_id, diskImage * image, const bool verbose);
