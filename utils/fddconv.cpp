@@ -4,6 +4,7 @@
 // Description: FDD image conversion utility command-line tool
 
 #include <iostream>
+#include <algorithm>
 
 #include "cxxopts/cxxopts.hpp"
 #include "bail.hpp"
@@ -30,6 +31,12 @@ int main(int argc, char** argv)
     std::string input_file;
     std::string output_file;
     uint8_t volume_id = 254;
+    std::string format_id;
+    std::string type_id;
+    std::string filesystem_id;
+    std::string type_str;
+    std::string fs_str;
+
 
     // Parsing parameters ----------------------------------------------------
 
@@ -44,6 +51,13 @@ int main(int argc, char** argv)
             ("a,add", "File to add", cxxopts::value<std::vector<std::string>>())
             ("d,delete", "File to delete", cxxopts::value<std::vector<std::string>>())
             ("m,volume", "Volume id - decimal (i.e. 254) or hex (i.e. $FE)", cxxopts::value<std::string>())
+            ("f,input_format", "Input file format DDD:FFF \n"
+                                        "DDD: a140 (Apple/Agat 140k), \n"
+                                        "     a840 (Agat 840k). \n"
+                                        "FFF: dos33 (Apple DOS), \n"
+                                        "     sos (Sprite OS), \n"
+                                        "     cpm, cpm-do, cpm-po (CP/M raw, DOS sectors, ProDOS sectors)",
+                                        cxxopts::value<std::string>())
             ("h,help", "Help");
 
         opts.parse_positional({"input"});
@@ -97,6 +111,18 @@ int main(int argc, char** argv)
             volume_id = parse_number(vid_str) & 0xFF;
             if (verbose) std::cout << "Volume id: " << std::to_string(volume_id) << " ($" << int_to_hex(volume_id) << ")" <<std::endl;
         }
+
+        if (res.count("input_format")) {
+            const std::string format_str = res["input_format"].as<std::string>();
+            size_t pos = format_str.find(':');
+            if (pos != std::string::npos) {
+                type_str = format_str.substr(0, pos);
+                fs_str = format_str.substr(pos + 1);
+                std::transform(type_str.begin(), type_str.end(), type_str.begin(), ::tolower);
+                std::transform(fs_str.begin(), fs_str.end(), fs_str.begin(), ::tolower);
+            } else return bail("Incorrect input format");
+        }
+
     }
     catch (const cxxopts::exceptions::exception& e) {
         return bail("Bad options: %s", e.what());
@@ -109,19 +135,39 @@ int main(int argc, char** argv)
 
     // Loading input file ----------------------------------------------------
 
-    std::string format_id;
-    std::string type_id;
-    std::string filesystem_id;
-    const Result res = detect_fdd_type(input_file, format_id, type_id, filesystem_id, false);
-    if (res) {
-        if (verbose) {
-            std::cout << "Format auto detection:" << std::endl;
-            std::cout << "    Format = " << format_id << std::endl;
-            std::cout << "    Type = " << type_id << std::endl;
-            std::cout << "    Filesystem = " << filesystem_id << std::endl;
+    if (type_str.empty() && fs_str.empty()) {
+        const Result res = detect_fdd_type(input_file, format_id, type_id, filesystem_id, false);
+        if (res) {
+            if (verbose) {
+                std::cout << "Format auto detection:" << std::endl;
+                std::cout << "    Format = " << format_id << std::endl;
+                std::cout << "    Type = " << type_id << std::endl;
+                std::cout << "    Filesystem = " << filesystem_id << std::endl;
+            }
+        } else {
+            return bail("Input file error : %s : %s", decode_error(res).c_str(), res.message.c_str());
         }
     } else {
-        return bail("Input file error : %s : %s", decode_error(res).c_str(), res.message.c_str());
+        const Result res = detect_fdd_type(input_file, format_id, type_id, filesystem_id, true);
+        if (res) {
+            if (type_str == "a140") type_id = "TYPE_AGAT_140";
+            if (type_str == "a840") type_id = "TYPE_AGAT_840";
+            if (type_id.empty()) return bail("Incorrect disk format");
+            if (fs_str == "dos33") filesystem_id = "FILESYSTEM_DOS33";
+            if (fs_str == "sos") filesystem_id = "FILESYSTEM_SPRITE_OS";
+            if (fs_str == "cpm") filesystem_id = "FILESYSTEM_CPM_RAW";
+            if (fs_str == "cpm-do") filesystem_id = "FILESYSTEM_CPM_DOS";
+            if (fs_str == "cpm-po") filesystem_id = "FILESYSTEM_CPM_PRODOS";
+            if (filesystem_id.empty()) return bail("Incorrect type of filesystem");
+            if (verbose) {
+                std::cout << "Input file parameters:" << std::endl;
+                std::cout << "    Format = " << format_id << std::endl;
+                std::cout << "    Type = " << type_id << std::endl;
+                std::cout << "    Filesystem = " << filesystem_id << std::endl;
+            }
+        } else {
+            return bail("Input file error : %s : %s", decode_error(res).c_str(), res.message.c_str());
+        }
     }
     auto image = prepare_image(input_file, format_id, type_id);
     if (!image) return bail("Can't open image");
