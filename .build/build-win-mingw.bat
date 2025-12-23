@@ -26,6 +26,8 @@ if not exist %_BUILD_DIR%\ (
 mkdir "%_RELEASE_DIR%"
 
 copy "%_BUILD_DIR%\utils\fddconv.exe" "%_RELEASE_DIR%"
+copy "%_ROOT_MINGW%\libwinpthread-1.dll" "%_RELEASE_DIR%"
+
 
 set SEVENZIP="7z"
 %SEVENZIP% >nul 2>&1

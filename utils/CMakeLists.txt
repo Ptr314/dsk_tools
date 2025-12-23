@@ -18,3 +18,9 @@ if(MSVC)
     set_target_properties(fddconv PROPERTIES CXX_STANDARD 17)
 endif()
 
+# MinGW: Statically link GCC runtime to avoid DLL dependencies
+# Note: -static-libwinpthread not supported in MinGW 4.9.2
+if(MINGW)
+    target_link_options(fddconv PRIVATE -static-libgcc -static-libstdc++)
+endif()
+
