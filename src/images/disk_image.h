@@ -50,13 +50,15 @@ namespace dsk_tools {
             int format_track_encoding;
             int format_floppyinterfacemode;
             bool is_loaded;
+            bool interleaved;
 
         public:
             explicit diskImage(std::unique_ptr<Loader> loader);
             virtual ~diskImage();
+            static unsigned transform_index(unsigned x, unsigned mod);
             virtual Result check() = 0;                                            // Check physical image parameters
             virtual Result load();
-            virtual uint8_t *get_sector_data(int head, int track, int sector);      // Uses sector starnslation
+            virtual uint8_t *get_sector_data(unsigned head, unsigned track, unsigned sector);      // Uses sector translation
 
             std::string file_name() {return loader->get_file_name();};
             bool get_loaded() const {return is_loaded;};

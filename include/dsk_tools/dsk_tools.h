@@ -16,6 +16,7 @@
 #include "image_agat140.h"
 #include "image_agat840.h"
 #include "image_fil.h"
+#include "image_pc360.h"
 
 #include "loader.h"
 #include "loader_raw.h"

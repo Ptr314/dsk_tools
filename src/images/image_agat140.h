@@ -4,8 +4,6 @@
 // Description: A class for Apple II / Agat 140 Kb FDD images
 #pragma once
 
-#define IMAGE_AGAT140_H
-
 #include "disk_image.h"
 
 namespace dsk_tools {

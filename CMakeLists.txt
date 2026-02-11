@@ -18,6 +18,8 @@ add_library(${PROJECT_NAME} STATIC
     src/utils.h                         src/utils.cpp
     src/bit_enums.h
 
+    src/host_helpers.h                  src/host_helpers.cpp
+
     src/loaders/loader.h                src/loaders/loader.cpp
     src/loaders/loader_raw.h            src/loaders/loader_raw.cpp
     src/loaders/loader_aim.h            src/loaders/loader_aim.cpp
@@ -32,6 +34,7 @@ add_library(${PROJECT_NAME} STATIC
     src/images/image_agat140.h          src/images/image_agat140.cpp
     src/images/image_agat840.h          src/images/image_agat840.cpp
     src/images/image_fil.h              src/images/image_fil.cpp
+    src/images/image_pc360.h            src/images/image_pc360.cpp
 
     src/writers/writer.h                src/writers/writer.cpp
     src/writers/writer_hxc_hfe.h        src/writers/writer_hxc_hfe.cpp
@@ -44,40 +47,29 @@ add_library(${PROJECT_NAME} STATIC
     src/filesystems/fs_spriteos.h       src/filesystems/fs_spriteos.cpp
     src/filesystems/fs_cpm.h            src/filesystems/fs_cpm.cpp
     src/filesystems/fs_fil.h            src/filesystems/fs_fil.cpp
+    src/filesystems/fs_host.h           src/filesystems/fs_host.cpp
+
     src/viewers/viewer.h
+    src/viewers/viewer_selectors.h
+
     src/viewers/viewer_binary.h         src/viewers/viewer_binary.cpp
     src/viewers/viewer_text.h           src/viewers/viewer_text.cpp
-    src/viewers/viewer_basic_agat.h
-    src/viewers/viewer_basic_agat.cpp
-    src/viewers/viewer_basic_apple.h
-    src/viewers/viewer_basic_apple.cpp
-    src/viewers/viewer_basic_mbasic.h
-    src/viewers/viewer_basic_mbasic.cpp
+    src/viewers/viewer_basic_agat.h     src/viewers/viewer_basic_agat.cpp
+    src/viewers/viewer_basic_apple.h    src/viewers/viewer_basic_apple.cpp
+    src/viewers/viewer_basic_mbasic.h   src/viewers/viewer_basic_mbasic.cpp
+    src/viewers/viewer_pics.h           src/viewers/viewer_pics.cpp
     src/viewers/viewer_pics_agat.h
-        src/viewers/viewer_pics.h
-    src/viewers/viewer_pics.cpp
     src/viewers/agat/agat_common.h
     src/viewers/agat/agat_base.h
     src/viewers/agat/agat_base.cpp
-    src/viewers/agat/agat_16color.h
-    src/viewers/agat/agat_16color.cpp
-    src/viewers/agat/agat_4color.h
-    src/viewers/agat/agat_4color.cpp
-    src/viewers/agat/agat_mono.h
-    src/viewers/agat/agat_mono.cpp
-    src/viewers/agat/agat_apple.h
-    src/viewers/agat/agat_apple.cpp
-    src/viewers/agat/agat_text.h
-    src/viewers/agat/agat_text.cpp
-    src/viewers/agat/agat_font.h
-    src/viewers/agat/agat_font.cpp
+    src/viewers/agat/agat_16color.h     src/viewers/agat/agat_16color.cpp
+    src/viewers/agat/agat_4color.h      src/viewers/agat/agat_4color.cpp
+    src/viewers/agat/agat_mono.h        src/viewers/agat/agat_mono.cpp
+    src/viewers/agat/agat_apple.h       src/viewers/agat/agat_apple.cpp
+    src/viewers/agat/agat_text.h        src/viewers/agat/agat_text.cpp
     src/viewers/agat/agat_fonts.h
-    src/filesystems/fs_host.h
-        src/filesystems/fs_host.cpp
-    src/host_helpers.h                 src/host_helpers.cpp
-        src/viewers/viewer_selectors.h
-        src/viewers/agat/agat_font_bft.h
-        src/viewers/agat/agat_font_bft.cpp
+    src/viewers/agat/agat_font.h        src/viewers/agat/agat_font.cpp
+    src/viewers/agat/agat_font_bft.h    src/viewers/agat/agat_font_bft.cpp
 )
 
 # Platform-specific compilation settings

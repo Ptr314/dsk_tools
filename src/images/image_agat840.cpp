@@ -20,7 +20,7 @@ namespace dsk_tools {
         format_floppyinterfacemode = GENERIC_SHUGGART_DD_FLOPPYMODE;
     }
 
-    uint8_t * imageAgat840::get_sector_data(int head, int track, int sector)
+    uint8_t * imageAgat840::get_sector_data(unsigned head, unsigned track, unsigned sector)
     {
         return diskImage::get_sector_data(track & 1, track >> 1, sector);
     }

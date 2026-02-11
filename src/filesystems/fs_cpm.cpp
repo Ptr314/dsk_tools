@@ -44,6 +44,22 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
                 3            // OFF
             };
         } else
+        if (image->get_type_id() == "TYPE_PC_360_I" || image->get_type_id() == "TYPE_PC_360_NI") {
+            // n = 11, BLS = 2048 (2**n)
+            // SPT, BSH, BLM, EXM, DSM, DRM, AL0, AL1, CKS, OFF
+            DPB = {
+                36,          // SPT: 512*9/128
+                4,           // BSH: n-7
+                15,          // BLM: 2**BSH - 1
+                0,           // EXM: 2**(BHS-2) - 1 if DSM<256
+                179,         // DSM: Size/BLS - 1
+                63,          // DRM
+                0b10000000,  // AL0
+                0b00000000,  // AL1
+                16,          // CKS
+                0            // OFF
+            };
+        } else
             return Result::error(ErrorCode::OpenBadFormat, "Unsupported disk type for CP/M");
 
         is_open = true;
@@ -85,55 +101,88 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
 
         result += "{$FILE_NAME}: " +  make_file_name(dir_entry) + "\n";
 
+        const int sector_size = image->get_sector_size();
+        const int BLS = 1 << (DPB.BSH + 7);                 // Block size
+        const int spb = BLS / sector_size;     // Sectors per block
+
+        const int heads = image->get_heads();
+        const int sectors = image->get_sectors();
+        const int index_shift = DPB.OFF * sectors;
+
         int file_size = 0;
         std::string list;
         for (int i=0; i < fd.metadata.size() / sizeof(CPM_DIR_ENTRY); i++) {
             list += "{$EXTENT}: " +  std::to_string(i) + "\n";
             std::memcpy(&dir_entry, fd.metadata.data() + i*sizeof(CPM_DIR_ENTRY), sizeof(CPM_DIR_ENTRY));
             file_size += dir_entry.RC*128;
+
             for (const unsigned char AL : dir_entry.AL) {
-                const int track = AL / 4 + DPB.OFF;
-                const int part = AL % 4;
                 if (AL != 0 && AL != 0xE5)  {
-                    list += "    Block: " + std::to_string(AL);
-                    list += " Track: " + std::to_string(track);
-                    list += " Part: " + std::to_string(part);
-                    list += " Sectors:" ;
-                    for (int k=0; k<4; k++) {
-                        list += " " + std::to_string(translate_sector(part*4 + k));
+                    list += "    {$CPM_BLOCK}: " + std::to_string(AL);
+                    list += ", {$CPM_SECTORS} ";
+                    list += heads==1 ? "(T:S)" : "(H:T:S)";
+                    list += ": ";
+                    for (int k=0; k<spb; k++) {
+                        if (k) list += ", ";
+                        const int sector_index = AL*spb + k + index_shift;
+                        const int sector = translate_sector(sector_index % sectors);
+                        if (heads == 1) {
+                            const int track = sector_index / sectors;
+                            list += std::to_string(track) + ":" + std::to_string(sector);
+                        } else {
+                            const int head = (sector_index / sectors) & 1;
+                            const int track = (sector_index / sectors) >> 1;
+                            list += std::to_string(head) + ":" + std::to_string(track) + ":" + std::to_string(sector);
+                        }
                     }
                     list += "\n";
                 }
             }
         }
-
         result += "{$SIZE}: " +  std::to_string(file_size) + " {$BYTES}\n";
         result += "{$ATTRIBUTES}: " + attrs + " \n";
-
+        result += "\n";
+        result += "{$CPM_SECTOR_SIZE}: " +  std::to_string(sector_size) + "\n";
+        result += "{$CPM_BLOCK_SIZE}: " +  std::to_string(BLS) + "\n";
+        result += "{$CPM_SECTORS_PER_BLOCK}: " +  std::to_string(spb) + "\n";
+        result += "{$CPM_RESERVED_TRACKS}: " +  std::to_string(DPB.OFF) + "\n";
         result += "\n";
         result += list;
 
         return result;
     }
 
-    void fsCPM::load_file(const BYTES * dir_records, int extents, BYTES & out) const
+    void fsCPM::load_file(const BYTES & dir_records, BYTES & out) const
     {
         out.clear();
         int file_size = 0;
-        for (int i=0; i<extents; i++) {
-            CPM_DIR_ENTRY dir_entry{};
-            std::memcpy(&dir_entry, dir_records + i*sizeof(CPM_DIR_ENTRY), sizeof(CPM_DIR_ENTRY));
+        for (int i=0; i<dir_records.size() / sizeof(CPM_DIR_ENTRY); i++) {
+            const auto dir_entry = reinterpret_cast<const CPM_DIR_ENTRY *>(dir_records.data() + i*sizeof(CPM_DIR_ENTRY));
 
-            file_size += dir_entry.RC*128;
+            file_size += dir_entry->RC*128;
 
-            for (const unsigned char AL : dir_entry.AL) {
-                const int track = AL / 4 + DPB.OFF;
-                const int part = AL % 4;
+            const int sector_size = image->get_sector_size();
+            const int BLS = 1 << (DPB.BSH + 7);                 // Block size
+            const int spb = BLS / sector_size;     // Sectors per block
+
+            const int sectors = image->get_sectors();
+            const int index_shift = DPB.OFF * sectors;
+
+            for (const unsigned char AL : dir_entry->AL) {
                 if (AL != 0 && AL != 0xE5)  {
-                    for (int k=0; k<4; k++) {
-                        const int sector = translate_sector(part*4 + k);
-                        const auto p = image->get_sector_data(0, track, sector);
-                        out.insert(out.end(), p, p + 256);
+                    for (int k=0; k<spb; k++) {
+                        const int sector_index = AL*spb + k + index_shift;
+                        int head, track;
+                        if (image->get_heads() == 1) {
+                            head = 0;
+                            track = sector_index / sectors;
+                        } else {
+                            head = (sector_index / sectors) & 1;
+                            track = (sector_index / sectors) >> 1;
+                        }
+                        const int sector = translate_sector(sector_index % sectors);
+                        const auto p = image->get_sector_data(head, track, sector);
+                        out.insert(out.end(), p, p + sector_size);
                     }
                 }
             }
@@ -154,7 +203,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
     Result fsCPM::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
         data.clear();
-        load_file(reinterpret_cast<const BYTES*>(uf.metadata.data()), uf.metadata.size() / sizeof(CPM_DIR_ENTRY), data);
+        load_file(uf.metadata, data);
         return Result::ok();
     }
 
@@ -164,9 +213,9 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
 
         files.clear();
 
-        constexpr int directory_sectors = 6;
-        constexpr int entries_in_sector = 8;
-        constexpr int catalog_size = directory_sectors * entries_in_sector;
+        const int catalog_size = DPB.DRM + 1;
+        const int entries_in_sector = image->get_sector_size() / 32;
+        const int directory_sectors =catalog_size / entries_in_sector;
 
         std::vector<CPM_DIR_ENTRY*> catalog(catalog_size);
 
@@ -176,15 +225,20 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
                 catalog[i*entries_in_sector + j] = reinterpret_cast<CPM_DIR_ENTRY*>(sector + j*sizeof(CPM_DIR_ENTRY));
         }
 
+        std::string prev_name;
+
         for (int i = 0; i < catalog_size; i++) {
             const uint8_t ST = catalog[i]->ST;
             if (ST != 0xE5 && ST != 0x1F) {
+                std::string file_name = make_file_name(*catalog[i]);
                 const int extent = catalog[i]->XH*32 + catalog[i]->XL;
-                if (extent == 0) {
+                if (extent == 0 || prev_name != file_name ) {
+                    prev_name = file_name;
+
                     UniversalFile f;
                     f.is_dir = false;
                     f.is_deleted = false;
-                    f.name = make_file_name(*catalog[i]);
+                    f.name = file_name;
                     f.size = catalog[i]->RC * 128;
 
                     f.is_protected = (catalog[i]->E[0] & 0x80) != 0;
@@ -206,8 +260,10 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
                 } else {
                     UniversalFile * f = &(files.at(files.size()-1));
                     f->size += catalog[i]->RC * 128;
-                    f->metadata.resize(f->metadata.size() + sizeof(CPM_DIR_ENTRY));
-                    std::memcpy(f->metadata.data() + sizeof(CPM_DIR_ENTRY)*extent, catalog[i], sizeof(CPM_DIR_ENTRY));
+                    size_t old_size = f->metadata.size();
+                    f->metadata.resize(old_size + sizeof(CPM_DIR_ENTRY));
+                    std::memcpy(f->metadata.data() + old_size, catalog[i], sizeof(CPM_DIR_ENTRY));
+                    std::cout << f->metadata.size() << std::endl;
                 }
             }
         }

@@ -64,9 +64,11 @@ namespace dsk_tools {
         std::unique_ptr<Loader> loader = create_loader(file_name, format_id, type_id);
         if (!loader) return nullptr;
 
-        if (type_id == "TYPE_AGAT_140") return dsk_tools::make_unique<imageAgat140>(std::move(loader));
-        if (type_id == "TYPE_AGAT_840") return dsk_tools::make_unique<imageAgat840>(std::move(loader));
-        if (type_id == "TYPE_FIL")      return dsk_tools::make_unique<imageFIL>(std::move(loader));
+        if (type_id == "TYPE_AGAT_140")   return dsk_tools::make_unique<imageAgat140>(std::move(loader));
+        if (type_id == "TYPE_AGAT_840")   return dsk_tools::make_unique<imageAgat840>(std::move(loader));
+        if (type_id == "TYPE_FIL")        return dsk_tools::make_unique<imageFIL>(std::move(loader));
+        if (type_id == "TYPE_PC_360_I")   return dsk_tools::make_unique<imagePC360>(std::move(loader), true);
+        if (type_id == "TYPE_PC_360_NI")  return dsk_tools::make_unique<imagePC360>(std::move(loader), false);
 
         return nullptr;
     }
@@ -264,6 +266,9 @@ namespace dsk_tools {
             if (fsize == 860160 || fsize == 860164) {
                 type_id = "TYPE_AGAT_840";
             } else
+            if (fsize == 512*9*40*2) {
+                type_id = "TYPE_PC_360_I";
+            } else
                 return Result::error(ErrorCode::DetectError, "Invalid file size for DSK format");
 
             // filesystem_id
@@ -295,11 +300,10 @@ namespace dsk_tools {
                     filesystem_id = "FILESYSTEM_CPM_RAW";
                 } else
                     filesystem_id = "FILESYSTEM_DOS33";
-
-                // } else
-                //     return FDD_DETECT_ERROR;
+            } else
+            if (type_id == "TYPE_PC_360_I" || type_id == "TYPE_PC_360_NI") {
+                filesystem_id = "FILESYSTEM_CPM_RAW";
             }
-
         } else
         if (ext == ".aim") {
             format_id = "FILE_AIM";

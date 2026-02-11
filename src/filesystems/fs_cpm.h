@@ -48,7 +48,7 @@ namespace dsk_tools {
         CPM_DPB DPB{};
         std::string m_filesystem_id;
         static std::string make_file_name(CPM_DIR_ENTRY & di);
-        void load_file(const BYTES *dir_records, int extents, BYTES & out) const;
+        void load_file(const BYTES & dir_records, BYTES & out) const;
 
     public:
         fsCPM(diskImage * image, const std::string & filesystem_id);

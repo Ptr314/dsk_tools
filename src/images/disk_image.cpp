@@ -10,6 +10,7 @@ namespace dsk_tools {
     diskImage::diskImage(std::unique_ptr<Loader> loader):
           loader(std::move(loader))
         , is_loaded(false)
+        , interleaved(true)
     {}
 
     diskImage::~diskImage() = default;
@@ -30,14 +31,22 @@ namespace dsk_tools {
         return result;
     }
 
-    uint8_t * diskImage::get_sector_data(int head, int track, int sector)
+    unsigned diskImage::transform_index(const unsigned x, const unsigned mod){
+        return (2 * x) % mod + (x / mod) * mod;
+    }
+
+    uint8_t * diskImage::get_sector_data(const unsigned head, const unsigned track, const unsigned sector)
     {
-        long offset = ((track * format_heads  + head) * format_sectors + sector) * format_sector_size;
+        unsigned track_index = track * format_heads + head;
+        if (!interleaved) track_index = transform_index(track_index, format_heads * format_tracks - 1);
+        const unsigned sector_index = track_index * format_sectors + sector;
+        const unsigned offset =  sector_index * format_sector_size;
+
         // Bounds check: ensure offset + sector_size doesn't exceed buffer
-        if (offset < 0 || offset + format_sector_size > static_cast<long>(buffer.size())) {
+        if (offset + format_sector_size > static_cast<long>(buffer.size())) {
             return nullptr;
         }
-        return reinterpret_cast<uint8_t *>(&buffer[offset]);
+        return &buffer[offset];
     }
 
 }
