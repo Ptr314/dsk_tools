@@ -11,12 +11,11 @@ namespace dsk_tools {
           m_loader(std::move(loader))
         , m_is_loaded(false)
         , m_sides_interleaved(true)
-        , m_sector_interleave(1)
     {}
 
     diskImage::diskImage(std::unique_ptr<Loader> loader, unsigned heads, unsigned tracks, unsigned sectors, unsigned sector_size,
                          unsigned bitrate, unsigned rpm, unsigned track_encoding, unsigned floppyinterfacemode,
-                         bool sides_interleaved, unsigned sector_interleave):
+                         bool sides_interleaved, const std::vector<unsigned> &sector_translation):
           m_loader(std::move(loader))
         , m_format_heads(heads)
         , m_format_tracks(tracks)
@@ -29,13 +28,16 @@ namespace dsk_tools {
         , m_format_floppyinterfacemode(floppyinterfacemode)
         , m_is_loaded(false)
         , m_sides_interleaved(sides_interleaved)
-        , m_sector_interleave(sector_interleave)
+        , m_sector_translation(sector_translation)
     {}
 
     diskImage::~diskImage() = default;
 
     Result diskImage::load()
     {
+        if (m_sector_translation.size() > 0 && m_sector_translation.size() != m_format_sectors)
+            return Result::error(ErrorCode::LoadError, "Sector translation table has incorrect size");
+
         m_type_id = m_loader->get_type_id();
         Result result = m_loader->load(m_buffer);
         if (result) {
@@ -55,13 +57,19 @@ namespace dsk_tools {
     }
 
     unsigned diskImage::physical_sector(const unsigned logical) const {
-        return (logical * m_sector_interleave) % m_format_sectors;
+        if (!m_sector_translation.empty())
+            return m_sector_translation[logical];
+        return logical;
+    }
+
+    void diskImage::set_sector_translation(const std::vector<unsigned> &table) {
+        m_sector_translation = table;
     }
 
     uint8_t * diskImage::get_sector_data(const unsigned head, const unsigned track, const unsigned sector)
     {
         unsigned track_index = track * m_format_heads + head;
-        if (!m_sides_interleaved) track_index = transform_index(track_index, m_format_heads * m_format_tracks - 1);
+        if (m_format_heads == 2 && !m_sides_interleaved) track_index = transform_index(track_index, m_format_heads * m_format_tracks - 1);
         const unsigned sector_index = track_index * m_format_sectors + physical_sector(sector);
         const unsigned offset = sector_index * m_format_sector_size;
 

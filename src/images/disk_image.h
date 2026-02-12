@@ -6,6 +6,7 @@
 
 
 #include <memory>
+#include <vector>
 
 #include "definitions.h"
 #include "loader.h"
@@ -51,13 +52,14 @@ namespace dsk_tools {
             unsigned m_format_floppyinterfacemode;
             bool m_is_loaded;
             bool m_sides_interleaved;
-            unsigned m_sector_interleave;
+            std::vector<unsigned> m_sector_translation;
 
         public:
             explicit diskImage(std::unique_ptr<Loader> loader);
             diskImage(std::unique_ptr<Loader> loader, unsigned heads, unsigned tracks, unsigned sectors, unsigned sector_size,
                       unsigned bitrate, unsigned rpm, unsigned track_encoding, unsigned floppyinterfacemode,
-                      bool sides_interleaved = true, unsigned sector_interleave = 1);
+                      bool sides_interleaved = true, const std::vector<unsigned> &sector_translation = {});
+            void set_sector_translation(const std::vector<unsigned> &table);
             virtual ~diskImage();
             static unsigned transform_index(unsigned x, unsigned mod);
             virtual unsigned physical_sector(unsigned logical) const;
@@ -76,7 +78,7 @@ namespace dsk_tools {
             unsigned get_rpm() const {return m_format_rpm;};
             unsigned get_track_encoding() const {return m_format_track_encoding;};
             unsigned get_floppyinterfacemode() const {return m_format_floppyinterfacemode;};
-            unsigned get_sector_interleave() const {return m_sector_interleave;};
+            std::vector<unsigned> get_sector_translation() const {return m_sector_translation;};
             std::string get_type_id() {return m_type_id;};
             BYTES * get_buffer() {return &m_buffer;};
     };

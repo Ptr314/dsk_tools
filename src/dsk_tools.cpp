@@ -91,6 +91,21 @@ namespace dsk_tools {
                                               GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
                                               false                           // sides interleaved
                                           );
+        if (type_id == "TYPE_GMD_7012_I")  return dsk_tools::make_unique<diskImage>(
+                                              std::move(loader),
+                                              1,                              // heads
+                                              77,                             // tracks
+                                              26,                             // sectors
+                                              128,                            // sector size
+                                              250,                            // bitrate
+                                              300,                            // rpm
+                                              UNKNOWN_ENCODING,               // track encoding
+                                              GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
+                                              false,                          // sides interleaved
+                                              std::vector<unsigned>{0,  6, 12, 18, 24, 4, 10, 16, 22, 2, 8, 14, 20,
+                                                                    1,  7, 13, 19, 25, 5, 11, 17, 23, 3, 9, 15, 21
+                                              }                               // sector translation
+                                          );
 
         return nullptr;
     }
@@ -272,7 +287,7 @@ namespace dsk_tools {
         }
 
         // format_if
-        if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm") {
+        if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd") {
             format_id = "FILE_RAW_MSB";
 
             if (format_only) {
@@ -290,6 +305,9 @@ namespace dsk_tools {
             } else
             if (fsize == 512*9*40*2) {
                 type_id = "TYPE_PC_360_I";
+            } else
+            if (fsize == 128*26*77) {
+                type_id = "TYPE_GMD_7012_I";
             } else
                 return Result::error(ErrorCode::DetectError, "Invalid file size for DSK format");
 
@@ -324,6 +342,9 @@ namespace dsk_tools {
                     filesystem_id = "FILESYSTEM_DOS33";
             } else
             if (type_id == "TYPE_PC_360_I" || type_id == "TYPE_PC_360_NI") {
+                filesystem_id = "FILESYSTEM_CPM_RAW";
+            } else
+            if (type_id == "TYPE_GMD_7012_I") {
                 filesystem_id = "FILESYSTEM_CPM_RAW";
             }
         } else

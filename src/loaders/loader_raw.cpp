@@ -40,6 +40,9 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         if (type_id == "TYPE_PC_360_I" || type_id == "TYPE_PC_360_NI")
             image_size = 2*40*9*512;
         else
+        if (type_id == "TYPE_GMD_7012_I")
+            image_size = 77*26*128;
+        else
             return Result::error(ErrorCode::LoadParamsMismatch, "Unknown disk type");
 
         if (fsize<image_size)

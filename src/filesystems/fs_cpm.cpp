@@ -60,6 +60,22 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
                 0            // OFF
             };
         } else
+        if (image->get_type_id() == "TYPE_GMD_7012_I") {
+            // n = 10, BLS = 1024 (2**n)
+            // SPT, BSH, BLM, EXM, DSM, DRM, AL0, AL1, CKS, OFF
+            DPB = {
+                26,          // SPT: 128*26/128
+                3,           // BSH: n-7
+                7,           // BLM: 2**BSH - 1
+                0,           // EXM: 2**(BHS-2) - 1 if DSM<256
+                179,         // DSM: Size/BLS - 1
+                63,          // DRM
+                0b10000000,  // AL0
+                0b00000000,  // AL1
+                16,          // CKS
+                2            // OFF
+            };
+        } else
             return Result::error(ErrorCode::OpenBadFormat, "Unsupported disk type for CP/M");
 
         is_open = true;
@@ -214,8 +230,8 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
         files.clear();
 
         const int catalog_size = DPB.DRM + 1;
-        const int entries_in_sector = image->get_sector_size() / 32;
-        const int directory_sectors =catalog_size / entries_in_sector;
+        const int entries_in_sector = image->get_sector_size() / sizeof(CPM_DIR_ENTRY);
+        const int directory_sectors = catalog_size / entries_in_sector;
 
         std::vector<CPM_DIR_ENTRY*> catalog(catalog_size);
 
@@ -229,7 +245,8 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
 
         for (int i = 0; i < catalog_size; i++) {
             const uint8_t ST = catalog[i]->ST;
-            if (ST != 0xE5 && ST != 0x1F) {
+            if (ST == 0xE5) break;
+            if (ST != 0x1F) {
                 std::string file_name = make_file_name(*catalog[i]);
                 const int extent = catalog[i]->XH*32 + catalog[i]->XL;
                 if (extent == 0 || prev_name != file_name ) {
