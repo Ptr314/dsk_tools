@@ -25,6 +25,7 @@
 #include "loader_nib.h"
 #include "loader_nic.h"
 #include "loader_hxc_mfm.h"
+#include "loader_imd.h"
 
 #include "writer.h"
 #include "writer_raw.h"

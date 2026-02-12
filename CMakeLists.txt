@@ -29,6 +29,7 @@ add_library(${PROJECT_NAME} STATIC
     src/loaders/loader_mfm.h            src/loaders/loader_mfm.cpp
     src/loaders/loader_nic.h            src/loaders/loader_nic.cpp
     src/loaders/loader_hxc_mfm.h        src/loaders/loader_hxc_mfm.cpp
+    src/loaders/loader_imd.h            src/loaders/loader_imd.cpp
 
     src/images/disk_image.h             src/images/disk_image.cpp
     src/images/image_agat140.h          src/images/image_agat140.cpp

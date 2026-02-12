@@ -56,6 +56,7 @@ namespace dsk_tools {
         if (format_id == "FILE_HXC_MFM") return dsk_tools::make_unique<LoaderHXC_MFM>(file_name, format_id, type_id);
         if (format_id == "FILE_HXC_HFE") return dsk_tools::make_unique<LoaderHXC_HFE>(file_name, format_id, type_id);
         if (format_id == "FILE_FIL")     return dsk_tools::make_unique<LoaderFIL>(file_name, format_id, type_id);
+        if (format_id == "FILE_IMD")     return dsk_tools::make_unique<LoaderIMD>(file_name, format_id, type_id);
         return nullptr;
     }
 
@@ -473,6 +474,19 @@ namespace dsk_tools {
             format_id = "FILE_FIL";
             type_id = "TYPE_FIL";
             filesystem_id = "FILESYSTEM_FIL";
+        } else
+        if (ext == ".imd") {
+            format_id = "FILE_IMD";
+
+            if (format_only) {
+                type_id = "";
+                filesystem_id = "";
+                return Result::ok();
+            }
+
+            // TODO: make detection using contents
+            type_id = "TYPE_PC_360_I";
+            filesystem_id = "FILESYSTEM_CPM_RAW";
         } else
             return Result::error(ErrorCode::DetectError, "Unknown file format");
 
