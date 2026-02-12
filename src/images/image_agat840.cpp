@@ -9,15 +9,12 @@ namespace dsk_tools {
     imageAgat840::imageAgat840(std::unique_ptr<Loader> loader):
         imageAgat140(std::move(loader))
     {
-        format_heads = 2;
-        format_tracks = 80;
-        format_sectors = 21;
-        format_sector_size = 256;
-        expected_size = format_heads * format_tracks * format_sectors * format_sector_size;
-        format_bitrate = 250;
-        format_rpm = 300;
-        format_track_encoding = ISOIBM_MFM_ENCODING;
-        format_floppyinterfacemode = GENERIC_SHUGGART_DD_FLOPPYMODE;
+        m_format_heads = 2;
+        m_format_tracks = 80;
+        m_format_sectors = 21;
+        m_expected_size = m_format_heads * m_format_tracks * m_format_sectors * m_format_sector_size;
+        m_format_track_encoding = ISOIBM_MFM_ENCODING;
+        m_format_floppyinterfacemode = GENERIC_SHUGGART_DD_FLOPPYMODE;
     }
 
     uint8_t * imageAgat840::get_sector_data(unsigned head, unsigned track, unsigned sector)

@@ -8,23 +8,17 @@
 
 namespace dsk_tools {
 imageAgat140::imageAgat140(std::unique_ptr<Loader> loader):
-          diskImage(std::move(loader))
-    {
-        format_heads = 1;
-        format_tracks = 35;
-        format_sectors = 16;
-        format_sector_size = 256;
-        expected_size = format_heads * format_tracks * format_sectors * format_sector_size;
-        format_bitrate = 250;
-        format_rpm = 300;
-        format_track_encoding = UNKNOWN_ENCODING;
-        format_floppyinterfacemode = GENERIC_SHUGGART_DD_FLOPPYMODE;
-    }
-
-    Result imageAgat140::check()
-    {
-        // TODO: Implement validation
-        return Result::ok();
-    }
+          diskImage(
+              std::move(loader),
+              1,                              // heads
+              35,                             // tracks
+              16,                             // sectors
+              256,                            // sector size
+              250,                            // bitrate
+              300,                            // rpm
+              UNKNOWN_ENCODING,               // track encoding
+              GENERIC_SHUGGART_DD_FLOPPYMODE  // floppy interface mode
+          )
+    {}
 
 }

@@ -13,6 +13,5 @@ namespace dsk_tools {
     public:
         explicit imageFIL(std::unique_ptr<Loader> loader);
         Result load() override;
-        Result check() override;
     };
 }

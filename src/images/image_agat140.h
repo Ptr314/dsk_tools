@@ -14,6 +14,5 @@ namespace dsk_tools {
 
         public:
             explicit imageAgat140(std::unique_ptr<Loader> loader);
-            Result check() override;
     };
 }

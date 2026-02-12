@@ -34,7 +34,6 @@ add_library(${PROJECT_NAME} STATIC
     src/images/image_agat140.h          src/images/image_agat140.cpp
     src/images/image_agat840.h          src/images/image_agat840.cpp
     src/images/image_fil.h              src/images/image_fil.cpp
-    src/images/image_pc360.h            src/images/image_pc360.cpp
 
     src/writers/writer.h                src/writers/writer.cpp
     src/writers/writer_hxc_hfe.h        src/writers/writer_hxc_hfe.cpp

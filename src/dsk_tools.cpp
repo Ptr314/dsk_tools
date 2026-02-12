@@ -67,8 +67,30 @@ namespace dsk_tools {
         if (type_id == "TYPE_AGAT_140")   return dsk_tools::make_unique<imageAgat140>(std::move(loader));
         if (type_id == "TYPE_AGAT_840")   return dsk_tools::make_unique<imageAgat840>(std::move(loader));
         if (type_id == "TYPE_FIL")        return dsk_tools::make_unique<imageFIL>(std::move(loader));
-        if (type_id == "TYPE_PC_360_I")   return dsk_tools::make_unique<imagePC360>(std::move(loader), true);
-        if (type_id == "TYPE_PC_360_NI")  return dsk_tools::make_unique<imagePC360>(std::move(loader), false);
+        if (type_id == "TYPE_PC_360_I")   return dsk_tools::make_unique<diskImage>(
+                                              std::move(loader),
+                                              2,                              // heads
+                                              40,                             // tracks
+                                              9,                              // sectors
+                                              512,                            // sector size
+                                              250,                            // bitrate
+                                              300,                            // rpm
+                                              UNKNOWN_ENCODING,               // track encoding
+                                              GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
+                                              true                            // interleaved
+                                          );
+        if (type_id == "TYPE_PC_360_NI")  return dsk_tools::make_unique<diskImage>(
+                                              std::move(loader),
+                                              2,                              // heads
+                                              40,                             // tracks
+                                              9,                              // sectors
+                                              512,                            // sector size
+                                              250,                            // bitrate
+                                              300,                            // rpm
+                                              UNKNOWN_ENCODING,               // track encoding
+                                              GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
+                                              false                           // interleaved
+                                          );
 
         return nullptr;
     }

@@ -14,7 +14,7 @@ namespace dsk_tools {
     {
     public:
         imageAgat840(std::unique_ptr<Loader> loader);
-        virtual uint8_t *get_sector_data(unsigned head, unsigned track, unsigned sector) override;
+        uint8_t *get_sector_data(unsigned head, unsigned track, unsigned sector) override;
     };
 
 }

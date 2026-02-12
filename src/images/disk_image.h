@@ -37,41 +37,44 @@ namespace dsk_tools {
 
     class diskImage {
         protected:
-            std::string type_id;
-            BYTES buffer;
-            std::unique_ptr<Loader> loader;
-            int format_heads;
-            int format_tracks;
-            int format_sectors;
-            int format_sector_size;
-            int expected_size;
-            int format_bitrate;
-            int format_rpm;
-            int format_track_encoding;
-            int format_floppyinterfacemode;
-            bool is_loaded;
-            bool interleaved;
+            std::string m_type_id;
+            BYTES m_buffer;
+            std::unique_ptr<Loader> m_loader;
+            int m_format_heads;
+            int m_format_tracks;
+            int m_format_sectors;
+            int m_format_sector_size;
+            int m_expected_size;
+            int m_format_bitrate;
+            int m_format_rpm;
+            int m_format_track_encoding;
+            int m_format_floppyinterfacemode;
+            bool m_is_loaded;
+            bool m_interleaved;
 
         public:
             explicit diskImage(std::unique_ptr<Loader> loader);
+            diskImage(std::unique_ptr<Loader> loader, int heads, int tracks, int sectors, int sector_size,
+                      int bitrate, int rpm, int track_encoding, int floppyinterfacemode,
+                      bool interleaved = true);
             virtual ~diskImage();
             static unsigned transform_index(unsigned x, unsigned mod);
-            virtual Result check() = 0;                                            // Check physical image parameters
+            virtual Result check();                                            // Check physical image parameters
             virtual Result load();
             virtual uint8_t *get_sector_data(unsigned head, unsigned track, unsigned sector);      // Uses sector translation
 
-            std::string file_name() {return loader->get_file_name();};
-            bool get_loaded() const {return is_loaded;};
-            int get_heads() const {return format_heads;};
-            int get_tracks() const {return format_tracks;};
-            int get_sectors() const {return format_sectors;};
-            int get_sector_size() const {return format_sector_size;};
-            int get_size() const {return expected_size;};
-            int get_bitrate() const {return format_bitrate;};
-            int get_rpm() const {return format_rpm;};
-            int get_track_encoding() const {return format_track_encoding;};
-            int get_floppyinterfacemode() const {return format_floppyinterfacemode;};
-            std::string get_type_id() {return type_id;};
-            BYTES * get_buffer() {return &buffer;};
+            std::string file_name() {return m_loader->get_file_name();};
+            bool get_loaded() const {return m_is_loaded;};
+            int get_heads() const {return m_format_heads;};
+            int get_tracks() const {return m_format_tracks;};
+            int get_sectors() const {return m_format_sectors;};
+            int get_sector_size() const {return m_format_sector_size;};
+            int get_size() const {return m_expected_size;};
+            int get_bitrate() const {return m_format_bitrate;};
+            int get_rpm() const {return m_format_rpm;};
+            int get_track_encoding() const {return m_format_track_encoding;};
+            int get_floppyinterfacemode() const {return m_format_floppyinterfacemode;};
+            std::string get_type_id() {return m_type_id;};
+            BYTES * get_buffer() {return &m_buffer;};
     };
 }
