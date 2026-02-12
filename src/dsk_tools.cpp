@@ -77,7 +77,7 @@ namespace dsk_tools {
                                               300,                            // rpm
                                               UNKNOWN_ENCODING,               // track encoding
                                               GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
-                                              true                            // interleaved
+                                              true                            // sides interleaved
                                           );
         if (type_id == "TYPE_PC_360_NI")  return dsk_tools::make_unique<diskImage>(
                                               std::move(loader),
@@ -89,7 +89,7 @@ namespace dsk_tools {
                                               300,                            // rpm
                                               UNKNOWN_ENCODING,               // track encoding
                                               GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
-                                              false                           // interleaved
+                                              false                           // sides interleaved
                                           );
 
         return nullptr;

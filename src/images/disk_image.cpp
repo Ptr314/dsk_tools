@@ -10,12 +10,13 @@ namespace dsk_tools {
     diskImage::diskImage(std::unique_ptr<Loader> loader):
           m_loader(std::move(loader))
         , m_is_loaded(false)
-        , m_interleaved(true)
+        , m_sides_interleaved(true)
+        , m_sector_interleave(1)
     {}
 
-    diskImage::diskImage(std::unique_ptr<Loader> loader, int heads, int tracks, int sectors, int sector_size,
-                         int bitrate, int rpm, int track_encoding, int floppyinterfacemode,
-                         bool interleaved):
+    diskImage::diskImage(std::unique_ptr<Loader> loader, unsigned heads, unsigned tracks, unsigned sectors, unsigned sector_size,
+                         unsigned bitrate, unsigned rpm, unsigned track_encoding, unsigned floppyinterfacemode,
+                         bool sides_interleaved, unsigned sector_interleave):
           m_loader(std::move(loader))
         , m_format_heads(heads)
         , m_format_tracks(tracks)
@@ -27,7 +28,8 @@ namespace dsk_tools {
         , m_format_track_encoding(track_encoding)
         , m_format_floppyinterfacemode(floppyinterfacemode)
         , m_is_loaded(false)
-        , m_interleaved(interleaved)
+        , m_sides_interleaved(sides_interleaved)
+        , m_sector_interleave(sector_interleave)
     {}
 
     diskImage::~diskImage() = default;
@@ -37,7 +39,7 @@ namespace dsk_tools {
         m_type_id = m_loader->get_type_id();
         Result result = m_loader->load(m_buffer);
         if (result) {
-            int buffer_size = m_buffer.size();
+            unsigned buffer_size = m_buffer.size();
             if (m_expected_size == 0 || (buffer_size >= m_expected_size && buffer_size <= m_expected_size + 4)) {
                 m_is_loaded = true;
                 return Result::ok();
@@ -52,15 +54,19 @@ namespace dsk_tools {
         return (2 * x) % mod + (x / mod) * mod;
     }
 
+    unsigned diskImage::physical_sector(const unsigned logical) const {
+        return (logical * m_sector_interleave) % m_format_sectors;
+    }
+
     uint8_t * diskImage::get_sector_data(const unsigned head, const unsigned track, const unsigned sector)
     {
         unsigned track_index = track * m_format_heads + head;
-        if (!m_interleaved) track_index = transform_index(track_index, m_format_heads * m_format_tracks - 1);
-        const unsigned sector_index = track_index * m_format_sectors + sector;
-        const unsigned offset =  sector_index * m_format_sector_size;
+        if (!m_sides_interleaved) track_index = transform_index(track_index, m_format_heads * m_format_tracks - 1);
+        const unsigned sector_index = track_index * m_format_sectors + physical_sector(sector);
+        const unsigned offset = sector_index * m_format_sector_size;
 
         // Bounds check: ensure offset + sector_size doesn't exceed buffer
-        if (offset + m_format_sector_size > static_cast<long>(m_buffer.size())) {
+        if (offset + m_format_sector_size > m_buffer.size()) {
             return nullptr;
         }
         return &m_buffer[offset];

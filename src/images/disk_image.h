@@ -40,40 +40,43 @@ namespace dsk_tools {
             std::string m_type_id;
             BYTES m_buffer;
             std::unique_ptr<Loader> m_loader;
-            int m_format_heads;
-            int m_format_tracks;
-            int m_format_sectors;
-            int m_format_sector_size;
-            int m_expected_size;
-            int m_format_bitrate;
-            int m_format_rpm;
-            int m_format_track_encoding;
-            int m_format_floppyinterfacemode;
+            unsigned m_format_heads;
+            unsigned m_format_tracks;
+            unsigned m_format_sectors;
+            unsigned m_format_sector_size;
+            unsigned m_expected_size;
+            unsigned m_format_bitrate;
+            unsigned m_format_rpm;
+            unsigned m_format_track_encoding;
+            unsigned m_format_floppyinterfacemode;
             bool m_is_loaded;
-            bool m_interleaved;
+            bool m_sides_interleaved;
+            unsigned m_sector_interleave;
 
         public:
             explicit diskImage(std::unique_ptr<Loader> loader);
-            diskImage(std::unique_ptr<Loader> loader, int heads, int tracks, int sectors, int sector_size,
-                      int bitrate, int rpm, int track_encoding, int floppyinterfacemode,
-                      bool interleaved = true);
+            diskImage(std::unique_ptr<Loader> loader, unsigned heads, unsigned tracks, unsigned sectors, unsigned sector_size,
+                      unsigned bitrate, unsigned rpm, unsigned track_encoding, unsigned floppyinterfacemode,
+                      bool sides_interleaved = true, unsigned sector_interleave = 1);
             virtual ~diskImage();
             static unsigned transform_index(unsigned x, unsigned mod);
+            virtual unsigned physical_sector(unsigned logical) const;
             virtual Result check();                                            // Check physical image parameters
             virtual Result load();
             virtual uint8_t *get_sector_data(unsigned head, unsigned track, unsigned sector);      // Uses sector translation
 
             std::string file_name() {return m_loader->get_file_name();};
             bool get_loaded() const {return m_is_loaded;};
-            int get_heads() const {return m_format_heads;};
-            int get_tracks() const {return m_format_tracks;};
-            int get_sectors() const {return m_format_sectors;};
-            int get_sector_size() const {return m_format_sector_size;};
-            int get_size() const {return m_expected_size;};
-            int get_bitrate() const {return m_format_bitrate;};
-            int get_rpm() const {return m_format_rpm;};
-            int get_track_encoding() const {return m_format_track_encoding;};
-            int get_floppyinterfacemode() const {return m_format_floppyinterfacemode;};
+            unsigned get_heads() const {return m_format_heads;};
+            unsigned get_tracks() const {return m_format_tracks;};
+            unsigned get_sectors() const {return m_format_sectors;};
+            unsigned get_sector_size() const {return m_format_sector_size;};
+            unsigned get_size() const {return m_expected_size;};
+            unsigned get_bitrate() const {return m_format_bitrate;};
+            unsigned get_rpm() const {return m_format_rpm;};
+            unsigned get_track_encoding() const {return m_format_track_encoding;};
+            unsigned get_floppyinterfacemode() const {return m_format_floppyinterfacemode;};
+            unsigned get_sector_interleave() const {return m_sector_interleave;};
             std::string get_type_id() {return m_type_id;};
             BYTES * get_buffer() {return &m_buffer;};
     };
