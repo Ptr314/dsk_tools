@@ -458,7 +458,7 @@ namespace dsk_tools {
             if (hdr->number_of_side == 2 && hdr->number_of_track == 80) {
                 type_id = "TYPE_AGAT_840";
                 BYTES buffer(sizeof(HXC_HFE_HEADER));
-                dsk_tools::LoaderHXC_HFE loader(file_name, format_id, type_id);
+                LoaderHXC_HFE loader(file_name, format_id, type_id);
                 Result res = loader.load(buffer);
                 if (res && buffer[0] == 0x01) {
                     if (buffer[2] == 0x58) {
@@ -989,6 +989,15 @@ namespace dsk_tools {
                 break;
         }
         return error;
+    }
+
+    unsigned image_size_by_type(const std::string &type_id)
+    {
+        if (type_id == "TYPE_AGAT_840") return 2*80*21*256;
+        if (type_id == "TYPE_AGAT_140") return 1*35*16*256;
+        if (type_id == "TYPE_PC_360_I" || type_id == "TYPE_PC_360_NI") return 2*40*9*512;
+        if (type_id == "TYPE_GMD_7012_I") return 77*26*128;
+        return 0;
     }
 
 } // namespace

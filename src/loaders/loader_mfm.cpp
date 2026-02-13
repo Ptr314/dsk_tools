@@ -229,7 +229,7 @@ namespace dsk_tools {
         return result;
     }
 
-    Result LoaderMFM::load(std::vector<uint8_t> &buffer)
+    Result LoaderMFM::load(BYTES &buffer, const unsigned heads, const unsigned tracks, const unsigned sectors, const unsigned sector_size, const unsigned expected_size)
     {
         UTF8_ifstream file(file_name, std::ios::binary);
         if (!file.good()) {

@@ -19,7 +19,7 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
         Loader(file_name, format_id, type_id)
     {}
 
-    Result LoaderHXC_HFE::load(BYTES &buffer)
+    Result LoaderHXC_HFE::load(BYTES &buffer, const unsigned heads, const unsigned tracks, const unsigned sectors, const unsigned sector_size, const unsigned expected_size)
     {
         UTF8_ifstream file(file_name, std::ios::binary);
 
@@ -42,14 +42,14 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
 
         if (signature != "HXCPICFE") return Result::error(ErrorCode::LoadIncorrectFile, "Invalid HFE signature");
 
-        int image_size, sectors_per_track, sector_size;
+        int image_size, sectors_per_track, s_size;
 
         if (type_id == "TYPE_AGAT_840") {
             if (hdr->number_of_side != 2 || hdr->number_of_track != 80)
                 return Result::error(ErrorCode::LoadIncorrectFile, "Invalid HFE parameters");
             sectors_per_track = 21;
-            sector_size = 256;
-            image_size = 2*80*sectors_per_track*sector_size;
+            s_size = 256;
+            image_size = 2*80*sectors_per_track*s_size;
         } else
             return Result::error(ErrorCode::LoadIncorrectFile, "Unsupported disk type");
 
@@ -90,7 +90,7 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
                     std::copy(
                         raw_data.begin(),
                         raw_data.end(),
-                        buffer.begin() + (((track << 1) + s) * sectors_per_track) * sector_size
+                        buffer.begin() + (((track << 1) + s) * sectors_per_track) * s_size
                     );
                 } else
                     errors = true;

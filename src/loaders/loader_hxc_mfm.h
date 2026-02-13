@@ -14,8 +14,8 @@ namespace dsk_tools {
     public:
         LoaderHXC_MFM(const std::string & file_name, const std::string & format_id, const std::string & type_id);
     protected:
-        virtual void prepare_tracks_list(BYTES & in) override;
-        virtual std::string get_header_info(BYTES & in) override;
+        void prepare_tracks_list(BYTES & in) override;
+        std::string get_header_info(BYTES & in) override;
 
     };
 

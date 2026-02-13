@@ -18,7 +18,7 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         Loader(file_name, format_id, type_id)
     {}
 
-    Result LoaderRAW::load(std::vector<uint8_t> &buffer)
+    Result LoaderRAW::load(BYTES &buffer, const unsigned heads, const unsigned tracks, const unsigned sectors, const unsigned sector_size, const unsigned expected_size)
     {
         UTF8_ifstream file(file_name, std::ios::binary);
 
@@ -30,19 +30,8 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         auto fsize = file.tellg();
         file.seekg (0, std::ios::beg);
 
-        int image_size;
-        if (type_id == "TYPE_AGAT_840")
-            image_size = 2*80*21*256;
-        else
-        if (type_id == "TYPE_AGAT_140")
-            image_size = 1*35*16*256;
-        else
-        if (type_id == "TYPE_PC_360_I" || type_id == "TYPE_PC_360_NI")
-            image_size = 2*40*9*512;
-        else
-        if (type_id == "TYPE_GMD_7012_I")
-            image_size = 77*26*128;
-        else
+        unsigned image_size = image_size_by_type(type_id);
+        if (image_size == 0)
             return Result::error(ErrorCode::LoadParamsMismatch, "Unknown disk type");
 
         if (fsize<image_size)

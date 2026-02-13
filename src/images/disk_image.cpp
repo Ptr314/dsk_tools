@@ -39,7 +39,7 @@ namespace dsk_tools {
             return Result::error(ErrorCode::LoadError, "Sector translation table has incorrect size");
 
         m_type_id = m_loader->get_type_id();
-        Result result = m_loader->load(m_buffer);
+        Result result = m_loader->load(m_buffer, m_format_heads, m_format_tracks, m_format_sectors, m_format_sector_size, m_expected_size);
         if (result) {
             unsigned buffer_size = m_buffer.size();
             if (m_expected_size == 0 || (buffer_size >= m_expected_size && buffer_size <= m_expected_size + 4)) {

@@ -3,6 +3,8 @@
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: A loader class for .IMD files
 
+#include <cstring>
+
 #include "host_helpers.h"
 
 #include "loader_imd.h"
@@ -15,15 +17,99 @@ namespace dsk_tools {
         Loader(file_name, format_id, type_id)
     {}
 
-    Result LoaderIMD::load(BYTES &buffer)
+    Result LoaderIMD::load(BYTES &buffer, const unsigned heads, const unsigned tracks, const unsigned sectors, const unsigned sector_size, const unsigned expected_size)
     {
-        const UTF8_ifstream file(file_name, std::ios::binary);
+        UTF8_ifstream file(file_name, std::ios::binary);
 
-        if (!file.good()) {
-            return Result::error(ErrorCode::LoadError, "Cannot open file");
+        if (!file.good()) return Result::error(ErrorCode::LoadError, "Cannot open file");
+
+        constexpr unsigned signature_length = 29;
+        char header[signature_length];
+        file.read(header, signature_length);
+
+        if (std::string(header, 3) != "IMD") return Result::error(ErrorCode::LoadIncorrectFile, "Incorrect file format");
+
+        std::string comment;
+        char c;
+        while (file.read(&c, 1) && c != 0x1A) {
+            comment += c;
         }
+        if (c != 0x1A) return Result::error(ErrorCode::LoadIncorrectFile, "File seems to be corrupt");
 
-        // TODO: Load here
+        buffer.resize(expected_size);
+
+        while (file.good()) {
+            // Track header
+            IMD_TRACK_HEADER track_header{};
+            file.read(reinterpret_cast<char*>(&track_header), sizeof(IMD_TRACK_HEADER));
+            if (!file.good()) break;
+            if (heads && track_header.head + 1 > heads) return Result::error(ErrorCode::LoadIncorrectFile, "Incorrect head index");
+            if (tracks && track_header.cylinder >= tracks) return Result::error(ErrorCode::LoadIncorrectFile, "Incorrect track index");
+            if (sectors && track_header.sectors != sectors) return Result::error(ErrorCode::LoadIncorrectFile, "Incorrect sector count");
+            const int s_size = 1 << (track_header.sector_size+7);
+            if (sector_size && s_size != sector_size) return Result::error(ErrorCode::LoadIncorrectFile, "Incorrect sector size");
+
+            // Sector map
+            BYTES sector_map;
+            sector_map.resize(track_header.sectors);
+            file.read(reinterpret_cast<char*>(sector_map.data()), sector_map.size());
+            if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, "File seems to be corrupt");
+
+            //Cylinder map
+            static bool cm_presents = (track_header.head & 0x80) != 0;
+            if (cm_presents) {
+                BYTES cylinder_map;
+                cylinder_map.resize(track_header.sectors);
+                file.read(reinterpret_cast<char*>(cylinder_map.data()), cylinder_map.size());
+                if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, "File seems to be corrupt");
+            }
+
+            //Head map
+            static bool hm_presents = (track_header.head & 0x40) != 0;
+            if (hm_presents) {
+                BYTES head_map;
+                head_map.resize(track_header.sectors);
+                file.read(reinterpret_cast<char*>(head_map.data()), head_map.size());
+                if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, "File seems to be corrupt");
+            }
+
+            for (unsigned sector=0; sector<track_header.sectors; sector++) {
+                unsigned track_pos, sector_pos;
+                if (heads == 2) track_pos = track_header.cylinder * heads + track_header.head;
+                else if (heads == 1) track_pos = track_header.cylinder;
+                else return Result::error(ErrorCode::LoadError, "Incorrect data");
+                sector_pos = (track_pos * sectors + sector_map[sector]-1) * sector_size;
+
+                uint8_t data_marker;
+                unsigned data_len;
+
+                file.read(reinterpret_cast<char*>(&data_marker), 1);
+
+                switch (data_marker) {
+                    case 0x00:
+                        data_len = 0; break;
+                    case 0x01: case 0x03: case 0x05: case 0x07:
+                        data_len = sector_size; break;
+                    case 0x02: case 0x04: case 0x06: case 0x08:
+                        data_len = 1;  break;
+                    default:
+                        return Result::error(ErrorCode::LoadIncorrectFile, "File seems to be corrupt");
+                        break;
+                }
+
+                if (sector_pos + sector_size > buffer.size())
+                    return Result::error(ErrorCode::LoadIncorrectFile, "Data exceeds buffer size");
+
+                if (data_len == 1) {
+                    uint8_t data_value = 0;
+                    file.read(reinterpret_cast<char*>(&data_value), 1);
+                    std::memset(buffer.data() + sector_pos, data_value, sector_size);
+                } else
+                if (data_len > 0) {
+                    file.read(reinterpret_cast<char*>(buffer.data() + sector_pos), sector_size);
+                }
+            }
+        }
 
         loaded = true;
 

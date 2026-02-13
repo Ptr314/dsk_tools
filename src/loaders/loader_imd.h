@@ -20,7 +20,7 @@ namespace dsk_tools {
     {
     public:
         LoaderIMD(const std::string & file_name, const std::string & format_id, const std::string & type_id);
-        Result load(BYTES & buffer) override;
+        Result load(BYTES & buffer, unsigned heads, unsigned tracks, unsigned sectors, unsigned sector_size, unsigned expected_size) override;
         std::string file_info() override;
 
     };

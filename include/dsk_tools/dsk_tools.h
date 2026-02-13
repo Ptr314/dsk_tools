@@ -78,4 +78,6 @@ namespace dsk_tools {
 
     std::string decode_error(const Result& result);
 
+    unsigned image_size_by_type(const std::string &type_id);
+
 } // namespace

@@ -15,7 +15,7 @@ namespace dsk_tools {
         Loader(file_name, format_id, type_id)
     {}
 
-    Result LoaderFIL::load(std::vector<uint8_t> &buffer)
+    Result LoaderFIL::load(BYTES &buffer, const unsigned heads, const unsigned tracks, const unsigned sectors, const unsigned sector_size, const unsigned expected_size)
     {
         UTF8_ifstream file(file_name, std::ios::binary);
 
@@ -27,7 +27,7 @@ namespace dsk_tools {
         auto fsize = file.tellg();
         file.seekg (0, std::ios::beg);
 
-        image_size = fsize;
+        unsigned image_size = fsize;
 
         buffer.resize(image_size);
         file.read (reinterpret_cast<char*>(buffer.data()), image_size);
