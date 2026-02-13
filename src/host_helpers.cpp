@@ -65,6 +65,9 @@
                 m_state = std::ios_base::failbit;
                 return 0;
             }
+            if (static_cast<std::streamsize>(bytesRead) < count) {
+                m_state = std::ios_base::eofbit;
+            }
             return static_cast<std::streamsize>(bytesRead);
         }
 
@@ -81,7 +84,7 @@
                 dwMoveMethod = FILE_CURRENT;
             }
 
-            if (!SetFilePointer(m_handle, static_cast<LONG>(offset), nullptr, dwMoveMethod)) {
+            if (SetFilePointer(m_handle, static_cast<LONG>(offset), nullptr, dwMoveMethod) == INVALID_SET_FILE_POINTER) {
                 m_state = std::ios_base::failbit;
             }
         }
@@ -108,7 +111,7 @@
         }
 
         bool UTF8_ifstream::good() const {
-            return m_handle != INVALID_HANDLE_VALUE && (m_state & std::ios_base::failbit) == 0;
+            return m_handle != INVALID_HANDLE_VALUE && (m_state & (std::ios_base::failbit | std::ios_base::eofbit)) == 0;
         }
 
         UTF8_ifstream::operator bool() const {

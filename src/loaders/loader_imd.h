@@ -8,6 +8,14 @@
 
 namespace dsk_tools {
 
+    struct IMD_TRACK_HEADER {
+        uint8_t     mode;
+        uint8_t     cylinder;
+        uint8_t     head;
+        uint8_t     sectors;
+        uint8_t     sector_size;
+    };
+
     class LoaderIMD:public Loader
     {
     public:
