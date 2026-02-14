@@ -36,12 +36,14 @@ namespace dsk_tools {
             crlf = {0x8D, 0x0D};
             ignore = {0x0A};
             txt_end = {0x1A};
+            tab = 8;
         } else
         if (cm_name == "koi7_n2") {
             charmap = &koi7_n2_charmap;
             crlf = {0x0D};
             ignore = {0x0A};
             txt_end = {0x1A};
+            tab = 8;
         } else {
             // TODO: Other encodings;
         }

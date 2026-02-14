@@ -118,7 +118,10 @@ namespace dsk_tools {
 
     std::string LoaderIMD::file_info()
     {
-        std::string result = "";
+        std::string result;
+        std::string track_tbl;
+        std::string bad_tbl;
+        bool has_errors = false;
 
         UTF8_ifstream file(file_name, std::ios::binary);
 
@@ -163,26 +166,23 @@ namespace dsk_tools {
             // Track header
             IMD_TRACK_HEADER track_header{};
             file.read(reinterpret_cast<char*>(&track_header), sizeof(IMD_TRACK_HEADER));
-            if (!file.good()) {
-                // result += "{$UNEXPECTED_END_OF_FILE}\n";
-                return result;
-            }
+            if (!file.good()) break;
             int sector_size = 1 << (track_header.sector_size+7);
-            result += "{$TRACK}: " + std::to_string(track_header.cylinder)
+            track_tbl += "{$TRACK}: " + std::to_string(track_header.cylinder)
                         + ", {$SIDE}: " + std::to_string(track_header.head & 0x3F)
                         + ", {$CPM_SECTORS}: " + std::to_string(track_header.sectors)
                         + ", {$CPM_SECTOR_SIZE}: " + std::to_string(sector_size)
                         +"\n";
-
+            bad_tbl += "H" + std::to_string(track_header.head & 0x3F) + "T" + pad_number(track_header.cylinder, 2, '0') + ": ";
             // Sector map
             BYTES sector_map;
             sector_map.resize(track_header.sectors);
             file.read(reinterpret_cast<char*>(sector_map.data()), sector_map.size());
             if (!file.good()) {
                 result += "{$UNEXPECTED_END_OF_FILE}\n";
-                return result;
+                break;
             }
-            result += "    {$SECTORS_MAP}: " + toHexList(sector_map.data(), sector_map.size()) + "\n";
+            track_tbl += "    {$SECTORS_MAP}: " + toHexList(sector_map.data(), sector_map.size()) + "\n";
 
             //Cylinder map
             static bool cm_presents = (track_header.head & 0x80) != 0;
@@ -192,9 +192,9 @@ namespace dsk_tools {
                 file.read(reinterpret_cast<char*>(cylinder_map.data()), cylinder_map.size());
                 if (!file.good()) {
                     result += "{$UNEXPECTED_END_OF_FILE}\n";
-                    return result;
+                    break;
                 }
-                result += "    {$CYLINDERS_MAP}: " + toHexList(cylinder_map.data(), cylinder_map.size()) + "\n";
+                track_tbl += "    {$CYLINDERS_MAP}: " + toHexList(cylinder_map.data(), cylinder_map.size()) + "\n";
             }
 
             //Head map
@@ -205,13 +205,13 @@ namespace dsk_tools {
                 file.read(reinterpret_cast<char*>(head_map.data()), head_map.size());
                 if (!file.good()) {
                     result += "{$UNEXPECTED_END_OF_FILE}\n";
-                    return result;
+                    break;
                 }
-                result += "    {$HEAD_MAP}: " + toHexList(head_map.data(), head_map.size()) + "\n";
+                track_tbl += "    {$HEAD_MAP}: " + toHexList(head_map.data(), head_map.size()) + "\n";
             }
 
             for (unsigned sector=0; sector<track_header.sectors; sector++) {
-                result += "    " + int_to_hex(static_cast<uint8_t>(sector+1)) + " (" + int_to_hex(sector_map[sector]) + "): ";
+                track_tbl += "    " + int_to_hex(static_cast<uint8_t>(sector+1)) + " (" + int_to_hex(sector_map[sector]) + "): ";
 
                 uint8_t data_marker = 0;
 
@@ -221,50 +221,65 @@ namespace dsk_tools {
 
                 switch (data_marker) {
                     case 0x00:
-                        result += "{$SECTOR_UNAVAILABLE}";
+                        track_tbl += "{$SECTOR_UNAVAILABLE}";
                         skip = 0;
+                        bad_tbl += "U";
+                        has_errors = true;
                         break;
                     case 0x01:
-                        result += "{$NORMAL_DATA}";
+                        track_tbl += "{$NORMAL_DATA}";
                         skip = sector_size;
+                        bad_tbl += ".";
                         break;
                     case 0x02:
-                        result += "{$NORMAL_DATA}, {$DATA_COMPRESSED}";
+                        track_tbl += "{$NORMAL_DATA}, {$DATA_COMPRESSED}";
                         skip = 1;
+                        bad_tbl += ":";
                         break;
                     case 0x03:
-                        result += "{$NORMAL_DATA}, {$DATA_DELETED}";
+                        track_tbl += "{$NORMAL_DATA}, {$DATA_DELETED}";
                         skip = sector_size;
+                        bad_tbl += ".";
                         break;
                     case 0x04:
-                        result += "{$NORMAL_DATA}, {$DATA_COMPRESSED}, {$DATA_DELETED}";
+                        track_tbl += "{$NORMAL_DATA}, {$DATA_COMPRESSED}, {$DATA_DELETED}";
                         skip = 1;
+                        bad_tbl += ":";
                         break;
                     case 0x05:
-                        result += "{$NORMAL_DATA_WITH_ERROR}";
+                        track_tbl += "{$NORMAL_DATA_WITH_ERROR}";
                         skip = sector_size;
+                        bad_tbl += "B";
+                        has_errors = true;
                         break;
                     case 0x06:
-                        result += "{$NORMAL_DATA_WITH_ERROR}, {$DATA_COMPRESSED}";
+                        track_tbl += "{$NORMAL_DATA_WITH_ERROR}, {$DATA_COMPRESSED}";
                         skip = 1;
+                        bad_tbl += "B";
+                        has_errors = true;
                         break;
                     case 0x07:
-                        result += "{$NORMAL_DATA_WITH_ERROR}, {$DATA_DELETED}";
+                        track_tbl += "{$NORMAL_DATA_WITH_ERROR}, {$DATA_DELETED}";
                         skip = sector_size;
+                        bad_tbl += "B";
+                        has_errors = true;
                         break;
                     case 0x08:
-                        result += "{$NORMAL_DATA_WITH_ERROR}, {$DATA_COMPRESSED}, {$DATA_DELETED}";
+                        track_tbl += "{$NORMAL_DATA_WITH_ERROR}, {$DATA_COMPRESSED}, {$DATA_DELETED}";
                         skip = 1;
+                        bad_tbl += "B";
+                        has_errors = true;
                         break;
                     default:
-                        result += "{$UNKNOWN_DATA_MARKER}";
+                        track_tbl += "{$UNKNOWN_DATA_MARKER}";
                         skip=-1;
+                        has_errors = true;
                         break;
                 }
                 if (skip == 1) {
                     uint8_t data_value = 0;
                     file.read(reinterpret_cast<char*>(&data_value), 1);
-                    result += " ($" + int_to_hex(data_value) + ")";
+                    track_tbl += " ($" + int_to_hex(data_value) + ")";
                 } else
                 if (skip > 0) {
                     file.seekg(skip, std::ios::cur);
@@ -273,12 +288,14 @@ namespace dsk_tools {
                     return result;
                 }
 
-                result += "\n";
+                track_tbl += "\n";
             }
+            bad_tbl += "\n";
         }
-
+        result += has_errors ? "{$FILE_HAS_ERRORS}" : "{$FILE_HAS_NO_ERRORS}";
+        result += "\n\n";
+        result += bad_tbl + "\n\n" + track_tbl + "\n";
         return result;
-
     }
 
 }
