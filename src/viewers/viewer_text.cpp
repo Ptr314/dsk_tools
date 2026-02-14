@@ -33,7 +33,7 @@ namespace dsk_tools {
         } else
         if (cm_name == "koi7_n0_n1") {
             charmap = &koi7_n0_n1_charmap;
-            crlf = {0x0D};
+            crlf = {0x8D, 0x0D};
             ignore = {0x0A};
             txt_end = {0x1A};
         } else
@@ -72,9 +72,9 @@ namespace dsk_tools {
                             break;
                         } else
                             if (is_koi7) {
-                                if (c == 0x0F) koi7_high = 0;
+                                if (c == 0x0F || c == 0x8F) koi7_high = 0;
                                 else
-                                if (c == 0x0E) koi7_high = 0x80;
+                                if (c == 0x0E || c == 0x8E) koi7_high = 0x80;
                                 else
                                     out += (*charmap)[(c & 0x7F) | koi7_high];
                             } else
