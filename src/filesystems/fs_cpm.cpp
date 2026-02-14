@@ -68,9 +68,9 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
                 3,           // BSH: n-7
                 7,           // BLM: 2**BSH - 1
                 0,           // EXM: 2**(BHS-2) - 1 if DSM<256
-                179,         // DSM: Size/BLS - 1
+                242,         // DSM: (77-2)*26*128/1024 - 1
                 63,          // DRM
-                0b10000000,  // AL0
+                0b11000000,  // AL0
                 0b00000000,  // AL1
                 16,          // CKS
                 2            // OFF
@@ -101,6 +101,131 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
             return agat_140_cpm2prodos[sector];
         else
             throw std::runtime_error("Incorrect filesystem id");
+    }
+
+    std::string fsCPM::information()
+    {
+        std::string result;
+
+        result += "{$DPB_INFO}:\n";
+        result += "    {$CPM_SECTORS_PER_TRACK}: " + std::to_string(DPB.SPT) + "\n";
+        result += "    {$CPM_BLOCK_SIZE}: " + std::to_string(1 << (DPB.BSH + 7)) + "\n";
+        result += "    {$CPM_TOTAL_BLOCKS}: " + std::to_string(DPB.DSM + 1) + "\n";
+        result += "    {$CPM_DIR_ENTRIES}: " + std::to_string(DPB.DRM + 1) + "\n";
+        result += "    {$CPM_RESERVED_TRACKS}: " + std::to_string(DPB.OFF) + "\n";
+        result += "\n";
+
+        if (!image->has_bad_sectors()) return result;
+
+        result += "{$DISK_HAS_BAD_SECTORS}\n\n";
+
+        if (DPB.OFF > 0) {
+            const int heads = image->get_heads();
+            const int sectors = image->get_sectors();
+            bool found = false;
+
+            for (unsigned track = 0; track < DPB.OFF; track++) {
+                for (int head = 0; head < heads; head++) {
+                    for (int s = 1; s <= sectors; s++) {
+                        if (image->is_bad_sector(head, track, s)) {
+                            result += "{$BAD_SECTOR_IN_RESERVED}: "
+                                    + std::to_string(head) + ":"
+                                    + std::to_string(track) + ":"
+                                    + std::to_string(s) + "\n";
+                            found = true;
+                        }
+                    }
+                }
+            }
+
+            if (!found) {
+                result += "{$NO_BAD_SECTORS_IN_RESERVED}\n";
+            }
+        }
+
+        {
+            const int entries_in_sector = image->get_sector_size() / sizeof(CPM_DIR_ENTRY);
+            const int directory_sectors = (DPB.DRM + 1) / entries_in_sector;
+            bool found = false;
+
+            for (int i = 0; i < directory_sectors; i++) {
+                int s = translate_sector(i);
+                if (image->is_bad_sector(0, DPB.OFF, s)) {
+                    result += "{$BAD_SECTOR_IN_DIRECTORY}: "
+                            + std::to_string(0) + ":"
+                            + std::to_string(DPB.OFF) + ":"
+                            + std::to_string(s) + "\n";
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                result += "{$NO_BAD_SECTORS_IN_DIRECTORY}\n";
+            }
+        }
+
+        {
+            std::vector<UniversalFile> files;
+            dir(files, false);
+
+            const int sectors = image->get_sectors();
+            const int BLS = 1 << (DPB.BSH + 7);
+            const int spb = BLS / image->get_sector_size();
+            const int index_shift = DPB.OFF * sectors;
+            const int heads = image->get_heads();
+
+            result += "\n";
+            bool any_bad = false;
+
+            const int sector_size = image->get_sector_size();
+
+            for (const auto & f : files) {
+                std::string sector_map;
+                std::string bad_list;
+                bool file_bad = false;
+                unsigned file_offset = 0;
+                for (size_t i = 0; i < f.metadata.size() / sizeof(CPM_DIR_ENTRY); i++) {
+                    const auto de = reinterpret_cast<const CPM_DIR_ENTRY *>(f.metadata.data() + i * sizeof(CPM_DIR_ENTRY));
+                    for (const unsigned char AL : de->AL) {
+                        if (AL != 0 && AL != 0xE5) {
+                            for (int k = 0; k < spb; k++) {
+                                const int sector_index = AL * spb + k + index_shift;
+                                int head, track;
+                                if (heads == 1) {
+                                    head = 0;
+                                    track = sector_index / sectors;
+                                } else {
+                                    head = (sector_index / sectors) & 1;
+                                    track = (sector_index / sectors) >> 1;
+                                }
+                                const int sector = translate_sector(sector_index % sectors);
+                                if (image->is_bad_sector(head, track, sector)) {
+                                    sector_map += "B";
+                                    bad_list += "    $" + int_to_hex(file_offset, false)
+                                              + " - " + std::to_string(head)
+                                              + ":" + std::to_string(track)
+                                              + ":" + std::to_string(sector) + "\n";
+                                    file_bad = true;
+                                } else {
+                                    sector_map += ".";
+                                }
+                                file_offset += sector_size;
+                            }
+                        }
+                    }
+                }
+                if (file_bad) {
+                    result += "{$FILE_HAS_BAD_SECTORS}: " + f.name + "\n    " + sector_map + "\n" + bad_list;
+                    any_bad = true;
+                }
+            }
+
+            if (!any_bad) {
+                result += "{$NO_FILES_WITH_BAD_SECTORS}\n";
+            }
+        }
+
+        return result;
     }
 
     std::string fsCPM::file_info(const UniversalFile & fd) {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2025-2026 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
-// Description: A loader class for .IMD files
+// Description: A loader class for .IMD files (http://dunfield.classiccmp.org/img/)
 
 #include <cstring>
 
@@ -97,9 +97,18 @@ namespace dsk_tools {
                         break;
                 }
 
+                if (data_marker == 0x00 || data_marker >= 0x05) {
+                    // TODO: recalc head & cylinder for sequentional disks
+                    m_bad_sectors.insert(bad_sector_key(track_header.head & 0x3F, track_header.cylinder, sector_map[sector]));
+                }
+
                 if (sector_pos + sector_size > buffer.size())
                     return Result::error(ErrorCode::LoadIncorrectFile, "Data exceeds buffer size");
 
+                if (data_len == 0) {
+                    constexpr uint8_t data_value = 0;
+                    std::memset(buffer.data() + sector_pos, data_value, sector_size);
+                } else
                 if (data_len == 1) {
                     uint8_t data_value = 0;
                     file.read(reinterpret_cast<char*>(&data_value), 1);

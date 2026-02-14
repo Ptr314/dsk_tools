@@ -4,6 +4,7 @@
 // Description: Abstract class for all disk images
 
 #include "disk_image.h"
+#include "utils.h"
 
 namespace dsk_tools {
 
@@ -78,6 +79,16 @@ namespace dsk_tools {
             return nullptr;
         }
         return &m_buffer[offset];
+    }
+
+    bool diskImage::has_bad_sectors() const
+    {
+        return !m_loader->bad_sectors().empty();
+    }
+
+    bool diskImage::is_bad_sector(unsigned head, unsigned track, unsigned sector) const
+    {
+        return m_loader->bad_sectors().count(bad_sector_key(head, track, sector)) > 0;
     }
 
     Result diskImage::check()

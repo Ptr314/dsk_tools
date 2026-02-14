@@ -9,12 +9,14 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <unordered_set>
 
 #include "bit_enums.h"
 
 namespace dsk_tools {
 
     typedef std::vector<uint8_t> BYTES;
+    typedef std::unordered_set<uint32_t> BadSectorTable;
 
     enum class FSCaps : unsigned int {
         None        = 0,

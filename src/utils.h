@@ -17,6 +17,13 @@
 
 namespace dsk_tools
 {
+    inline uint32_t bad_sector_key(unsigned head, unsigned track, unsigned sector)
+    {
+        return (static_cast<uint32_t>(head) << 16)
+             | (static_cast<uint32_t>(track) << 8)
+             |  static_cast<uint32_t>(sector);
+    }
+
     std::string agat_to_utf(const uint8_t in[], int len);
     std::string trim(const std::string& str, const std::string& whitespace = " \t\r\n");
     std::string get_file_ext(const std::string &file_name);

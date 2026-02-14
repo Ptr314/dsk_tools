@@ -19,6 +19,7 @@ namespace dsk_tools {
             std::string             format_id;
             std::string             type_id;
             bool                    loaded;
+            BadSectorTable          m_bad_sectors;
 
         public:
             Loader(const std::string & file_name, const std::string & format_id, const std::string & type_id);
@@ -26,6 +27,7 @@ namespace dsk_tools {
 
             std::string get_file_name() {return file_name;};
             std::string get_type_id() {return type_id;};
+            const BadSectorTable & bad_sectors() const { return m_bad_sectors; };
 
             virtual Result load(BYTES & buffer, unsigned heads = 0, unsigned tracks = 0, unsigned sectors = 0, unsigned sector_size = 0, unsigned expected_size = 0) = 0;
             virtual std::string file_info() = 0;

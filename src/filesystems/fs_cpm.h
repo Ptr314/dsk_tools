@@ -55,6 +55,7 @@ namespace dsk_tools {
         FS get_fs() const override {return FS::CPM;};
         Result open() override;
         FSCaps get_caps() override;
+        std::string information() override;
         Result dir(std::vector<UniversalFile> & files, bool show_deleted) override;
         Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;
         std::string file_info(const UniversalFile & fd) override;

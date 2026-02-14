@@ -81,5 +81,7 @@ namespace dsk_tools {
             std::vector<unsigned> get_sector_translation() const {return m_sector_translation;};
             std::string get_type_id() {return m_type_id;};
             BYTES * get_buffer() {return &m_buffer;};
+            bool has_bad_sectors() const;
+            bool is_bad_sector(unsigned head, unsigned track, unsigned sector) const;
     };
 }
