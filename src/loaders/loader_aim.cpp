@@ -28,7 +28,7 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
         return true;
     }
 
-    Result LoaderAIM::load(BYTES & buffer, const unsigned heads, const unsigned tracks, const unsigned sectors, const unsigned sector_size, const unsigned expected_size)
+    Result LoaderAIM::load(BYTES & buffer, const DiskFormatParams &format)
     {
         UTF8_ifstream file(file_name, std::ios::binary);
 

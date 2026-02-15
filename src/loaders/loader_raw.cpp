@@ -18,7 +18,7 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         Loader(file_name, format_id, type_id)
     {}
 
-    Result LoaderRAW::load(BYTES &buffer, const unsigned heads, const unsigned tracks, const unsigned sectors, const unsigned sector_size, const unsigned expected_size)
+    Result LoaderRAW::load(BYTES &buffer, const DiskFormatParams &format)
     {
         UTF8_ifstream file(file_name, std::ios::binary);
 

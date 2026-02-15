@@ -215,6 +215,59 @@ namespace dsk_tools {
             0x3, 0xb, 0x3, 0xb, 0x7, 0xf, 0x7, 0xf, 0x3, 0xb, 0x3, 0xb, 0x7, 0xf, 0x7, 0xf
     };
 
+    // Track encoding constants (from HxC HFE format)
+    #define ISOIBM_MFM_ENCODING             0x00
+    #define AMIGA_MFM_ENCODING              0x01
+    #define ISOIBM_FM_ENCODING              0x02
+    #define EMU_FM_ENCODING                 0x03
+    #define UNKNOWN_ENCODING                0xFF
+
+    // Floppy interface mode constants (from HxC HFE format)
+    #define IBMPC_DD_FLOPPYMODE             0x00
+    #define IBMPC_HD_FLOPPYMODE             0x01
+    #define ATARIST_DD_FLOPPYMODE           0x02
+    #define ATARIST_HD_FLOPPYMODE           0x03
+    #define AMIGA_DD_FLOPPYMODE             0x04
+    #define AMIGA_HD_FLOPPYMODE             0x05
+    #define CPC_DD_FLOPPYMODE               0x06
+    #define GENERIC_SHUGGART_DD_FLOPPYMODE  0x07
+    #define IBMPC_ED_FLOPPYMODE             0x08
+    #define MSX2_DD_FLOPPYMODE              0x09
+    #define C64_DD_FLOPPYMODE               0x0A
+    #define EMU_SHUGART_FLOPPYMODE          0x0B
+    #define S950_DD_FLOPPYMODE              0x0C
+    #define S950_HD_FLOPPYMODE              0x0D
+    #define DISABLE_FLOPPYMODE              0xFE
+
+    struct DiskFormatParams {
+        unsigned heads;
+        unsigned tracks;
+        unsigned sectors;
+        unsigned sector_size;
+        unsigned expected_size;
+        unsigned bitrate;
+        unsigned rpm;
+        unsigned track_encoding;
+        unsigned floppyinterfacemode;
+        bool sides_interleaved;
+        std::vector<unsigned> sector_translation;
+
+        DiskFormatParams()
+            : heads(0), tracks(0), sectors(0), sector_size(0), expected_size(0)
+            , bitrate(0), rpm(0), track_encoding(0), floppyinterfacemode(0)
+            , sides_interleaved(true)
+        {}
+
+        DiskFormatParams(unsigned heads, unsigned tracks, unsigned sectors, unsigned sector_size,
+                         unsigned bitrate, unsigned rpm, unsigned track_encoding, unsigned floppyinterfacemode,
+                         bool sides_interleaved = true, const std::vector<unsigned> &sector_translation = {})
+            : heads(heads), tracks(tracks), sectors(sectors), sector_size(sector_size)
+            , expected_size(heads * tracks * sectors * sector_size)
+            , bitrate(bitrate), rpm(rpm), track_encoding(track_encoding), floppyinterfacemode(floppyinterfacemode)
+            , sides_interleaved(sides_interleaved), sector_translation(sector_translation)
+        {}
+    };
+
     #define HXC_HFE_BLOCK_SIZE  512
 
     #pragma pack(push, 1)

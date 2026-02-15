@@ -19,7 +19,7 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
         Loader(file_name, format_id, type_id)
     {}
 
-    Result LoaderHXC_HFE::load(BYTES &buffer, const unsigned heads, const unsigned tracks, const unsigned sectors, const unsigned sector_size, const unsigned expected_size)
+    Result LoaderHXC_HFE::load(BYTES &buffer, const DiskFormatParams &format)
     {
         UTF8_ifstream file(file_name, std::ios::binary);
 

@@ -10,24 +10,26 @@ namespace dsk_tools {
     imageFIL::imageFIL(std::unique_ptr<Loader> loader):
         diskImage(
             std::move(loader),
-            1,                              // heads
-            1,                              // tracks
-            1,                              // sectors
-            256,                            // sector size
-            250,                            // bitrate
-            300,                            // rpm
-            UNKNOWN_ENCODING,               // track encoding
-            GENERIC_SHUGGART_DD_FLOPPYMODE  // floppy interface mode
+            DiskFormatParams(
+                1,                              // heads
+                1,                              // tracks
+                1,                              // sectors
+                256,                            // sector size
+                250,                            // bitrate
+                300,                            // rpm
+                UNKNOWN_ENCODING,               // track encoding
+                GENERIC_SHUGGART_DD_FLOPPYMODE  // floppy interface mode
+            )
         )
     {
-        m_expected_size = 0;
+        m_format.expected_size = 0;
     }
 
     Result imageFIL::load()
     {
         Result res = diskImage::load();
         if (res)
-            m_expected_size = m_buffer.size();
+            m_format.expected_size = m_buffer.size();
         return res;
     }
 

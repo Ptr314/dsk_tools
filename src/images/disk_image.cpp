@@ -11,39 +11,26 @@ namespace dsk_tools {
     diskImage::diskImage(std::unique_ptr<Loader> loader):
           m_loader(std::move(loader))
         , m_is_loaded(false)
-        , m_sides_interleaved(true)
     {}
 
-    diskImage::diskImage(std::unique_ptr<Loader> loader, unsigned heads, unsigned tracks, unsigned sectors, unsigned sector_size,
-                         unsigned bitrate, unsigned rpm, unsigned track_encoding, unsigned floppyinterfacemode,
-                         bool sides_interleaved, const std::vector<unsigned> &sector_translation):
+    diskImage::diskImage(std::unique_ptr<Loader> loader, const DiskFormatParams &format):
           m_loader(std::move(loader))
-        , m_format_heads(heads)
-        , m_format_tracks(tracks)
-        , m_format_sectors(sectors)
-        , m_format_sector_size(sector_size)
-        , m_expected_size(heads * tracks * sectors * sector_size)
-        , m_format_bitrate(bitrate)
-        , m_format_rpm(rpm)
-        , m_format_track_encoding(track_encoding)
-        , m_format_floppyinterfacemode(floppyinterfacemode)
+        , m_format(format)
         , m_is_loaded(false)
-        , m_sides_interleaved(sides_interleaved)
-        , m_sector_translation(sector_translation)
     {}
 
     diskImage::~diskImage() = default;
 
     Result diskImage::load()
     {
-        if (m_sector_translation.size() > 0 && m_sector_translation.size() != m_format_sectors)
+        if (!m_format.sector_translation.empty() && m_format.sector_translation.size() != m_format.sectors)
             return Result::error(ErrorCode::LoadError, "Sector translation table has incorrect size");
 
         m_type_id = m_loader->get_type_id();
-        Result result = m_loader->load(m_buffer, m_format_heads, m_format_tracks, m_format_sectors, m_format_sector_size, m_expected_size);
+        Result result = m_loader->load(m_buffer, m_format);
         if (result) {
             unsigned buffer_size = m_buffer.size();
-            if (m_expected_size == 0 || (buffer_size >= m_expected_size && buffer_size <= m_expected_size + 4)) {
+            if (m_format.expected_size == 0 || (buffer_size >= m_format.expected_size && buffer_size <= m_format.expected_size + 4)) {
                 m_is_loaded = true;
                 return Result::ok();
             } else {
@@ -58,24 +45,24 @@ namespace dsk_tools {
     }
 
     unsigned diskImage::physical_sector(const unsigned logical) const {
-        if (!m_sector_translation.empty())
-            return m_sector_translation[logical];
+        if (!m_format.sector_translation.empty())
+            return m_format.sector_translation[logical];
         return logical;
     }
 
     void diskImage::set_sector_translation(const std::vector<unsigned> &table) {
-        m_sector_translation = table;
+        m_format.sector_translation = table;
     }
 
     uint8_t * diskImage::get_sector_data(const unsigned head, const unsigned track, const unsigned sector)
     {
-        unsigned track_index = track * m_format_heads + head;
-        if (m_format_heads == 2 && !m_sides_interleaved) track_index = transform_index(track_index, m_format_heads * m_format_tracks - 1);
-        const unsigned sector_index = track_index * m_format_sectors + physical_sector(sector);
-        const unsigned offset = sector_index * m_format_sector_size;
+        unsigned track_index = track * m_format.heads + head;
+        if (m_format.heads == 2 && !m_format.sides_interleaved) track_index = transform_index(track_index, m_format.heads * m_format.tracks - 1);
+        const unsigned sector_index = track_index * m_format.sectors + physical_sector(sector);
+        const unsigned offset = sector_index * m_format.sector_size;
 
         // Bounds check: ensure offset + sector_size doesn't exceed buffer
-        if (offset + m_format_sector_size > m_buffer.size()) {
+        if (offset + m_format.sector_size > m_buffer.size()) {
             return nullptr;
         }
         return &m_buffer[offset];

@@ -13,7 +13,7 @@ namespace dsk_tools {
     {
         public:
             LoaderRAW(const std::string & file_name, const std::string & format_id, const std::string & type_id);
-            Result load(BYTES & buffer, unsigned heads = 0, unsigned tracks = 0, unsigned sectors = 0, unsigned sector_size = 0, unsigned expected_size = 0) override;
+            Result load(BYTES & buffer, const DiskFormatParams &format = DiskFormatParams()) override;
             std::string file_info() override;
 
     };

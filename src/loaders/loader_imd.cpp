@@ -17,8 +17,14 @@ namespace dsk_tools {
         Loader(file_name, format_id, type_id)
     {}
 
-    Result LoaderIMD::load(BYTES &buffer, const unsigned heads, const unsigned tracks, const unsigned sectors, const unsigned sector_size, const unsigned expected_size)
+    Result LoaderIMD::load(BYTES &buffer, const DiskFormatParams &format)
     {
+        const unsigned heads = format.heads;
+        const unsigned tracks = format.tracks;
+        const unsigned sectors = format.sectors;
+        const unsigned sector_size = format.sector_size;
+        const unsigned expected_size = format.expected_size;
+
         UTF8_ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) return Result::error(ErrorCode::LoadError, "Cannot open file");
@@ -98,7 +104,7 @@ namespace dsk_tools {
                 }
 
                 if (data_marker == 0x00 || data_marker >= 0x05) {
-                    // TODO: recalc head & cylinder for sequentional disks
+                    // TODO: recalc head & cylinder for sequential disks
                     m_bad_sectors.insert(bad_sector_key(track_header.head & 0x3F, track_header.cylinder, sector_map[sector]));
                 }
 

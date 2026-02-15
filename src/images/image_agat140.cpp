@@ -10,14 +10,16 @@ namespace dsk_tools {
 imageAgat140::imageAgat140(std::unique_ptr<Loader> loader):
           diskImage(
               std::move(loader),
-              1,                              // heads
-              35,                             // tracks
-              16,                             // sectors
-              256,                            // sector size
-              250,                            // bitrate
-              300,                            // rpm
-              UNKNOWN_ENCODING,               // track encoding
-              GENERIC_SHUGGART_DD_FLOPPYMODE  // floppy interface mode
+              DiskFormatParams(
+                  1,                              // heads
+                  35,                             // tracks
+                  16,                             // sectors
+                  256,                            // sector size
+                  250,                            // bitrate
+                  300,                            // rpm
+                  UNKNOWN_ENCODING,               // track encoding
+                  GENERIC_SHUGGART_DD_FLOPPYMODE  // floppy interface mode
+              )
           )
     {}
 

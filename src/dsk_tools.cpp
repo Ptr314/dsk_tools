@@ -70,42 +70,48 @@ namespace dsk_tools {
         if (type_id == "TYPE_FIL")        return dsk_tools::make_unique<imageFIL>(std::move(loader));
         if (type_id == "TYPE_PC_360_I")   return dsk_tools::make_unique<diskImage>(
                                               std::move(loader),
-                                              2,                              // heads
-                                              40,                             // tracks
-                                              9,                              // sectors
-                                              512,                            // sector size
-                                              250,                            // bitrate
-                                              300,                            // rpm
-                                              UNKNOWN_ENCODING,               // track encoding
-                                              GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
-                                              true                            // sides interleaved
+                                              DiskFormatParams(
+                                                  2,                              // heads
+                                                  40,                             // tracks
+                                                  9,                              // sectors
+                                                  512,                            // sector size
+                                                  250,                            // bitrate
+                                                  300,                            // rpm
+                                                  UNKNOWN_ENCODING,               // track encoding
+                                                  GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
+                                                  true                            // sides interleaved
+                                              )
                                           );
         if (type_id == "TYPE_PC_360_NI")  return dsk_tools::make_unique<diskImage>(
                                               std::move(loader),
-                                              2,                              // heads
-                                              40,                             // tracks
-                                              9,                              // sectors
-                                              512,                            // sector size
-                                              250,                            // bitrate
-                                              300,                            // rpm
-                                              UNKNOWN_ENCODING,               // track encoding
-                                              GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
-                                              false                           // sides interleaved
+                                              DiskFormatParams(
+                                                  2,                              // heads
+                                                  40,                             // tracks
+                                                  9,                              // sectors
+                                                  512,                            // sector size
+                                                  250,                            // bitrate
+                                                  300,                            // rpm
+                                                  UNKNOWN_ENCODING,               // track encoding
+                                                  GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
+                                                  false                           // sides interleaved
+                                              )
                                           );
         if (type_id == "TYPE_GMD_7012_I")  return dsk_tools::make_unique<diskImage>(
                                               std::move(loader),
-                                              1,                              // heads
-                                              77,                             // tracks
-                                              26,                             // sectors
-                                              128,                            // sector size
-                                              250,                            // bitrate
-                                              300,                            // rpm
-                                              UNKNOWN_ENCODING,               // track encoding
-                                              GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
-                                              false,                          // sides interleaved
-                                              std::vector<unsigned>{0,  6, 12, 18, 24, 4, 10, 16, 22, 2, 8, 14, 20,
-                                                                    1,  7, 13, 19, 25, 5, 11, 17, 23, 3, 9, 15, 21
-                                              }                               // sector translation
+                                              DiskFormatParams(
+                                                  1,                              // heads
+                                                  77,                             // tracks
+                                                  26,                             // sectors
+                                                  128,                            // sector size
+                                                  250,                            // bitrate
+                                                  300,                            // rpm
+                                                  UNKNOWN_ENCODING,               // track encoding
+                                                  GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
+                                                  false,                          // sides interleaved
+                                                  std::vector<unsigned>{0,  6, 12, 18, 24, 4, 10, 16, 22, 2, 8, 14, 20,
+                                                                        1,  7, 13, 19, 25, 5, 11, 17, 23, 3, 9, 15, 21
+                                                  }                               // sector translation
+                                              )
                                           );
 
         return nullptr;

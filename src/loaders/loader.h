@@ -29,7 +29,7 @@ namespace dsk_tools {
             std::string get_type_id() {return type_id;};
             const BadSectorTable & bad_sectors() const { return m_bad_sectors; };
 
-            virtual Result load(BYTES & buffer, unsigned heads = 0, unsigned tracks = 0, unsigned sectors = 0, unsigned sector_size = 0, unsigned expected_size = 0) = 0;
+            virtual Result load(BYTES & buffer, const DiskFormatParams &format = DiskFormatParams()) = 0;
             virtual std::string file_info() = 0;
     };
 
