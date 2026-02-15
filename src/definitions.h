@@ -251,20 +251,22 @@ namespace dsk_tools {
         unsigned floppyinterfacemode;
         bool sides_interleaved;
         std::vector<unsigned> sector_translation;
+        unsigned sector_base;
 
         DiskFormatParams()
             : heads(0), tracks(0), sectors(0), sector_size(0), expected_size(0)
             , bitrate(0), rpm(0), track_encoding(0), floppyinterfacemode(0)
-            , sides_interleaved(true)
+            , sides_interleaved(true), sector_base(1)
         {}
 
         DiskFormatParams(unsigned heads, unsigned tracks, unsigned sectors, unsigned sector_size,
                          unsigned bitrate, unsigned rpm, unsigned track_encoding, unsigned floppyinterfacemode,
+                         unsigned sector_base = 1,
                          bool sides_interleaved = true, const std::vector<unsigned> &sector_translation = {})
             : heads(heads), tracks(tracks), sectors(sectors), sector_size(sector_size)
             , expected_size(heads * tracks * sectors * sector_size)
             , bitrate(bitrate), rpm(rpm), track_encoding(track_encoding), floppyinterfacemode(floppyinterfacemode)
-            , sides_interleaved(sides_interleaved), sector_translation(sector_translation)
+            , sides_interleaved(sides_interleaved), sector_translation(sector_translation), sector_base(sector_base)
         {}
     };
 

@@ -126,7 +126,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
 
             for (unsigned track = 0; track < DPB.OFF; track++) {
                 for (int head = 0; head < heads; head++) {
-                    for (int s = 1; s <= sectors; s++) {
+                    for (int s = 0; s < sectors; s++) {
                         if (image->is_bad_sector(head, track, s)) {
                             result += "{$BAD_SECTOR_IN_RESERVED}: "
                                     + std::to_string(head) + ":"
@@ -190,7 +190,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
                         if (AL != 0 && AL != 0xE5) {
                             for (int k = 0; k < spb; k++) {
                                 const int sector_index = AL * spb + k + index_shift;
-                                int head, track;
+                                unsigned head, track;
                                 if (heads == 1) {
                                     head = 0;
                                     track = sector_index / sectors;
@@ -198,11 +198,16 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id):
                                     head = (sector_index / sectors) & 1;
                                     track = (sector_index / sectors) >> 1;
                                 }
-                                const int sector = translate_sector(sector_index % sectors);
+                                unsigned sector = translate_sector(sector_index % sectors);
                                 if (image->is_bad_sector(head, track, sector)) {
                                     sector_map += "B";
-                                    bad_list += "    $" + int_to_hex(file_offset, false)
-                                              + " - " + std::to_string(head)
+                                    bad_list += "    $" + int_to_hex(file_offset, true) + " - ";
+                                    bad_list += "B:" + std::to_string(AL) + " / ";
+                                    bad_list += "L:" + std::to_string(head)
+                                              + ":" + std::to_string(track)
+                                              + ":" + std::to_string(sector) + " / ";
+                                    image->logical_to_physical(head, track, sector);
+                                    bad_list += "P:" + std::to_string(head)
                                               + ":" + std::to_string(track)
                                               + ":" + std::to_string(sector) + "\n";
                                     file_bad = true;

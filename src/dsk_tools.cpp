@@ -79,6 +79,7 @@ namespace dsk_tools {
                                                   300,                            // rpm
                                                   UNKNOWN_ENCODING,               // track encoding
                                                   GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
+                                                  1,
                                                   true                            // sides interleaved
                                               )
                                           );
@@ -93,6 +94,7 @@ namespace dsk_tools {
                                                   300,                            // rpm
                                                   UNKNOWN_ENCODING,               // track encoding
                                                   GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
+                                                  1,
                                                   false                           // sides interleaved
                                               )
                                           );
@@ -107,6 +109,7 @@ namespace dsk_tools {
                                                   300,                            // rpm
                                                   UNKNOWN_ENCODING,               // track encoding
                                                   GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
+                                                  1,
                                                   false,                          // sides interleaved
                                                   std::vector<unsigned>{0,  6, 12, 18, 24, 4, 10, 16, 22, 2, 8, 14, 20,
                                                                         1,  7, 13, 19, 25, 5, 11, 17, 23, 3, 9, 15, 21

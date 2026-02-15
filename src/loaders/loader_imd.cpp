@@ -112,7 +112,7 @@ namespace dsk_tools {
                     return Result::error(ErrorCode::LoadIncorrectFile, "Data exceeds buffer size");
 
                 if (data_len == 0) {
-                    constexpr uint8_t data_value = 0;
+                    constexpr uint8_t data_value = 0xE5;
                     std::memset(buffer.data() + sector_pos, data_value, sector_size);
                 } else
                 if (data_len == 1) {
@@ -183,8 +183,8 @@ namespace dsk_tools {
             file.read(reinterpret_cast<char*>(&track_header), sizeof(IMD_TRACK_HEADER));
             if (!file.good()) break;
             int sector_size = 1 << (track_header.sector_size+7);
-            track_tbl += "{$TRACK}: " + std::to_string(track_header.cylinder)
-                        + ", {$SIDE}: " + std::to_string(track_header.head & 0x3F)
+            track_tbl += "{$SIDE}: " + std::to_string(track_header.head & 0x3F)
+                        + ", {$TRACK}: " + std::to_string(track_header.cylinder)
                         + ", {$CPM_SECTORS}: " + std::to_string(track_header.sectors)
                         + ", {$CPM_SECTOR_SIZE}: " + std::to_string(sector_size)
                         +"\n";

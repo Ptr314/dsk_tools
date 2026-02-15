@@ -49,5 +49,6 @@ namespace dsk_tools {
             BYTES * get_buffer() {return &m_buffer;};
             bool has_bad_sectors() const;
             bool is_bad_sector(unsigned head, unsigned track, unsigned sector) const;
+            void logical_to_physical(unsigned & head, unsigned & track, unsigned & sector) const;
     };
 }

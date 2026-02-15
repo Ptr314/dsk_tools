@@ -3,6 +3,8 @@
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: Abstract class for all disk images
 
+#include <iostream>
+
 #include "disk_image.h"
 #include "utils.h"
 
@@ -73,10 +75,43 @@ namespace dsk_tools {
         return !m_loader->bad_sectors().empty();
     }
 
-    bool diskImage::is_bad_sector(unsigned head, unsigned track, unsigned sector) const
+    bool diskImage::is_bad_sector(const unsigned head, const unsigned track, const unsigned sector) const
     {
-        return m_loader->bad_sectors().count(bad_sector_key(head, track, sector)) > 0;
+        if (m_loader->bad_sectors().empty()) return false;
+
+        unsigned new_head = head;
+        unsigned new_track = track;
+        unsigned new_sector = sector;
+
+        logical_to_physical(new_head, new_track, new_sector);
+        return m_loader->bad_sectors().count(bad_sector_key(new_head, new_track, new_sector)) > 0;
+
+        // if (m_format.heads == 1 || m_format.sides_interleaved)
+        //     return m_loader->bad_sectors().count(bad_sector_key(head, track, sector+m_format.sector_base)) > 0;
+        //
+        // // Two sides with sequential tracks
+        // unsigned track_index = track * m_format.heads + head;
+        // track_index = transform_index(track_index, m_format.heads * m_format.tracks - 1);
+        // const unsigned new_head = track_index & 1;
+        // const unsigned new_track = track_index >> 1;
+        // return m_loader->bad_sectors().count(
+        //     bad_sector_key(
+        //             new_head,
+        //             new_track,
+        //             physical_sector(sector+m_format.sector_base)
+        //     )
+        // ) > 0;
     }
+    void diskImage::logical_to_physical(unsigned & head, unsigned & track, unsigned & sector) const {
+        if (m_format.heads == 2 && !m_format.sides_interleaved) {
+            unsigned track_index = track * m_format.heads + head;
+            track_index = transform_index(track_index, m_format.heads * m_format.tracks - 1);
+            head = track_index & 1;
+            track = track_index >> 1;
+        }
+        sector = physical_sector(sector+m_format.sector_base);
+    }
+
 
     Result diskImage::check()
     {

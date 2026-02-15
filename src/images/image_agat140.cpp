@@ -18,7 +18,8 @@ imageAgat140::imageAgat140(std::unique_ptr<Loader> loader):
                   250,                            // bitrate
                   300,                            // rpm
                   UNKNOWN_ENCODING,               // track encoding
-                  GENERIC_SHUGGART_DD_FLOPPYMODE  // floppy interface mode
+                  GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
+                  0                               // sector base
               )
           )
     {}
