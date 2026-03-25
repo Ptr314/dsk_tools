@@ -107,6 +107,14 @@ namespace dsk_tools
         return path.substr(pos + 1);
     }
 
+    std::string get_file_basename(const std::string& path) {
+        std::string name = get_filename(path);
+        size_t dot = name.find_last_of('.');
+        if (dot != std::string::npos)
+            name = name.substr(0, dot);
+        return name;
+    }
+
     std::string get_file_path(const std::string& path) {
         size_t pos = path.find_last_of("/\\");
         if (pos == std::string::npos)
