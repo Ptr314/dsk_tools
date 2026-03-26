@@ -11,6 +11,7 @@
 #include "definitions.h"
 #include "utils.h"
 #include "bit_enums.h"
+#include "host_helpers.h"
 
 #include "disk_image.h"
 #include "image_agat140.h"

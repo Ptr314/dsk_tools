@@ -6,6 +6,8 @@
 #include "host_helpers.h"
 #include "utils.h"
 
+namespace dsk_tools {
+
 #ifdef _WIN32
     #include <windows.h>
     #include <direct.h>
@@ -18,14 +20,14 @@
         UTF8_ifstream::UTF8_ifstream(const std::string& filename,
                                       std::ios_base::openmode mode)
         {
-            std::wstring wpath = dsk_tools::utf8_to_wide(filename);
+            std::wstring wpath = utf8_to_wide(filename);
             this->open(wpath.c_str(), mode);
         }
 
         UTF8_ofstream::UTF8_ofstream(const std::string& filename,
                                       std::ios_base::openmode mode)
         {
-            std::wstring wpath = dsk_tools::utf8_to_wide(filename);
+            std::wstring wpath = utf8_to_wide(filename);
             this->open(wpath.c_str(), mode);
         }
 
@@ -36,7 +38,7 @@
                                       std::ios_base::openmode mode)
             : m_handle(INVALID_HANDLE_VALUE), m_state(std::ios_base::goodbit)
         {
-            std::wstring wpath = dsk_tools::utf8_to_wide(filename);
+            std::wstring wpath = utf8_to_wide(filename);
             m_handle = CreateFileW(wpath.c_str(), GENERIC_READ, FILE_SHARE_READ,
                                   nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
             if (m_handle == INVALID_HANDLE_VALUE) {
@@ -122,7 +124,7 @@
                                       std::ios_base::openmode mode)
             : m_handle(INVALID_HANDLE_VALUE), m_state(std::ios_base::goodbit)
         {
-            std::wstring wpath = dsk_tools::utf8_to_wide(filename);
+            std::wstring wpath = utf8_to_wide(filename);
             DWORD dwCreationDisposition = CREATE_ALWAYS;
             if (mode & std::ios_base::app) {
                 dwCreationDisposition = OPEN_ALWAYS;
@@ -180,19 +182,19 @@
 
     // Helper function for file removal with UTF-8 path
     int utf8_remove(const std::string& path) {
-        std::wstring wpath = dsk_tools::utf8_to_wide(path);
+        std::wstring wpath = utf8_to_wide(path);
         return _wremove(wpath.c_str());
     }
 
     // Helper function for directory creation with UTF-8 path
     int utf8_mkdir(const std::string& path) {
-        std::wstring wpath = dsk_tools::utf8_to_wide(path);
+        std::wstring wpath = utf8_to_wide(path);
         return _wmkdir(wpath.c_str());
     }
 
     // Recycle bin / Trash functionality
     int utf8_trash(const std::string& path) {
-        std::wstring wpath = dsk_tools::utf8_to_wide(path);
+        std::wstring wpath = utf8_to_wide(path);
 
         // SHFileOperation requires double-null terminated string
         std::vector<wchar_t> pathBuffer(wpath.size() + 2, 0);
@@ -330,3 +332,19 @@
     }
 
 #endif
+
+std::string utf8_read_file(const std::string& path)
+{
+    UTF8_ifstream file(path, std::ios::binary);
+    if (!file.is_open()) return "";
+    file.seekg(0, std::ios::end);
+    std::streampos size = file.tellg();
+    if (size <= 0) { file.close(); return ""; }
+    std::string buffer(static_cast<size_t>(size), '\0');
+    file.seekg(0, std::ios::beg);
+    file.read(&buffer[0], size);
+    file.close();
+    return buffer;
+}
+
+} // namespace dsk_tools

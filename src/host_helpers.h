@@ -8,6 +8,8 @@
 #include <ios>
 #include <string>
 
+namespace dsk_tools {
+
 // UTF-8 aware file stream classes for cross-platform use
 #ifdef _WIN32
     // Windows: UTF-8 file I/O wrappers
@@ -79,6 +81,7 @@
     int utf8_trash(const std::string& path);
 
 #else  // Linux
+
     // On non-Windows platforms, use standard classes directly
     using UTF8_ifstream = std::ifstream;
     using UTF8_ofstream = std::ofstream;
@@ -88,3 +91,7 @@
     int utf8_trash(const std::string& path);
 
 #endif
+
+std::string utf8_read_file(const std::string& path);
+
+} // namespace dsk_tools
