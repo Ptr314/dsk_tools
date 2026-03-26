@@ -6,14 +6,17 @@
 #include "host_helpers.h"
 #include "utils.h"
 
-namespace dsk_tools {
-
 #ifdef _WIN32
     #include <windows.h>
     #include <direct.h>
     #include <io.h>
     #include <shellapi.h>
     #include <vector>
+#endif
+
+namespace dsk_tools {
+
+#ifdef _WIN32
 
     #ifdef _MSC_VER
         // MSVC: Use std::ifstream with wchar_t* overload (Microsoft extension)
