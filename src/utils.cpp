@@ -258,11 +258,6 @@ namespace dsk_tools
         return s;
     }
 
-    bool file_exists(const std::string& filename) {
-        std::ifstream file(filename);
-        return file.good();
-    }
-
     std::string pad_number(const int num, const size_t width, const char padding) {
         std::string s = std::to_string(num);
         if (s.length() >= width) {

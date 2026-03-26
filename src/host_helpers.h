@@ -93,5 +93,8 @@ namespace dsk_tools {
 #endif
 
 std::string utf8_read_file(const std::string& path);
+bool file_exists(const std::string& path);
+long long utf8_file_size(const std::string& path);
+std::string parent_dir_name(const std::string& path);
 
 } // namespace dsk_tools

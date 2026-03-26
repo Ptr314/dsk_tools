@@ -350,4 +350,31 @@ std::string utf8_read_file(const std::string& path)
     return buffer;
 }
 
+bool file_exists(const std::string& path)
+{
+    UTF8_ifstream f(path);
+    return f.is_open();
+}
+
+long long utf8_file_size(const std::string& path)
+{
+    UTF8_ifstream f(path, std::ios::binary);
+    if (!f.is_open()) return -1;
+    f.seekg(0, std::ios::end);
+    long long size = static_cast<long long>(f.tellg());
+    f.close();
+    return size;
+}
+
+std::string parent_dir_name(const std::string& path)
+{
+    std::string p = path;
+    while (!p.empty() && (p.back() == '/' || p.back() == '\\'))
+        p.pop_back();
+    size_t pos = p.find_last_of("/\\");
+    if (pos != std::string::npos)
+        return p.substr(pos + 1);
+    return p;
+}
+
 } // namespace dsk_tools

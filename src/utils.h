@@ -63,7 +63,6 @@ namespace dsk_tools
     int agat_attr_to_type(uint8_t a);
     PreferredType agat_preferred_file_type(int t);
     std::string to_upper(std::string s);
-    bool file_exists(const std::string& filename);
     std::string pad_number(int num, size_t width = 4, char padding = ' ');
     std::string escapeHtml(const std::string& input, bool nbsp = false);
 
