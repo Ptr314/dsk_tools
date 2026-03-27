@@ -225,7 +225,7 @@ namespace dsk_tools {
     }
 
     int utf8_mkdir(const std::string& path) {
-        return ::mkdir(path.c_str(), 0755);
+        return mkdir(path.c_str(), 0755);
     }
 
     // macOS-specific trash implementation
@@ -257,7 +257,7 @@ namespace dsk_tools {
     }
 
     int utf8_mkdir(const std::string& path) {
-        return ::mkdir(path.c_str(), 0755);
+        return mkdir(path.c_str(), 0755);
     }
 
     // Recycle bin / Trash functionality
