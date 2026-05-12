@@ -80,4 +80,6 @@ namespace dsk_tools {
 
     unsigned image_size_by_type(const std::string &type_id);
 
+    DiskDefs parse_diskdefs(const std::string &contents);
+
 } // namespace

@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <map>
 #include <unordered_set>
 
 #include "bit_enums.h"
@@ -17,6 +18,15 @@ namespace dsk_tools {
 
     typedef std::vector<uint8_t> BYTES;
     typedef std::unordered_set<uint32_t> BadSectorTable;
+
+    struct DiskDef {
+        std::string                         name;
+        std::vector<int>                    skewtab;
+        std::map<std::string, std::string>  str_params;   // "sides", "os"
+        std::map<std::string, int>          int_params;   // other numeric params
+    };
+
+    typedef std::map<std::string, DiskDef> DiskDefs;       // keyed by name
 
     enum class FSCaps : unsigned int {
         None        = 0,

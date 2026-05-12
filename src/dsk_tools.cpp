@@ -1009,4 +1009,74 @@ namespace dsk_tools {
         return 0;
     }
 
+    static std::string diskdef_trim(const std::string &s)
+    {
+        const char *ws = " \t\r\n";
+        size_t a = s.find_first_not_of(ws);
+        if (a == std::string::npos) return std::string();
+        size_t b = s.find_last_not_of(ws);
+        return s.substr(a, b - a + 1);
+    }
+
+    DiskDefs parse_diskdefs(const std::string &contents)
+    {
+        DiskDefs result;
+        DiskDef current;
+        bool in_def = false;
+
+        std::istringstream stream(contents);
+        std::string line;
+
+        while (std::getline(stream, line)) {
+            std::string t = diskdef_trim(line);
+            if (t.empty() || t[0] == '#') continue;
+
+            std::string key, value;
+            size_t sp = t.find_first_of(" \t");
+            if (sp == std::string::npos) {
+                key = t;
+            } else {
+                key = t.substr(0, sp);
+                size_t vs = t.find_first_not_of(" \t", sp);
+                value = (vs == std::string::npos) ? std::string() : diskdef_trim(t.substr(vs));
+            }
+
+            if (key == "diskdef") {
+                current = DiskDef();
+                current.name = value;
+                in_def = true;
+            } else if (key == "end") {
+                if (in_def && !current.name.empty()) {
+                    result[current.name] = current;
+                }
+                current = DiskDef();
+                in_def = false;
+            } else if (in_def) {
+                if (key == "skewtab") {
+                    current.skewtab.clear();
+                    std::istringstream vs(value);
+                    std::string num;
+                    while (std::getline(vs, num, ',')) {
+                        num = diskdef_trim(num);
+                        if (num.empty()) continue;
+                        try {
+                            current.skewtab.push_back(std::stoi(num));
+                        } catch (...) {
+                            // Skip malformed entries
+                        }
+                    }
+                } else if (key == "os") {
+                    current.str_params[key] = value;
+                } else {
+                    try {
+                        current.int_params[key] = std::stoi(value);
+                    } catch (...) {
+                        // Skip malformed entries
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
 } // namespace
