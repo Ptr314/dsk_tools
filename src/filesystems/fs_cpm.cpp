@@ -25,6 +25,74 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         return FSCaps::Protect | FSCaps::Types | FSCaps::Export;
     }
 
+    Result fsCPM::fill_dpb(const std::string & type_id)
+    {
+        std::string diskdef_id = to_lower(type_id);
+        if (type_id.rfind("TYPE_CPM:", 0) == 0)
+            diskdef_id = to_lower(type_id.substr(9));
+
+        const auto it = m_diskdefs.find(diskdef_id);
+        if (it == m_diskdefs.end())
+            return Result::error(ErrorCode::OpenBadFormat, "Unknown CP/M disk definition");
+
+        const DiskDef &diskdef = it->second;
+
+        unsigned heads = 0;
+        if (!get_map_value(diskdef.int_params, std::string("heads"), heads, 2, false))
+            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: heads is incorrect");
+        unsigned tracks = 0;
+        if (!get_map_value(diskdef.int_params, std::string("tracks"), tracks, 0, true))
+            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: tracks is required");
+        unsigned sectrk = 0;
+        if (!get_map_value(diskdef.int_params, std::string("sectrk"), sectrk, 0, true))
+            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: sectrk is required");
+        unsigned seclen = 0;
+        if (!get_map_value(diskdef.int_params, std::string("seclen"), seclen, 0, true))
+            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: seclen is required");
+
+        unsigned BLS = 0;
+        if (!get_map_value(diskdef.int_params, std::string("blocksize"), BLS, 0, true))
+            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: blocksize is required");
+        unsigned n = 0;
+        for (unsigned v = BLS; v > 1; v >>= 1) ++n; // Avoiding <cmath> and floating point operations
+
+        unsigned boottrk = 0;
+        if (!get_map_value(diskdef.int_params, std::string("boottrk"), boottrk, 0, false))
+            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: boottrk is incorrect");
+
+        const auto OFF = static_cast<uint16_t>(boottrk);
+
+        unsigned maxdir = 0;
+        if (!get_map_value(diskdef.int_params, std::string("maxdir"), maxdir, 64, false))
+            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: maxdir is incorrect");
+
+        const auto SPT = static_cast<uint16_t>(seclen * sectrk / 128);
+        const auto BSH = static_cast<uint8_t>(n - 7);
+        const auto BLM = static_cast<uint8_t>((1u << BSH) - 1u);                       // BLS/128 - 1
+        const auto DSM = static_cast<uint16_t>((tracks - OFF) * heads * sectrk * seclen / BLS - 1);
+        // CP/M 2.2 standard EXM: DSM<256 -> BLS/1024-1, else BLS/2048-1
+        const auto  EXM = static_cast<uint8_t>(
+            (DSM < 256)
+                ? ((BLS >= 1024) ? (BLS / 1024 - 1) : 0)
+                : ((BLS >= 2048) ? (BLS / 2048 - 1) : 0)
+        );
+        const auto DRM = static_cast<uint16_t>(maxdir - 1);
+        const auto CKS = static_cast<uint16_t>(maxdir >> 2);                           // removable media: maxdir/4
+
+        // AL0:AL1 reserves the top `dir_blocks` bits of a 16-bit bitmap for the directory.
+        // dir_blocks = ceil(maxdir * 32 / BLS)
+        const unsigned dir_blocks = (maxdir * 32u + BLS - 1u) / BLS;
+        const uint16_t AL_word = (dir_blocks >= 16)
+                                     ? static_cast<uint16_t>(0xFFFFu)
+                                     : static_cast<uint16_t>(((1u << dir_blocks) - 1u) << (16u - dir_blocks));
+        const auto AL0 = static_cast<uint8_t>((AL_word >> 8) & 0xFFu);
+        const auto AL1 = static_cast<uint8_t>(AL_word & 0xFFu);
+
+        DPB = {SPT, BSH, BLM, EXM, DSM, DRM, AL0, AL1, CKS, OFF};
+
+        return Result::ok();
+    }
+
     Result fsCPM::open()
     {
         if (!image->get_loaded()) return Result::error(ErrorCode::OpenNotLoaded);
@@ -44,83 +112,10 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 16,          // CKS
                 3            // OFF
             };
-        } else
-        if (type_id == "TYPE_PC_360_I" || type_id == "TYPE_PC_360_NI") {
-            // n = 11, BLS = 2048 (2**n)
-            // SPT, BSH, BLM, EXM, DSM, DRM, AL0, AL1, CKS, OFF
-            DPB = {
-                36,          // SPT: 512*9/128
-                4,           // BSH: n-7
-                15,          // BLM: 2**BSH - 1
-                0,           // EXM: 2**(BHS-2) - 1 if DSM<256
-                179,         // DSM: Size/BLS - 1
-                63,          // DRM
-                0b10000000,  // AL0
-                0b00000000,  // AL1
-                16,          // CKS
-                0            // OFF
-            };
         } else {
             if (type_id.rfind("TYPE_CPM:", 0) == 0) {
-                const std::string diskdef_id = to_lower(type_id.substr(9));
-                const auto it = m_diskdefs.find(diskdef_id);
-                if (it != m_diskdefs.end()) {
-                    const DiskDef &diskdef = it->second;
-
-                    unsigned heads = 0;
-                    if (!get_map_value(diskdef.int_params, std::string("heads"), heads, 2, false))
-                        return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: heads is incorrect");
-                    unsigned tracks = 0;
-                    if (!get_map_value(diskdef.int_params, std::string("tracks"), tracks, 0, true))
-                        return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: tracks is required");
-                    unsigned sectrk = 0;
-                    if (!get_map_value(diskdef.int_params, std::string("sectrk"), sectrk, 0, true))
-                        return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: sectrk is required");
-                    unsigned seclen = 0;
-                    if (!get_map_value(diskdef.int_params, std::string("seclen"), seclen, 0, true))
-                        return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: seclen is required");
-
-                    unsigned BLS = 0;
-                    if (!get_map_value(diskdef.int_params, std::string("blocksize"), BLS, 0, true))
-                        return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: blocksize is required");
-                    unsigned n = 0;
-                    for (unsigned v = BLS; v > 1; v >>= 1) ++n; // Avoiding <cmath> and floating point operations
-
-                    unsigned boottrk = 0;
-                    if (!get_map_value(diskdef.int_params, std::string("boottrk"), boottrk, 0, false))
-                        return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: boottrk is incorrect");
-
-                    const auto OFF = static_cast<uint16_t>(boottrk);
-
-                    unsigned maxdir = 0;
-                    if (!get_map_value(diskdef.int_params, std::string("maxdir"), maxdir, 64, false))
-                        return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: maxdir is incorrect");
-
-                    const auto SPT = static_cast<uint16_t>(seclen * sectrk / 128);
-                    const auto BSH = static_cast<uint8_t>(n - 7);
-                    const auto BLM = static_cast<uint8_t>((1u << BSH) - 1u);                       // BLS/128 - 1
-                    const auto DSM = static_cast<uint16_t>((tracks - OFF) * heads * sectrk * seclen / BLS - 1);
-                    // CP/M 2.2 standard EXM: DSM<256 -> BLS/1024-1, else BLS/2048-1
-                    const auto  EXM = static_cast<uint8_t>(
-                        (DSM < 256)
-                            ? ((BLS >= 1024) ? (BLS / 1024 - 1) : 0)
-                            : ((BLS >= 2048) ? (BLS / 2048 - 1) : 0)
-                    );
-                    const auto DRM = static_cast<uint16_t>(maxdir - 1);
-                    const auto CKS = static_cast<uint16_t>(maxdir >> 2);                           // removable media: maxdir/4
-
-                    // AL0:AL1 reserves the top `dir_blocks` bits of a 16-bit bitmap for the directory.
-                    // dir_blocks = ceil(maxdir * 32 / BLS)
-                    const unsigned dir_blocks = (maxdir * 32u + BLS - 1u) / BLS;
-                    const uint16_t AL_word = (dir_blocks >= 16)
-                                                 ? static_cast<uint16_t>(0xFFFFu)
-                                                 : static_cast<uint16_t>(((1u << dir_blocks) - 1u) << (16u - dir_blocks));
-                    const auto AL0 = static_cast<uint8_t>((AL_word >> 8) & 0xFFu);
-                    const auto AL1 = static_cast<uint8_t>(AL_word & 0xFFu);
-
-                    DPB = {SPT, BSH, BLM, EXM, DSM, DRM, AL0, AL1, CKS, OFF};
-                } else
-                    return Result::error(ErrorCode::OpenBadFormat, "Unsupported CP/M disk definition");
+                const auto res= fill_dpb(type_id);
+                if (!res) return res;
             } else
                 return Result::error(ErrorCode::OpenBadFormat, "Unsupported disk type for CP/M");
         }
@@ -366,7 +361,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 const uint16_t AL = DPB.DSM<256 ? dir_entry->AL[al_ind] : dir_entry->AL[al_ind] + (dir_entry->AL[al_ind+1] << 8);
                 al_ind += DPB.DSM<256 ? 1 : 2;
                 if (AL != 0 && AL != 0xE5 && AL != 0xE5E5)  {
-                    std::cout << AL << std::endl;
+                    // std::cout << AL << std::endl;
                     for (int k=0; k<spb; k++) {
                         const int sector_index = AL*spb + k + index_shift;
                         int head, track;

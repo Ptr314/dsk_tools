@@ -68,37 +68,7 @@ namespace dsk_tools {
         if (type_id == "TYPE_AGAT_140")   return dsk_tools::make_unique<imageAgat140>(std::move(loader));
         if (type_id == "TYPE_AGAT_840")   return dsk_tools::make_unique<imageAgat840>(std::move(loader));
         if (type_id == "TYPE_FIL")        return dsk_tools::make_unique<imageFIL>(std::move(loader));
-        if (type_id == "TYPE_PC_360_I")   return dsk_tools::make_unique<diskImage>(
-                                              std::move(loader),
-                                              DiskFormatParams(
-                                                  2,                              // heads
-                                                  40,                             // tracks
-                                                  9,                              // sectors
-                                                  512,                            // sector size
-                                                  250,                            // bitrate
-                                                  300,                            // rpm
-                                                  UNKNOWN_ENCODING,               // track encoding
-                                                  GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
-                                                  1,
-                                                  true                            // sides interleaved
-                                              )
-                                          );
-        if (type_id == "TYPE_PC_360_NI")  return dsk_tools::make_unique<diskImage>(
-                                              std::move(loader),
-                                              DiskFormatParams(
-                                                  2,                              // heads
-                                                  40,                             // tracks
-                                                  9,                              // sectors
-                                                  512,                            // sector size
-                                                  250,                            // bitrate
-                                                  300,                            // rpm
-                                                  UNKNOWN_ENCODING,               // track encoding
-                                                  GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
-                                                  1,
-                                                  false                           // sides interleaved
-                                              )
-                                          );
-        if (type_id.rfind("TYPE_CPM:", 0) == 0) {
+         if (type_id.rfind("TYPE_CPM:", 0) == 0) {
             const std::string diskdef_id = to_lower(type_id.substr(9));
             const auto it = diskdefs.find(diskdef_id);
             if (it == diskdefs.end()) return nullptr;
@@ -117,7 +87,14 @@ namespace dsk_tools {
             const unsigned track_enc = UNKNOWN_ENCODING;
             const unsigned iface = GENERIC_SHUGGART_DD_FLOPPYMODE;
             const unsigned sector_base = 1;
-            const bool side_ilvd = true;
+
+            bool side_ilvd;
+            std::string sides = "";
+            if (!get_map_value(diskdef.str_params, std::string("sides"), sides, std::string("int"), false)) return nullptr;
+            if (sides == "int") side_ilvd = true;
+            else if (sides == "seq") side_ilvd = false;
+            else return nullptr;
+
             std::vector<unsigned> skewtab = diskdef.skewtab;
 
             return dsk_tools::make_unique<diskImage>(
@@ -342,7 +319,7 @@ namespace dsk_tools {
                 type_id = "TYPE_AGAT_840";
             } else
             if (fsize == 512*9*40*2) {
-                type_id = "TYPE_PC_360_I";
+                type_id = "TYPE_CPM:IRISHA-360-INT";
             } else
             if (fsize == 128*26*77) {
                 type_id = "TYPE_CPM:GMD-7012";
@@ -379,7 +356,7 @@ namespace dsk_tools {
                 } else
                     filesystem_id = "FILESYSTEM_DOS33";
             } else
-            if (type_id == "TYPE_PC_360_I" || type_id == "TYPE_PC_360_NI") {
+            if (type_id == "TYPE_CPM:IRISHA-360-INT" || type_id == "TYPE_CPM:IRISHA-360-SEQ") {
                 filesystem_id = "FILESYSTEM_CPM_RAW";
             } else
             if (type_id == "TYPE_CPM:GMD-7012") {
@@ -522,7 +499,7 @@ namespace dsk_tools {
             }
 
             // TODO: make detection using contents
-            type_id = "TYPE_PC_360_I";
+            type_id = "TYPE_CPM:IRISHA-360-INT";
             filesystem_id = "FILESYSTEM_CPM_RAW";
         } else
             return Result::error(ErrorCode::DetectError, "Unknown file format");
@@ -1032,7 +1009,7 @@ namespace dsk_tools {
     {
         if (type_id == "TYPE_AGAT_840") return 2*80*21*256;
         if (type_id == "TYPE_AGAT_140") return 1*35*16*256;
-        if (type_id == "TYPE_PC_360_I" || type_id == "TYPE_PC_360_NI") return 2*40*9*512;
+        if (type_id == "TYPE_CPM:IRISHA-360-INT" || type_id == "TYPE_CPM:IRISHA-360-SEQ") return 2*40*9*512;
         if (type_id == "TYPE_CPM:GMD-7012") return 77*26*128;
         if (type_id == "TYPE_CPM:KORVET") return 2*80*5*1024;
         return 0;
@@ -1094,7 +1071,7 @@ namespace dsk_tools {
                             // Skip malformed entries
                         }
                     }
-                } else if (key == "os") {
+                } else if (key == "os" || key == "sides") {
                     current.str_params[key] = value;
                 } else {
                     try {

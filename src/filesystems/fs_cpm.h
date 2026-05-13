@@ -63,5 +63,6 @@ namespace dsk_tools {
         std::vector<std::string> get_save_file_formats() override;
         std::vector<std::string> get_add_file_formats() override;
         int translate_sector(int sector) const override;
+        Result fill_dpb(const std::string& type_id);
     };
 }
