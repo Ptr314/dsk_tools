@@ -98,24 +98,6 @@ namespace dsk_tools {
                                                   false                           // sides interleaved
                                               )
                                           );
-        if (type_id == "TYPE_GMD_7012_I")  return dsk_tools::make_unique<diskImage>(
-                                              std::move(loader),
-                                              DiskFormatParams(
-                                                  1,                              // heads
-                                                  77,                             // tracks
-                                                  26,                             // sectors
-                                                  128,                            // sector size
-                                                  250,                            // bitrate
-                                                  300,                            // rpm
-                                                  UNKNOWN_ENCODING,               // track encoding
-                                                  GENERIC_SHUGGART_DD_FLOPPYMODE, // floppy interface mode
-                                                  1,
-                                                  false,                          // sides interleaved
-                                                  std::vector<unsigned>{0,  6, 12, 18, 24, 4, 10, 16, 22, 2, 8, 14, 20,
-                                                                        1,  7, 13, 19, 25, 5, 11, 17, 23, 3, 9, 15, 21
-                                                  }                               // sector translation
-                                              )
-                                          );
         if (type_id.rfind("TYPE_CPM:", 0) == 0) {
             const std::string diskdef_id = to_lower(type_id.substr(9));
             const auto it = diskdefs.find(diskdef_id);
@@ -363,7 +345,7 @@ namespace dsk_tools {
                 type_id = "TYPE_PC_360_I";
             } else
             if (fsize == 128*26*77) {
-                type_id = "TYPE_GMD_7012_I";
+                type_id = "TYPE_CPM:GMD-7012";
             } else
                 return Result::error(ErrorCode::DetectError, "Invalid file size for DSK format");
 
@@ -400,7 +382,7 @@ namespace dsk_tools {
             if (type_id == "TYPE_PC_360_I" || type_id == "TYPE_PC_360_NI") {
                 filesystem_id = "FILESYSTEM_CPM_RAW";
             } else
-            if (type_id == "TYPE_GMD_7012_I") {
+            if (type_id == "TYPE_CPM:GMD-7012") {
                 filesystem_id = "FILESYSTEM_CPM_RAW";
             }
         } else
@@ -1051,7 +1033,7 @@ namespace dsk_tools {
         if (type_id == "TYPE_AGAT_840") return 2*80*21*256;
         if (type_id == "TYPE_AGAT_140") return 1*35*16*256;
         if (type_id == "TYPE_PC_360_I" || type_id == "TYPE_PC_360_NI") return 2*40*9*512;
-        if (type_id == "TYPE_GMD_7012_I") return 77*26*128;
+        if (type_id == "TYPE_CPM:GMD-7012") return 77*26*128;
         if (type_id == "TYPE_CPM:KORVET") return 2*80*5*1024;
         return 0;
     }

@@ -60,22 +60,6 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 16,          // CKS
                 0            // OFF
             };
-        } else
-        if (type_id == "TYPE_GMD_7012_I") {
-            // n = 10, BLS = 1024 (2**n)
-            // SPT, BSH, BLM, EXM, DSM, DRM, AL0, AL1, CKS, OFF
-            DPB = {
-                26,          // SPT: 128*26/128
-                3,           // BSH: n-7
-                7,           // BLM: 2**BSH - 1
-                0,           // EXM: 2**(BHS-2) - 1 if DSM<256
-                242,         // DSM: (77-2)*26*128/1024 - 1
-                63,          // DRM
-                0b11000000,  // AL0
-                0b00000000,  // AL1
-                16,          // CKS
-                2            // OFF
-            };
         } else {
             if (type_id.rfind("TYPE_CPM:", 0) == 0) {
                 const std::string diskdef_id = to_lower(type_id.substr(9));
