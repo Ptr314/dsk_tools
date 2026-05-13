@@ -250,6 +250,13 @@ namespace dsk_tools
         return s;
     }
 
+    std::string to_lower(std::string s) {
+        for (size_t i = 0; i < s.length(); ++i) {
+            s[i] = std::tolower(static_cast<unsigned char>(s[i]));
+        }
+        return s;
+    }
+
     bool file_exists(const std::string& filename) {
         std::ifstream file(filename);
         return file.good();

@@ -60,7 +60,7 @@ namespace dsk_tools {
         return nullptr;
     }
 
-    std::unique_ptr<diskImage> prepare_image(const std::string &file_name, const std::string &format_id, const std::string &type_id)
+    std::unique_ptr<diskImage> prepare_image(const std::string &file_name, const std::string &format_id, const std::string &type_id, const DiskDefs & diskdefs)
     {
         std::unique_ptr<Loader> loader = create_loader(file_name, format_id, type_id);
         if (!loader) return nullptr;
@@ -116,11 +116,50 @@ namespace dsk_tools {
                                                   }                               // sector translation
                                               )
                                           );
+        if (type_id.rfind("TYPE_CPM:", 0) == 0) {
+            const std::string diskdef_id = to_lower(type_id.substr(9));
+            const auto it = diskdefs.find(diskdef_id);
+            if (it == diskdefs.end()) return nullptr;
+            const DiskDef &diskdef = it->second;
+
+            unsigned heads = 0;
+            if (!get_map_value(diskdef.int_params, std::string("heads"), heads, 2, false)) return nullptr;
+            unsigned tracks = 0;
+            if (!get_map_value(diskdef.int_params, std::string("tracks"), tracks, 0, true)) return nullptr;
+            unsigned sectrk = 0;
+            if (!get_map_value(diskdef.int_params, std::string("sectrk"), sectrk, 0, true)) return nullptr;
+            unsigned seclen = 0;
+            if (!get_map_value(diskdef.int_params, std::string("seclen"), seclen, 0, true)) return nullptr;
+            const unsigned bitrate = 250;
+            const unsigned rpm = 300;
+            const unsigned track_enc = UNKNOWN_ENCODING;
+            const unsigned iface = GENERIC_SHUGGART_DD_FLOPPYMODE;
+            const unsigned sector_base = 1;
+            const bool side_ilvd = true;
+            std::vector<unsigned> skewtab = diskdef.skewtab;
+
+            return dsk_tools::make_unique<diskImage>(
+                                              std::move(loader),
+                                              DiskFormatParams(
+                                                  heads,                    // heads
+                                                  tracks,                   // tracks
+                                                  sectrk,                   // sectors
+                                                  seclen,                   // sector size
+                                                  bitrate,                  // bitrate
+                                                  rpm,                      // rpm
+                                                  track_enc,                // track encoding
+                                                  iface,                    // floppy interface mode
+                                                  sector_base,              // sector base
+                                                  side_ilvd,                // sides interleaved
+                                                  skewtab                   // sector translation
+                                              )
+                                          );
+        }
 
         return nullptr;
     }
 
-    std::unique_ptr<fileSystem> prepare_filesystem(diskImage * image, const std::string &filesystem_id)
+    std::unique_ptr<fileSystem> prepare_filesystem(diskImage * image, const std::string &filesystem_id, const DiskDefs & diskdefs)
     {
         if (filesystem_id == "FILESYSTEM_DOS33") {
             return dsk_tools::make_unique<fsDOS33>(image);
@@ -129,7 +168,7 @@ namespace dsk_tools {
             return dsk_tools::make_unique<fsSpriteOS>(image);
         }
         if (filesystem_id == "FILESYSTEM_CPM_DOS" || filesystem_id == "FILESYSTEM_CPM_PRODOS"|| filesystem_id == "FILESYSTEM_CPM_RAW") {
-            return dsk_tools::make_unique<fsCPM>(image, filesystem_id);
+            return dsk_tools::make_unique<fsCPM>(image, filesystem_id, diskdefs);
         }
         if (filesystem_id == "FILESYSTEM_FIL") {
             return dsk_tools::make_unique<fsFIL>(image);
@@ -297,6 +336,13 @@ namespace dsk_tools {
         }
 
         // format_if
+        if (ext == ".kdi" && fsize == 819200) {
+            format_id = "FILE_RAW_MSB";
+            type_id = "TYPE_CPM:KORVET";
+            filesystem_id = "FILESYSTEM_CPM_RAW";
+            return Result::ok();
+        }
+
         if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd") {
             format_id = "FILE_RAW_MSB";
 
@@ -1006,6 +1052,7 @@ namespace dsk_tools {
         if (type_id == "TYPE_AGAT_140") return 1*35*16*256;
         if (type_id == "TYPE_PC_360_I" || type_id == "TYPE_PC_360_NI") return 2*40*9*512;
         if (type_id == "TYPE_GMD_7012_I") return 77*26*128;
+        if (type_id == "TYPE_CPM:KORVET") return 2*80*5*1024;
         return 0;
     }
 

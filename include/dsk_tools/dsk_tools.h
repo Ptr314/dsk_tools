@@ -51,8 +51,8 @@
 namespace dsk_tools {
 
     Result detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only = false);
-    std::unique_ptr<diskImage> prepare_image(const std::string &file_name, const std::string &format_id, const std::string &type_id);
-    std::unique_ptr<fileSystem> prepare_filesystem(diskImage * image, const std::string &filesystem_id);
+    std::unique_ptr<diskImage> prepare_image(const std::string &file_name, const std::string &format_id, const std::string &type_id, const DiskDefs & diskdefs);
+    std::unique_ptr<fileSystem> prepare_filesystem(diskImage * image, const std::string &filesystem_id, const DiskDefs & diskdefs);
     BYTES code44(const BYTES & buffer);
     BYTES decode44(const BYTES & buffer);
     void encode_gcr62(const uint8_t data_in[], uint8_t * data_out);

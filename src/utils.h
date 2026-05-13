@@ -32,6 +32,27 @@ namespace dsk_tools
     std::vector<std::string> split_utf8_chars(const std::string& str);
     std::vector<uint8_t> utf_to_agat(const std::string& input);
 
+    // Non-deduced context wrapper so default_value below converts to V instead of fighting it
+    template< typename T > struct identity { using type = T; };
+
+    template< typename K, typename V >
+    Result get_map_value(const std::map<K, V> &m, const K &key, V &out,
+                         typename identity<V>::type default_value, bool required)
+    {
+        auto it = m.find(key);
+        if (it != m.end()) {
+            out = it->second;
+            return Result::ok();
+        }
+        if (required) {
+            std::ostringstream oss;
+            oss << "Required key not found: " << key;
+            return Result::error(ErrorCode::NotFound, oss.str());
+        }
+        out = default_value;
+        return Result::ok();
+    }
+
     template< typename T >
     std::string int_to_hex( T i, bool fill = true )
     {
@@ -62,6 +83,7 @@ namespace dsk_tools
     int agat_attr_to_type(uint8_t a);
     PreferredType agat_preferred_file_type(int t);
     std::string to_upper(std::string s);
+    std::string to_lower(std::string s);
     bool file_exists(const std::string& filename);
     std::string pad_number(int num, size_t width = 4, char padding = ' ');
     std::string escapeHtml(const std::string& input, bool nbsp = false);

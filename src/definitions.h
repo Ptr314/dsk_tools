@@ -21,9 +21,9 @@ namespace dsk_tools {
 
     struct DiskDef {
         std::string                         name;
-        std::vector<int>                    skewtab;
+        std::vector<unsigned>               skewtab;
         std::map<std::string, std::string>  str_params;   // "sides", "os"
-        std::map<std::string, int>          int_params;   // other numeric params
+        std::map<std::string, unsigned>     int_params;   // other numeric params
     };
 
     typedef std::map<std::string, DiskDef> DiskDefs;       // keyed by name
