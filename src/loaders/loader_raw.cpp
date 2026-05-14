@@ -30,7 +30,7 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         auto fsize = file.tellg();
         file.seekg (0, std::ios::beg);
 
-        unsigned image_size = image_size_by_type(type_id);
+        unsigned image_size = image_size_by_type(type_id, format);
         if (image_size == 0)
             return Result::error(ErrorCode::LoadParamsMismatch, "Unknown disk type");
 

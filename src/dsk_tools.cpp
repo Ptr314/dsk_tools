@@ -301,6 +301,12 @@ namespace dsk_tools {
             filesystem_id = "FILESYSTEM_CPM_RAW";
             return Result::ok();
         }
+        if (ext == ".odi" && fsize == 819200) {
+            format_id = "FILE_RAW_MSB";
+            type_id = "TYPE_CPM:ORION";
+            filesystem_id = "FILESYSTEM_CPM_RAW";
+            return Result::ok();
+        }
 
         if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd") {
             format_id = "FILE_RAW_MSB";
@@ -1005,13 +1011,12 @@ namespace dsk_tools {
         return error;
     }
 
-    unsigned image_size_by_type(const std::string &type_id)
+    unsigned image_size_by_type(const std::string &type_id, const DiskFormatParams &format)
     {
         if (type_id == "TYPE_AGAT_840") return 2*80*21*256;
         if (type_id == "TYPE_AGAT_140") return 1*35*16*256;
-        if (type_id == "TYPE_CPM:IRISHA-360-INT" || type_id == "TYPE_CPM:IRISHA-360-SEQ") return 2*40*9*512;
-        if (type_id == "TYPE_CPM:GMD-7012") return 77*26*128;
-        if (type_id == "TYPE_CPM:KORVET") return 2*80*5*1024;
+        if (type_id.rfind("TYPE_CPM:", 0) == 0)
+            return format.heads * format.tracks*format.sectors*format.sector_size;
         return 0;
     }
 

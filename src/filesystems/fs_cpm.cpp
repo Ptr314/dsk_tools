@@ -440,7 +440,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                     f.type_label += (catalog[i]->E[2] & 0x80)?"A":""; // Archived
 
 
-                    std::set<std::string> txts = {".txt", ".doc", ".pas", ".asm", ".cmd", ".hlp"};
+                    std::set<std::string> txts = {".txt", ".doc", ".pas", ".asm", ".cmd", ".hlp", ".src"};
                     std::string ext = get_file_ext(f.name);
                     f.type_preferred = (txts.find(ext) != txts.end())?PreferredType::Text:PreferredType::Binary;
                     if (ext == ".bas")
