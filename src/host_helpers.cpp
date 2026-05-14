@@ -12,6 +12,16 @@
     #include <io.h>
     #include <shellapi.h>
     #include <vector>
+#elif defined(__APPLE__)
+    #include <cstdio>
+    #include <sys/stat.h>
+    #import <Foundation/Foundation.h>
+#else  // Linux
+    #include <cstdio>
+    #include <sys/stat.h>
+    #include <ctime>
+    #include <cstring>
+    #include <cstdlib>
 #endif
 
 namespace dsk_tools {
@@ -216,9 +226,6 @@ namespace dsk_tools {
     }
 
 #elif defined(__APPLE__)
-    #include <cstdio>
-    #include <sys/stat.h>
-    #import <Foundation/Foundation.h>
 
     int utf8_remove(const std::string& path) {
         return std::remove(path.c_str());
@@ -246,11 +253,6 @@ namespace dsk_tools {
     }
 
 #else  // Linux
-    #include <cstdio>
-    #include <sys/stat.h>
-    #include <ctime>
-    #include <cstring>
-    #include <cstdlib>
 
     int utf8_remove(const std::string& path) {
         return std::remove(path.c_str());
