@@ -10,6 +10,7 @@
 #include "fs_dos33.h"
 #include "loader_fil.h"
 #include "utils.h"
+#include "host_helpers.h"
 
 namespace dsk_tools {
 

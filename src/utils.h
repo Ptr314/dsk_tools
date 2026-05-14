@@ -28,6 +28,7 @@ namespace dsk_tools
     std::string trim(const std::string& str, const std::string& whitespace = " \t\r\n");
     std::string get_file_ext(const std::string &file_name);
     std::string get_filename(const std::string& path);
+    std::string get_file_basename(const std::string& path);
     std::string get_file_path(const std::string& path);
     std::vector<std::string> split_utf8_chars(const std::string& str);
     std::vector<uint8_t> utf_to_agat(const std::string& input);

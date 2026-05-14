@@ -120,7 +120,10 @@ namespace dsk_tools {
         // Detection errors (FDD_DETECT_*)
         DetectError,
 
-        PreparePicError
+        PreparePicError,
+
+        // Emulator config errors
+        ConfigError
     };
 
     struct Result {
