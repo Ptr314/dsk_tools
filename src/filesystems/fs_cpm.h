@@ -64,5 +64,12 @@ namespace dsk_tools {
         std::vector<std::string> get_add_file_formats() override;
         int translate_sector(int sector) const override;
         Result fill_dpb(const std::string& type_id);
+        Result delete_file(const UniversalFile & uf) override;
+        std::string exattr(const UniversalFile & fd) override;
+        std::pair<std::string, std::string> exattr_caption() override;
+        std::vector<ParameterDescription> file_get_metadata(const UniversalFile & fd) override;
+        Result file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata) override;
+        Result rename_file(const UniversalFile & fd, const std::string & new_name) override;
+        Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace) override;
     };
 }

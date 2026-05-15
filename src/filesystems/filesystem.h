@@ -80,6 +80,8 @@ namespace dsk_tools {
         virtual std::string file_info(const UniversalFile & fd) {return "";};
         virtual std::vector<ParameterDescription> file_get_metadata(const UniversalFile & fd) {std::vector<ParameterDescription> params; return params;};
         virtual Result file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata) {return Result::error(ErrorCode::NotImplementedYet);};
+        virtual std::string exattr(const UniversalFile & fd) {return "";}
+        virtual std::pair<std::string, std::string> exattr_caption() {return {"", ""};};
     };
 
 } // namespace

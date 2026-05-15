@@ -33,14 +33,15 @@ namespace dsk_tools {
         Dirs        = 1 << 0,       // Directories present
         Protect     = 1 << 1,       // File protection allowed
         Types       = 1 << 2,       // Files have types
-        Delete      = 1 << 3,       // Files can be deleted
-        Add         = 1 << 4,       // Files can be added
-        Rename      = 1 << 5,       // Files can be renamed
-        MkDir       = 1 << 6,       // Creating directories
-        Metadata    = 1 << 7,       // Editing file metadata
-        Restore     = 1 << 8,       // Restore deleted files
-        Export      = 1 << 9,       // Export is enabled
-        All         = Dirs | Protect | Types | Delete | Add | Rename | MkDir | Metadata | Restore
+        ExAttr      = 1 << 3,       // Files have extended attributes
+        Delete      = 1 << 4,       // Files can be deleted
+        Add         = 1 << 5,       // Files can be added
+        Rename      = 1 << 6,       // Files can be renamed
+        MkDir       = 1 << 7,       // Creating directories
+        Metadata    = 1 << 8,       // Editing file metadata
+        Restore     = 1 << 9,       // Restore deleted files
+        Export      = 1 << 10,      // Export is enabled
+        All         = Dirs | Protect | Types | ExAttr | Delete | Add | Rename | MkDir | Metadata | Restore | Export
     };
 
     ENABLE_ENUM_FLAG_OPERATORS(FSCaps);
