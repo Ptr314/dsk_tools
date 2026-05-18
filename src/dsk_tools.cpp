@@ -301,14 +301,20 @@ namespace dsk_tools {
             filesystem_id = "FILESYSTEM_CPM_RAW";
             return Result::ok();
         }
-        if (ext == ".odi" && fsize == 819200) {
+        if (ext == ".fdd" && fsize == 839680) {
+            format_id = "FILE_RAW_MSB";
+            type_id = "TYPE_CPM:VECTOR";
+            filesystem_id = "FILESYSTEM_CPM_RAW";
+            return Result::ok();
+        }
+        if ((ext == ".odi" || ext == ".fdd") && fsize == 819200) {
             format_id = "FILE_RAW_MSB";
             type_id = "TYPE_CPM:ORION";
             filesystem_id = "FILESYSTEM_CPM_RAW";
             return Result::ok();
         }
 
-        if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd") {
+        if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd" || ext == ".fdd") {
             format_id = "FILE_RAW_MSB";
 
             if (format_only) {
