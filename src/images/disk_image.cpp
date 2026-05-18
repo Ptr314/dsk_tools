@@ -26,7 +26,7 @@ namespace dsk_tools {
     Result diskImage::load()
     {
         if (!m_format.sector_translation.empty() && m_format.sector_translation.size() != m_format.sectors)
-            return Result::error(ErrorCode::LoadError, "Sector translation table has incorrect size");
+            return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Sector translation table has incorrect size"));
 
         m_type_id = m_loader->get_type_id();
         Result result = m_loader->load(m_buffer, m_format);
@@ -36,7 +36,7 @@ namespace dsk_tools {
                 m_is_loaded = true;
                 return Result::ok();
             } else {
-                return Result::error(ErrorCode::LoadSizeMismatch, "Buffer size mismatch");
+                return Result::error(ErrorCode::LoadSizeMismatch, QT_TRANSLATE_NOOP("errors", "Buffer size mismatch"));
             }
         }
         return result;

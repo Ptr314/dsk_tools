@@ -27,20 +27,20 @@ namespace dsk_tools {
 
         UTF8_ifstream file(file_name, std::ios::binary);
 
-        if (!file.good()) return Result::error(ErrorCode::LoadError, "Cannot open file");
+        if (!file.good()) return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Cannot open file"));
 
         constexpr unsigned signature_length = 29;
         char header[signature_length];
         file.read(header, signature_length);
 
-        if (std::string(header, 3) != "IMD") return Result::error(ErrorCode::LoadIncorrectFile, "Incorrect file format");
+        if (std::string(header, 3) != "IMD") return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect file format"));
 
         std::string comment;
         char c;
         while (file.read(&c, 1) && c != 0x1A) {
             comment += c;
         }
-        if (c != 0x1A) return Result::error(ErrorCode::LoadIncorrectFile, "File seems to be corrupt");
+        if (c != 0x1A) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
 
         buffer.resize(expected_size);
 
@@ -49,17 +49,17 @@ namespace dsk_tools {
             IMD_TRACK_HEADER track_header{};
             file.read(reinterpret_cast<char*>(&track_header), sizeof(IMD_TRACK_HEADER));
             if (!file.good()) break;
-            if (heads && track_header.head + 1 > heads) return Result::error(ErrorCode::LoadIncorrectFile, "Incorrect head index");
-            if (tracks && track_header.cylinder >= tracks) return Result::error(ErrorCode::LoadIncorrectFile, "Incorrect track index");
-            if (sectors && track_header.sectors != sectors) return Result::error(ErrorCode::LoadIncorrectFile, "Incorrect sector count");
+            if (heads && track_header.head + 1 > heads) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect head index"));
+            if (tracks && track_header.cylinder >= tracks) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect track index"));
+            if (sectors && track_header.sectors != sectors) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect sector count"));
             const int s_size = 1 << (track_header.sector_size+7);
-            if (sector_size && s_size != sector_size) return Result::error(ErrorCode::LoadIncorrectFile, "Incorrect sector size");
+            if (sector_size && s_size != sector_size) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect sector size"));
 
             // Sector map
             BYTES sector_map;
             sector_map.resize(track_header.sectors);
             file.read(reinterpret_cast<char*>(sector_map.data()), sector_map.size());
-            if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, "File seems to be corrupt");
+            if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
 
             //Cylinder map
             static bool cm_presents = (track_header.head & 0x80) != 0;
@@ -67,7 +67,7 @@ namespace dsk_tools {
                 BYTES cylinder_map;
                 cylinder_map.resize(track_header.sectors);
                 file.read(reinterpret_cast<char*>(cylinder_map.data()), cylinder_map.size());
-                if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, "File seems to be corrupt");
+                if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
             }
 
             //Head map
@@ -76,14 +76,14 @@ namespace dsk_tools {
                 BYTES head_map;
                 head_map.resize(track_header.sectors);
                 file.read(reinterpret_cast<char*>(head_map.data()), head_map.size());
-                if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, "File seems to be corrupt");
+                if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
             }
 
             for (unsigned sector=0; sector<track_header.sectors; sector++) {
                 unsigned track_pos, sector_pos;
                 if (heads == 2) track_pos = track_header.cylinder * heads + track_header.head;
                 else if (heads == 1) track_pos = track_header.cylinder;
-                else return Result::error(ErrorCode::LoadError, "Incorrect data");
+                else return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Incorrect data"));
                 sector_pos = (track_pos * sectors + sector_map[sector]-1) * sector_size;
 
                 uint8_t data_marker;
@@ -99,7 +99,7 @@ namespace dsk_tools {
                     case 0x02: case 0x04: case 0x06: case 0x08:
                         data_len = 1;  break;
                     default:
-                        return Result::error(ErrorCode::LoadIncorrectFile, "File seems to be corrupt");
+                        return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
                         break;
                 }
 
@@ -109,7 +109,7 @@ namespace dsk_tools {
                 }
 
                 if (sector_pos + sector_size > buffer.size())
-                    return Result::error(ErrorCode::LoadIncorrectFile, "Data exceeds buffer size");
+                    return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Data exceeds buffer size"));
 
                 if (data_len == 0) {
                     constexpr uint8_t data_value = 0xE5;

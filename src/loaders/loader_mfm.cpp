@@ -233,7 +233,7 @@ namespace dsk_tools {
     {
         UTF8_ifstream file(file_name, std::ios::binary);
         if (!file.good()) {
-            return Result::error(ErrorCode::LoadError, "Cannot open file");
+            return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Cannot open file"));
         }
 
         file.seekg (0, std::ios::end);

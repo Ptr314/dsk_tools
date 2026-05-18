@@ -22,7 +22,7 @@ namespace dsk_tools {
         std::ofstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
-            return Result::error(ErrorCode::WriteError, "Cannot create output file");
+            return Result::error(ErrorCode::WriteError, QT_TRANSLATE_NOOP("errors", "Cannot create output file"));
         }
 
         BYTES buffer;
@@ -33,7 +33,7 @@ namespace dsk_tools {
         file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
 
         if (!file.good()) {
-            return Result::error(ErrorCode::WriteError, "Error writing to file");
+            return Result::error(ErrorCode::WriteError, QT_TRANSLATE_NOOP("errors", "Error writing to file"));
         }
 
         return Result::ok();

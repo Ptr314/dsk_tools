@@ -23,7 +23,7 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         UTF8_ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
-            return Result::error(ErrorCode::LoadError, "Cannot open file");
+            return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Cannot open file"));
         }
 
         file.seekg (0, std::ios::end);
@@ -32,7 +32,7 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
 
         unsigned image_size = image_size_by_type(type_id, format);
         if (image_size == 0)
-            return Result::error(ErrorCode::LoadParamsMismatch, "Unknown disk type");
+            return Result::error(ErrorCode::LoadParamsMismatch, QT_TRANSLATE_NOOP("errors", "Unknown disk type"));
 
         // if (fsize<image_size)
         //     return Result::error(ErrorCode::LoadSizeMismatch, "File too small");

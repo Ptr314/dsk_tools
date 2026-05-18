@@ -28,7 +28,7 @@ namespace dsk_tools {
         Result res = ViewerPic::prepare_data(data, image, filesystem, error_msg);
         if (!res) return res;
         constexpr int data_pos = sizeof(Agat_BFT_header) + sizeof(m_glyph_width) + sizeof(m_glyph_shift);
-        if (data.size() < data_pos) return Result::error(ErrorCode::OpenBadFormat, "File is too small");
+        if (data.size() < data_pos) return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "File is too small"));
         std::memcpy(&m_bft_header, data.data(), sizeof(Agat_BFT_header));
         std::memcpy(m_glyph_width, data.data()+sizeof(Agat_BFT_header), sizeof(m_glyph_width));
         std::memcpy(m_glyph_shift, data.data()+sizeof(Agat_BFT_header)+sizeof(m_glyph_width), sizeof(m_glyph_shift));
@@ -41,7 +41,7 @@ namespace dsk_tools {
             if (m_glyph_shift[i] > max_shift) max_shift = m_glyph_shift[i];
         }
         const int total_size = data_pos + glyphs_count * m_bft_header.glyph_height;
-        if (data.size() < total_size) return Result::error(ErrorCode::OpenBadFormat, "File is too small");
+        if (data.size() < total_size) return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "File is too small"));
         m_x_grid = 8 + 1;
         m_y_grid = (m_bft_header.glyph_height - m_min_shift + max_shift) + 1;
         m_sx = (16+1) * m_x_grid; // 16 character + header

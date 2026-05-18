@@ -286,7 +286,7 @@ namespace dsk_tools {
             file = make_unique<UTF8_ifstream>(file_name, std::ios::binary);
 
             if (!file->good()) {
-                return Result::error(ErrorCode::LoadError, "Cannot open file");
+                return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Cannot open file"));
             }
 
             file->seekg (0, std::ios::end);
@@ -336,7 +336,7 @@ namespace dsk_tools {
             if (fsize == 128*26*77) {
                 type_id = "TYPE_CPM:GMD-7012";
             } else
-                return Result::error(ErrorCode::DetectError, "Invalid file size for DSK format");
+                return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid file size for DSK format"));
 
             // filesystem_id
             if (type_id == "TYPE_AGAT_140" || type_id == "TYPE_AGAT_840") {
@@ -395,7 +395,7 @@ namespace dsk_tools {
                     filesystem_id = "FILESYSTEM_DOS33";
                 }
             } else
-                return Result::error(ErrorCode::DetectError, "Failed to load AIM file");
+                return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Failed to load AIM file"));
         } else
         if (ext == ".nic" || ext == ".nib" || ext == ".mfm") {
             if (ext == ".nib") {
@@ -405,7 +405,7 @@ namespace dsk_tools {
                 if (fsize == 947520)
                     type_id = "TYPE_AGAT_840";
                 else
-                    return Result::error(ErrorCode::DetectError, "Invalid file size for NIB format");
+                    return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid file size for NIB format"));
             } else
                 type_id = "TYPE_AGAT_140";
 
@@ -438,9 +438,9 @@ namespace dsk_tools {
                 LoaderHXC_MFM loader(file_name, format_id, type_id);
                 res = loader.load(buffer);
             } else
-                return Result::error(ErrorCode::DetectError, "Unknown MFM format");
+                return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Unknown MFM format"));
 
-            if (!res) return Result::error(ErrorCode::DetectError, "Failed to load MFM file");
+            if (!res) return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Failed to load MFM file"));
 
             if (format_only) {
                 filesystem_id = "";
@@ -460,7 +460,7 @@ namespace dsk_tools {
                     filesystem_id = "FILESYSTEM_DOS33";
                 }
             } else
-                return Result::error(ErrorCode::DetectError, "Invalid filesystem signature");
+                return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid filesystem signature"));
         } else
         if (ext == ".hfe") {
             format_id = "FILE_HXC_HFE";
@@ -474,7 +474,7 @@ namespace dsk_tools {
             UTF8_ifstream file(file_name, std::ios::binary);
 
             if (!file.good()) {
-                return Result::error(ErrorCode::LoadError, "Cannot open HFE file");
+                return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Cannot open HFE file"));
             }
 
             BYTES hdr_buffer(sizeof(HXC_HFE_HEADER));
@@ -493,7 +493,7 @@ namespace dsk_tools {
                         filesystem_id = "FILESYSTEM_DOS33";
                     }
                 } else
-                    return Result::error(ErrorCode::DetectError, "Invalid HFE file format");
+                    return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid HFE file format"));
             }
         } else
         if (ext == ".fil") {
@@ -514,7 +514,7 @@ namespace dsk_tools {
             type_id = "TYPE_CPM:IRISHA-360-INT";
             filesystem_id = "FILESYSTEM_CPM_RAW";
         } else
-            return Result::error(ErrorCode::DetectError, "Unknown file format");
+            return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Unknown file format"));
 
         return Result::ok();
     }
@@ -756,7 +756,7 @@ namespace dsk_tools {
         if (!errors) {
             return Result::ok();
         } else {
-            return Result::error(ErrorCode::LoadDataCorrupt, "Agat 840 track decode error");
+            return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Agat 840 track decode error"));
         }
     }
 
@@ -769,14 +769,14 @@ namespace dsk_tools {
             BYTES track_in(in.begin() + i*encoded_track_size, in.begin() + (i+1)*encoded_track_size);
             BYTES track_out;
             Result res = decode_agat_840_track(track_out, track_in);
-            if (!res) return Result::error(ErrorCode::LoadDataCorrupt, "Failed to decode Agat 840 track");
+            if (!res) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Failed to decode Agat 840 track"));
             if (track_out.size() == raw_track_size) {
                 std::copy(
                     track_out.begin(),
                     track_out.end(),
                     out.begin() + i*raw_track_size
                 );
-            } else  return Result::error(ErrorCode::LoadDataCorrupt, "Decoded track size mismatch");
+            } else  return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Decoded track size mismatch"));
         };
         return Result::ok();
     }
@@ -849,7 +849,7 @@ namespace dsk_tools {
         if (!errors) {
             return Result::ok();
         } else {
-            return Result::error(ErrorCode::LoadDataCorrupt, "Agat 140 track decode error");
+            return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Agat 140 track decode error"));
         }
 
     }
@@ -860,7 +860,7 @@ namespace dsk_tools {
         for (int i=0; i<35; i++) {
             BYTES track_in(in.begin() + i*track_len, in.begin() + (i+1)*track_len);
             Result res = load_agat140_track(i, out, track_in, track_len);
-            if (!res) return Result::error(ErrorCode::LoadDataCorrupt, "Failed to decode Agat 140 track");
+            if (!res) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Failed to decode Agat 140 track"));
         };
         return Result::ok();
     }

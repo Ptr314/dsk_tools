@@ -14,6 +14,10 @@
 
 #include "bit_enums.h"
 
+#ifndef QT_TRANSLATE_NOOP
+#define QT_TRANSLATE_NOOP(scope, x) x
+#endif
+
 namespace dsk_tools {
 
     typedef std::vector<uint8_t> BYTES;

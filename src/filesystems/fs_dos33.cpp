@@ -30,14 +30,14 @@ namespace dsk_tools {
         if (!image->get_loaded()) return Result::error(ErrorCode::OpenNotLoaded);
 
         uint8_t* vtoc_data = image->get_sector_data(0, 0x11, 0);
-        if (!vtoc_data) return Result::error(ErrorCode::OpenBadFormat, "Cannot read VTOC");
+        if (!vtoc_data) return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "Cannot read VTOC"));
 
         VTOC = reinterpret_cast<dsk_tools::Agat_VTOC *>(vtoc_data);
         const int sector_size = static_cast<int>(VTOC->bytes_per_sector);
 
         // Also: https://retrocomputing.stackexchange.com/questions/15054/how-can-i-programmatically-determine-whether-an-apple-ii-dsk-disk-image-is-a-do
         if (VTOC->sectors_on_track != image->get_sectors() || sector_size != 256) {
-            return Result::error(ErrorCode::OpenBadFormat, "VTOC sector count or size mismatch");
+            return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "VTOC sector count or size mismatch"));
         }
 
         const TS_PAIR root_ts = {
@@ -204,7 +204,7 @@ namespace dsk_tools {
         if (track < 0x72 && tracks_count > 0x32) {
             uint8_t* vtoc_ex_data = image->get_sector_data(0, 0x32, 0);
             if (!vtoc_ex_data)
-                return Result::error(ErrorCode::IncorrectRequest, "Cannot read VTOC extension sector (0x32, 0)");
+                return Result::error(ErrorCode::IncorrectRequest, QT_TRANSLATE_NOOP("errors", "Cannot read VTOC extension sector (0x32, 0)"));
 
             VTOCEx = reinterpret_cast<Agat_VTOC_Ex *>(vtoc_ex_data);
             mapped = &(VTOCEx->free_sectors[track-0x32]);
@@ -213,13 +213,13 @@ namespace dsk_tools {
         if (track < 0xB2 && tracks_count > 0x72) {
             uint8_t* vtoc_ex_data = image->get_sector_data(0, 0x72, 0);
             if (!vtoc_ex_data)
-                return Result::error(ErrorCode::IncorrectRequest, "Cannot read VTOC extension sector (0x72, 0)");
+                return Result::error(ErrorCode::IncorrectRequest, QT_TRANSLATE_NOOP("errors", "Cannot read VTOC extension sector (0x72, 0)"));
 
             VTOCEx = reinterpret_cast<Agat_VTOC_Ex *>(vtoc_ex_data);
             mapped = &(VTOCEx->free_sectors[track-0x72]);
             return Result::ok();
         }
-        return Result::error(ErrorCode::IncorrectRequest, "Incorrect track number for mapping");
+        return Result::error(ErrorCode::IncorrectRequest, QT_TRANSLATE_NOOP("errors", "Incorrect track number for mapping"));
     }
 
     int fsDOS33::free_sectors()
@@ -718,7 +718,7 @@ namespace dsk_tools {
                     list_track = ts_list->next_track;
                     list_sector = ts_list->next_sector;
                 } else {
-                    return Result::error(ErrorCode::FileDeleteError, "Incorrect track/sector data");
+                    return Result::error(ErrorCode::FileDeleteError, QT_TRANSLATE_NOOP("errors", "Incorrect track/sector data"));
                 }
 
             } while (list_track != 0);
@@ -1015,14 +1015,14 @@ namespace dsk_tools {
                             const int file_sector = ts_list->ts[i][1];
                             if (file_track == 0 && file_sector == 0) break;
                             if (!sector_occupy(0, file_track, file_sector))
-                                return Result::error(ErrorCode::FileRestoreError, "Sector is not free");
+                                return Result::error(ErrorCode::FileRestoreError, QT_TRANSLATE_NOOP("errors", "Sector is not free"));
                         }
                         if (!sector_occupy(0, list_track, list_sector))
-                                return Result::error(ErrorCode::FileRestoreError, "Sector is not free");
+                                return Result::error(ErrorCode::FileRestoreError, QT_TRANSLATE_NOOP("errors", "Sector is not free"));
                         list_track = ts_list->next_track;
                         list_sector = ts_list->next_sector;
                     } else {
-                        return Result::error(ErrorCode::FileRestoreError, "Incorrect track/sector data");
+                        return Result::error(ErrorCode::FileRestoreError, QT_TRANSLATE_NOOP("errors", "Incorrect track/sector data"));
                     }
 
                 } while (list_track != 0);
@@ -1056,7 +1056,7 @@ namespace dsk_tools {
                     if (!catalog) return Result::error(ErrorCode::FileRestoreError);
 
                     if (!sector_occupy(0, catalog_ts.track, catalog_ts.sector))
-                        return Result::error(ErrorCode::FileRestoreError, "Sector is not free");
+                        return Result::error(ErrorCode::FileRestoreError, QT_TRANSLATE_NOOP("errors", "Sector is not free"));
                     catalog_ts.track = catalog->next_track;
                     catalog_ts.sector = catalog->next_sector;
                 } while (catalog_ts.track != 0);

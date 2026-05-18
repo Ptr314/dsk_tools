@@ -26,9 +26,9 @@ namespace dsk_tools {
     Result WriterRAW::substitute_tracks(BYTES & buffer, BYTES &tmplt, const int numtracks)
     {
         if (buffer.size() != tmplt.size())
-            return Result::error(ErrorCode::WriteIncorrectTemplate, "Template file size mismatch");
+            return Result::error(ErrorCode::WriteIncorrectTemplate, QT_TRANSLATE_NOOP("errors", "Template file size mismatch"));
         if (buffer.size() != image->get_size())
-            return Result::error(ErrorCode::WriteIncorrectSource, "Source file size mismatch");
+            return Result::error(ErrorCode::WriteIncorrectSource, QT_TRANSLATE_NOOP("errors", "Source file size mismatch"));
         int block_size = image->get_sectors() * image->get_sector_size() * image->get_heads();
 
         BYTES out;

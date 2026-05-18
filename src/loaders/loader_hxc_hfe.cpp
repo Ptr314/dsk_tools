@@ -24,7 +24,7 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
         UTF8_ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
-            return Result::error(ErrorCode::LoadError, "Cannot open file");
+            return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Cannot open file"));
         }
 
         file.seekg (0, std::ios::end);
@@ -40,18 +40,18 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
 
         std::string signature(reinterpret_cast<char*>(&hdr->HEADERSIGNATURE), sizeof(hdr->HEADERSIGNATURE));
 
-        if (signature != "HXCPICFE") return Result::error(ErrorCode::LoadIncorrectFile, "Invalid HFE signature");
+        if (signature != "HXCPICFE") return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Invalid HFE signature"));
 
         int image_size, sectors_per_track, s_size;
 
         if (type_id == "TYPE_AGAT_840") {
             if (hdr->number_of_side != 2 || hdr->number_of_track != 80)
-                return Result::error(ErrorCode::LoadIncorrectFile, "Invalid HFE parameters");
+                return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Invalid HFE parameters"));
             sectors_per_track = 21;
             s_size = 256;
             image_size = 2*80*sectors_per_track*s_size;
         } else
-            return Result::error(ErrorCode::LoadIncorrectFile, "Unsupported disk type");
+            return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Unsupported disk type"));
 
         buffer.resize(image_size);
 
@@ -100,7 +100,7 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
         if (!errors) {
             return Result::ok();
         } else {
-            return Result::error(ErrorCode::LoadDataCorrupt, "Failed to decode track data");
+            return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Failed to decode track data"));
         }
     }
 

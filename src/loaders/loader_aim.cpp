@@ -33,7 +33,7 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
         UTF8_ifstream file(file_name, std::ios::binary);
 
         if (!file.good()) {
-            return Result::error(ErrorCode::LoadError, "Cannot open file");
+            return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Cannot open file"));
         }
 
         file.seekg (0, std::ios::end);
@@ -53,19 +53,19 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
         for (int track=0; track<160; track++) {
             for (int sector=0; sector<21; sector++) {
                 // Index
-                if (!iterate_until(in, in_p, 0x95)) return Result::error(ErrorCode::LoadDataCorrupt, "Invalid index mark");
-                if (!iterate_until(in, in_p, 0x6A)) return Result::error(ErrorCode::LoadDataCorrupt, "Invalid index mark");
+                if (!iterate_until(in, in_p, 0x95)) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Invalid index mark"));
+                if (!iterate_until(in, in_p, 0x6A)) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Invalid index mark"));
                 // VTS
                 // uint8_t r_v = in.at(in_p++) & 0xFF;
                 // uint8_t r_t = in.at(in_p++) & 0xFF;
                 // uint8_t r_s = in.at(in_p++) & 0xFF;
                 in_p += 3;
                 // Data mark
-                if (!iterate_until(in, in_p, 0x6A)) return Result::error(ErrorCode::LoadDataCorrupt, "Invalid data mark");
-                if (!iterate_until(in, in_p, 0x95)) return Result::error(ErrorCode::LoadDataCorrupt, "Invalid data mark");
+                if (!iterate_until(in, in_p, 0x6A)) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Invalid data mark"));
+                if (!iterate_until(in, in_p, 0x95)) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Invalid data mark"));
                 // Data
                 for (int i=0; i<256; i++) {
-                    if (in_p >= in.size()) return Result::error(ErrorCode::LoadDataCorrupt, "Unexpected end of data");
+                    if (in_p >= in.size()) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Unexpected end of data"));
                     uint16_t b = in.at(in_p++);
                     uint8_t  d = b & 0xFF;
                     buffer[out_p++] = d;

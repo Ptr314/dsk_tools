@@ -71,12 +71,12 @@ namespace dsk_tools {
                 i++;
             }
         } else
-            return Result::error(ErrorCode::ReadError, "Unknown DIR_ENTRY.LEVEL value: " + std::to_string(dir_entry.LEVEL));
+            return Result::error(ErrorCode::ReadError, std::string(QT_TRANSLATE_NOOP("errors", "Unknown DIR_ENTRY.LEVEL value")) + ": " + std::to_string(dir_entry.LEVEL));
 
         if (strict_size) {
             const int expected_size = dir_entry.FILELEN[0] + (dir_entry.FILELEN[1]<<8) + (dir_entry.FILELEN[2]<<16);
             if (expected_size > buffer.size()) {
-                return Result::error(ErrorCode::ReadError, "File is smaller than expected");
+                return Result::error(ErrorCode::ReadError, QT_TRANSLATE_NOOP("errors", "File is smaller than expected"));
             }
             if (expected_size < buffer.size()) {
                 buffer.resize(expected_size);

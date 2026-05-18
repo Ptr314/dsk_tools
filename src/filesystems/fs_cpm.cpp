@@ -34,38 +34,38 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
 
         const auto it = m_diskdefs.find(diskdef_id);
         if (it == m_diskdefs.end())
-            return Result::error(ErrorCode::OpenBadFormat, "Unknown CP/M disk definition");
+            return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "Unknown CP/M disk definition"));
 
         const DiskDef &diskdef = it->second;
 
         unsigned heads = 0;
         if (!get_map_value(diskdef.int_params, std::string("heads"), heads, 2, false))
-            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: heads is incorrect");
+            return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "CP/M disk definition: heads is incorrect"));
         unsigned tracks = 0;
         if (!get_map_value(diskdef.int_params, std::string("tracks"), tracks, 0, true))
-            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: tracks is required");
+            return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "CP/M disk definition: tracks is required"));
         unsigned sectrk = 0;
         if (!get_map_value(diskdef.int_params, std::string("sectrk"), sectrk, 0, true))
-            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: sectrk is required");
+            return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "CP/M disk definition: sectrk is required"));
         unsigned seclen = 0;
         if (!get_map_value(diskdef.int_params, std::string("seclen"), seclen, 0, true))
-            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: seclen is required");
+            return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "CP/M disk definition: seclen is required"));
 
         unsigned BLS = 0;
         if (!get_map_value(diskdef.int_params, std::string("blocksize"), BLS, 0, true))
-            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: blocksize is required");
+            return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "CP/M disk definition: blocksize is required"));
         unsigned n = 0;
         for (unsigned v = BLS; v > 1; v >>= 1) ++n; // Avoiding <cmath> and floating point operations
 
         unsigned boottrk = 0;
         if (!get_map_value(diskdef.int_params, std::string("boottrk"), boottrk, 0, false))
-            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: boottrk is incorrect");
+            return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "CP/M disk definition: boottrk is incorrect"));
 
         const auto OFF = static_cast<uint16_t>(boottrk);
 
         unsigned maxdir = 0;
         if (!get_map_value(diskdef.int_params, std::string("maxdir"), maxdir, 64, false))
-            return Result::error(ErrorCode::OpenBadFormat, "CP/M disk definition: maxdir is incorrect");
+            return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "CP/M disk definition: maxdir is incorrect"));
 
         const auto SPT = static_cast<uint16_t>(seclen * sectrk / 128);
         const auto BSH = static_cast<uint8_t>(n - 7);
@@ -118,7 +118,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 const auto res= fill_dpb(type_id);
                 if (!res) return res;
             } else
-                return Result::error(ErrorCode::OpenBadFormat, "Unsupported disk type for CP/M");
+                return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "Unsupported disk type for CP/M"));
         }
 
         is_open = true;
@@ -684,7 +684,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             } else if (key == "user") {
                 const int u = std::stoi(val);
                 if (u < 0 || u > 0x1F)
-                    return Result::error(ErrorCode::FileMetadataError, "user number out of range");
+                    return Result::error(ErrorCode::FileMetadataError, QT_TRANSLATE_NOOP("errors", "user number out of range"));
                 new_ST = static_cast<uint8_t>(u);
                 change_user = (new_ST != file_entry->ST);
             } else if (key == "protected") {
