@@ -418,7 +418,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 catalog[i*entries_in_sector + j] = reinterpret_cast<CPM_DIR_ENTRY*>(sector + j*sizeof(CPM_DIR_ENTRY));
         }
 
-        const std::set<std::string> txts = {".txt", ".doc", ".pas", ".asm", ".cmd", ".hlp", ".src"};
+        const std::set<std::string> txts = {".txt", ".doc", ".pas", ".asm", ".cmd", ".hlp", ".src", ".me"};
 
         std::string prev_name;
         uint8_t prev_st;
@@ -447,7 +447,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
 
                 f.attributes = 0xE5 << 8;
 
-                std::string ext = get_file_ext(f.name);
+                std::string ext = trim(get_file_ext(f.name));
                 f.type_preferred = (txts.find(ext) != txts.end()) ? PreferredType::Text : PreferredType::Binary;
                 if (ext == ".bas")
                     f.type_preferred = PreferredType::MBASIC;
