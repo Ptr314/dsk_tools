@@ -34,14 +34,14 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         if (image_size == 0)
             return Result::error(ErrorCode::LoadParamsMismatch, "Unknown disk type");
 
-        if (fsize<image_size)
-            return Result::error(ErrorCode::LoadSizeMismatch, "File too small");
-        else
+        // if (fsize<image_size)
+        //     return Result::error(ErrorCode::LoadSizeMismatch, "File too small");
+
         if (fsize == image_size + 256)
             // Image with a 256-byte header?
             file.seekg (256, std::ios::beg);
 
-        buffer.resize(image_size);
+        buffer.assign(image_size, 0xE5);
         file.read (reinterpret_cast<char*>(buffer.data()), image_size);
 
         loaded = true;
