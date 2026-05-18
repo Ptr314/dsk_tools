@@ -51,6 +51,13 @@ namespace dsk_tools {
             ignore = {0x0A};
             txt_end = {0x1A};
             tab = 8;
+        } else
+        if (cm_name == "koi8_m") {
+            charmap = &koi8_m_charmap;
+            crlf = {0x0D};
+            ignore = {0x0A};
+            txt_end = {0x1A};
+            tab = 8;
         } else {
             // TODO: Other encodings;
         }
