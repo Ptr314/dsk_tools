@@ -129,6 +129,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
     {
         std::string ext;
         for (const unsigned char i : di.E) ext += static_cast<char>(i & 0x7F);
+        ext = trim(ext);
         return trim(std::string(reinterpret_cast<char*>(&di.F), 8)) + ((!ext.empty())?("."+ext):"");
     }
 
