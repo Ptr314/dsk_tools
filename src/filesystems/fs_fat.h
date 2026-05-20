@@ -43,6 +43,19 @@ namespace dsk_tools {
         uint32_t fileSize;             // 0x1C
     };
 
+    // VFAT Long File Name (LFN) entry. Sits in the directory slot that would
+    // normally hold a FAT_DIR_ENTRY; attr == 0x0F identifies it.
+    struct FAT_LFN_ENTRY {
+        uint8_t  ord;                  // 0x00: sequence; 0x40 bit = last (highest-ord) entry
+        uint8_t  name1[10];            // 0x01: chars 1..5  (UTF-16LE)
+        uint8_t  attr;                 // 0x0B: always 0x0F
+        uint8_t  type;                 // 0x0C: 0 for ordinary LFN
+        uint8_t  checksum;             // 0x0D: checksum of associated short name
+        uint8_t  name2[12];            // 0x0E: chars 6..11 (UTF-16LE)
+        uint16_t firstClusterLo;       // 0x1A: always 0
+        uint8_t  name3[4];             // 0x1C: chars 12..13 (UTF-16LE)
+    };
+
     #pragma pack(pop)
 
     enum class FATType { FAT12, FAT16, FAT32 };

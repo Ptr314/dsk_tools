@@ -15,6 +15,60 @@
 
 namespace dsk_tools {
 
+    namespace {
+        // Checksum of the 11-byte short name; used to bind LFN entries to their owner.
+        uint8_t lfn_checksum(const uint8_t name[11])
+        {
+            uint8_t sum = 0;
+            for (int i = 0; i < 11; i++)
+                sum = static_cast<uint8_t>(((sum & 1) ? 0x80 : 0) + (sum >> 1) + name[i]);
+            return sum;
+        }
+
+        // Pull all 13 UTF-16LE code units out of an LFN slot in their natural order.
+        void lfn_extract_chars(const FAT_LFN_ENTRY & lfn, uint16_t out[13])
+        {
+            for (int i = 0; i < 5; i++)
+                out[i]      = static_cast<uint16_t>(lfn.name1[i*2]) | (static_cast<uint16_t>(lfn.name1[i*2 + 1]) << 8);
+            for (int i = 0; i < 6; i++)
+                out[5 + i]  = static_cast<uint16_t>(lfn.name2[i*2]) | (static_cast<uint16_t>(lfn.name2[i*2 + 1]) << 8);
+            for (int i = 0; i < 2; i++)
+                out[11 + i] = static_cast<uint16_t>(lfn.name3[i*2]) | (static_cast<uint16_t>(lfn.name3[i*2 + 1]) << 8);
+        }
+
+        std::string utf16le_to_utf8(const std::vector<uint16_t> & u16)
+        {
+            std::string out;
+            out.reserve(u16.size());
+            for (size_t i = 0; i < u16.size(); i++) {
+                uint32_t cp = u16[i];
+                if (cp >= 0xD800 && cp <= 0xDBFF && i + 1 < u16.size()) {
+                    const uint16_t lo = u16[i + 1];
+                    if (lo >= 0xDC00 && lo <= 0xDFFF) {
+                        cp = 0x10000u + ((cp - 0xD800u) << 10) + (lo - 0xDC00u);
+                        i++;
+                    }
+                }
+                if (cp < 0x80) {
+                    out += static_cast<char>(cp);
+                } else if (cp < 0x800) {
+                    out += static_cast<char>(0xC0 | (cp >> 6));
+                    out += static_cast<char>(0x80 | (cp & 0x3F));
+                } else if (cp < 0x10000) {
+                    out += static_cast<char>(0xE0 | (cp >> 12));
+                    out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+                    out += static_cast<char>(0x80 | (cp & 0x3F));
+                } else {
+                    out += static_cast<char>(0xF0 | (cp >> 18));
+                    out += static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+                    out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+                    out += static_cast<char>(0x80 | (cp & 0x3F));
+                }
+            }
+            return out;
+        }
+    }
+
     fsFAT::fsFAT(diskImage * image):
         fileSystem(image)
     {}
@@ -384,6 +438,13 @@ namespace dsk_tools {
 
         const std::set<std::string> txts = {".txt", ".bat", ".ini", ".doc", ".asm", ".c", ".h", ".cpp", ".pas", ".me"};
 
+        // LFN accumulator: VFAT stores long names in 1..N preceding 0x0F-attr slots,
+        // highest ordinal first (with the 0x40 "last" bit set), bound to the short
+        // entry via a checksum of the 11-byte short name.
+        std::vector<std::vector<uint16_t>> lfn_parts;
+        uint8_t lfn_checksum_expected = 0;
+        bool lfn_valid = false;
+
         const size_t entries = buffer.size() / sizeof(FAT_DIR_ENTRY);
         for (size_t i = 0; i < entries; i++) {
             const auto * de = reinterpret_cast<const FAT_DIR_ENTRY *>(buffer.data() + i * sizeof(FAT_DIR_ENTRY));
@@ -391,24 +452,85 @@ namespace dsk_tools {
             const uint8_t first = de->name[0];
 
             if (first == 0x00) break;                       // no further entries past this point
-            if (de->attr == FAT_ATTR_LONG_NAME) continue;   // LFN entries — skip
-            if (de->attr & FAT_ATTR_VOLUME_ID) continue;    // volume label
+
+            // LFN sub-entry — accumulate, then continue to its companion short entry.
+            if (de->attr == FAT_ATTR_LONG_NAME) {
+                if (first == 0xE5) {
+                    // Deleted LFN sub-entry orphans the chain — drop it.
+                    lfn_parts.clear();
+                    lfn_valid = false;
+                    continue;
+                }
+                const auto * lfn = reinterpret_cast<const FAT_LFN_ENTRY *>(de);
+                const uint8_t ord = lfn->ord;
+                const uint8_t idx = static_cast<uint8_t>((ord & 0x1F) - 1);
+
+                uint16_t chars[13];
+                lfn_extract_chars(*lfn, chars);
+
+                if (ord & 0x40) {
+                    // First sub-entry we encounter is the highest-ordinal one — size to fit.
+                    lfn_parts.assign(static_cast<size_t>(idx) + 1, std::vector<uint16_t>());
+                    lfn_checksum_expected = lfn->checksum;
+                    lfn_valid = true;
+                }
+                if (!lfn_valid || idx >= lfn_parts.size() || lfn->checksum != lfn_checksum_expected) {
+                    lfn_parts.clear();
+                    lfn_valid = false;
+                    continue;
+                }
+                lfn_parts[idx].assign(chars, chars + 13);
+                continue;
+            }
+
+            if (de->attr & FAT_ATTR_VOLUME_ID) {            // volume label entry
+                lfn_parts.clear();
+                lfn_valid = false;
+                continue;
+            }
 
             const bool is_deleted = (first == 0xE5);
-            if (is_deleted && !show_deleted) continue;
+            if (is_deleted && !show_deleted) {
+                lfn_parts.clear();
+                lfn_valid = false;
+                continue;
+            }
 
             UniversalFile f;
             f.fs = get_fs();
 
+            std::string short_name;
             if (is_deleted) {
                 // First byte of a deleted entry is overwritten with 0xE5;
                 // surface a placeholder so the rest of the 8.3 name stays readable.
                 FAT_DIR_ENTRY shown = *de;
                 shown.name[0] = '?';
-                f.name = make_file_name(shown);
+                short_name = make_file_name(shown);
             } else {
-                f.name = make_file_name(*de);
+                short_name = make_file_name(*de);
             }
+
+            // Use the accumulated long name if the chain is complete and the
+            // checksum matches the short name we're sitting on.
+            std::string long_name;
+            if (!is_deleted && lfn_valid && lfn_checksum(de->name) == lfn_checksum_expected) {
+                std::vector<uint16_t> all_chars;
+                bool complete = true;
+                bool terminator_seen = false;
+                for (const auto & p : lfn_parts) {
+                    if (p.empty()) { complete = false; break; }
+                    if (terminator_seen) continue;
+                    for (uint16_t c : p) {
+                        if (c == 0x0000 || c == 0xFFFF) { terminator_seen = true; break; }
+                        all_chars.push_back(c);
+                    }
+                }
+                if (complete) long_name = utf16le_to_utf8(all_chars);
+            }
+            lfn_parts.clear();
+            lfn_valid = false;
+
+            f.name = long_name.empty() ? short_name : long_name;
 
             // Drop on-disk "." and ".." rows — the parent ".." is synthesized above
             // from current_path. Relies on make_file_name preserving the dots.
