@@ -870,6 +870,7 @@ namespace dsk_tools {
         ViewerText viewer_text;
         ViewerBASIC_Agat viewer_basic_agat;
         ViewerBASIC_Apple viewer_basic_apple;
+        ViewerBASIC_Vector viewer_basic_vector;
         ViewerBASIC_MBASIC viewer_basic_mbasic;
         ViewerPicAgat_256x256x1 viewer_pic_agat_256x256x1;
         ViewerPicAgat_BMP viewer_pic_agat_bmp;

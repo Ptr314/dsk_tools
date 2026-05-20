@@ -54,14 +54,17 @@ add_library(${PROJECT_NAME} STATIC
 
     src/viewers/viewer_binary.h         src/viewers/viewer_binary.cpp
     src/viewers/viewer_text.h           src/viewers/viewer_text.cpp
+
+    src/viewers/viewer_basic.h          src/viewers/viewer_basic.cpp
     src/viewers/viewer_basic_agat.h     src/viewers/viewer_basic_agat.cpp
     src/viewers/viewer_basic_apple.h    src/viewers/viewer_basic_apple.cpp
+    src/viewers/viewer_basic_vector.h    src/viewers/viewer_basic_vector.cpp
     src/viewers/viewer_basic_mbasic.h   src/viewers/viewer_basic_mbasic.cpp
+
     src/viewers/viewer_pics.h           src/viewers/viewer_pics.cpp
     src/viewers/viewer_pics_agat.h
     src/viewers/agat/agat_common.h
-    src/viewers/agat/agat_base.h
-    src/viewers/agat/agat_base.cpp
+    src/viewers/agat/agat_base.h        src/viewers/agat/agat_base.cpp
     src/viewers/agat/agat_16color.h     src/viewers/agat/agat_16color.cpp
     src/viewers/agat/agat_4color.h      src/viewers/agat/agat_4color.cpp
     src/viewers/agat/agat_mono.h        src/viewers/agat/agat_mono.cpp

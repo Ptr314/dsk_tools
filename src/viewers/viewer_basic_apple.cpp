@@ -11,6 +11,6 @@ namespace dsk_tools {
 
     std::string ViewerBASIC_Apple::process_as_text(const BYTES & data, const std::string & cm_name)
     {
-        return convert_tokenized(data, cm_name, dsk_tools::ABS_tokens);
+        return convert_tokenized(data, cm_name, dsk_tools::ABS_tokens, true);
     }
 }

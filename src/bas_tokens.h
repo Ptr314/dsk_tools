@@ -42,6 +42,21 @@ namespace dsk_tools {
         "LONG STRING",	"BIG EXPR", 		"CONTINUE",	"UNDEF NAME", 		"BYTE UNCOMPL",		"LABEL", 		"OPCODE", 		"DOUBLE DEF NAME"
     };
 
+    constexpr std::array<const char*, 128> Vector_tokens = {
+        "CLS","FOR","NEXT","DATA","INPUT","DIM","READ","CUR","GOTO",
+        "RUN","IF","RESTORE","GOSUB","RETURN","REM","STOP","OUT","ON",
+        "PLOT","LINE","POKE","PRINT","DEF","CONT","LIST","CLEAR",
+        "CLOAD","CSAVE","NEW","TAB(","TO","SPC(","FN","THEN","NOT",
+        "STEP","+","-","*","/","^","AND","OR",">","=","<","SGN","INT",
+        "ABS","USR","FRE","INP","POS","SQR","RND","LOG","EXP","COS",
+        "SIN","TAN","ATN","PEEK","LEN","STR$","VAL","ASC","CHR$",
+        "LEFT$","RIGHT$","MID$","POINT","INKEY$","AT","&","BEEP",
+        "PAUSE","VERIFY","HOME","EDIT","DELETE","MERGE","AUTO","HIMEM",
+        "@","ASN","ADDR","PI","RENUM","ACS","LG","LPRINT","LLIST",
+        "SCREEN","COLOR","GET","PUT","BSAVE","BLOAD","PLAY","PAINT",
+        "CIRCLE"
+    };
+
     constexpr std::array<const char*, 128> MBASIC_main_tokens = {
         "", "END", "FOR", "NEXT", "DATA", "INPUT", "DIM", "READ", "LET", "GOTO",
         "RUN", "IF", "RESTORE", "GOSUB", "RETURN", "REM", "STOP", "PRINT", "CLEAR", "LIST",
