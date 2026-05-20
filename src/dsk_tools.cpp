@@ -68,7 +68,7 @@ namespace dsk_tools {
         if (type_id == "TYPE_AGAT_140")   return dsk_tools::make_unique<imageAgat140>(std::move(loader));
         if (type_id == "TYPE_AGAT_840")   return dsk_tools::make_unique<imageAgat840>(std::move(loader));
         if (type_id == "TYPE_FIL")        return dsk_tools::make_unique<imageFIL>(std::move(loader));
-         if (type_id.rfind("TYPE_CPM:", 0) == 0) {
+         if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0) {
             const std::string diskdef_id = to_lower(type_id.substr(9));
             const auto it = diskdefs.find(diskdef_id);
             if (it == diskdefs.end()) return nullptr;
@@ -131,6 +131,9 @@ namespace dsk_tools {
         }
         if (filesystem_id == "FILESYSTEM_FIL") {
             return dsk_tools::make_unique<fsFIL>(image);
+        }
+        if (filesystem_id == "FILESYSTEM_FAT") {
+            return dsk_tools::make_unique<fsFAT>(image);
         }
         return nullptr;
     }
@@ -314,7 +317,7 @@ namespace dsk_tools {
             return Result::ok();
         }
 
-        if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd" || ext == ".fdd") {
+        if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd" || ext == ".fdd" || ext == ".img") {
             format_id = "FILE_RAW_MSB";
 
             if (format_only) {
@@ -335,6 +338,18 @@ namespace dsk_tools {
             } else
             if (fsize == 128*26*77) {
                 type_id = "TYPE_CPM:GMD-7012";
+            } else
+            if (fsize == 512*9*40*2) {
+                type_id = "TYPE_FAT:PC-360";
+            } else
+            if (fsize == 512*9*80*2) {
+                type_id = "TYPE_FAT:PC-720";
+            } else
+            if (fsize == 512*15*80*2) {
+                type_id = "TYPE_FAT:PC-1200";
+            } else
+            if (fsize == 512*18*80*2) {
+                type_id = "TYPE_FAT:PC-1440";
             } else
                 return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid file size for DSK format"));
 
@@ -373,6 +388,9 @@ namespace dsk_tools {
             } else
             if (type_id == "TYPE_CPM:GMD-7012") {
                 filesystem_id = "FILESYSTEM_CPM_RAW";
+            } else
+            if (type_id.rfind("TYPE_FAT:", 0)==0) {
+                filesystem_id = "FILESYSTEM_FAT";
             }
         } else
         if (ext == ".aim") {
@@ -1022,8 +1040,8 @@ namespace dsk_tools {
     {
         if (type_id == "TYPE_AGAT_840") return 2*80*21*256;
         if (type_id == "TYPE_AGAT_140") return 1*35*16*256;
-        if (type_id.rfind("TYPE_CPM:", 0) == 0)
-            return format.heads * format.tracks*format.sectors*format.sector_size;
+        if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0)
+            return format.heads * format.tracks * format.sectors * format.sector_size;
         return 0;
     }
 

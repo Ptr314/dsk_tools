@@ -39,6 +39,7 @@
 #include "fs_spriteos.h"
 #include "fs_cpm.h"
 #include "fs_fil.h"
+#include "fs_fat.h"
 
 #include "viewers/viewer.h"
 #include "viewers/viewer_binary.h"

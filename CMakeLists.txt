@@ -48,6 +48,7 @@ add_library(${PROJECT_NAME} STATIC
     src/filesystems/fs_cpm.h            src/filesystems/fs_cpm.cpp
     src/filesystems/fs_fil.h            src/filesystems/fs_fil.cpp
     src/filesystems/fs_host.h           src/filesystems/fs_host.cpp
+    src/filesystems/fs_fat.h            src/filesystems/fs_fat.cpp
 
     src/viewers/viewer.h
     src/viewers/viewer_selectors.h
