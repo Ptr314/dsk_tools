@@ -298,19 +298,19 @@ namespace dsk_tools {
         }
 
         // format_if
-        if (ext == ".kdi" && fsize == 819200) {
+        if (ext == ".kdi" && (fsize == 819200 || format_only)) {
             format_id = "FILE_RAW_MSB";
             type_id = "TYPE_CPM:KORVET";
             filesystem_id = "FILESYSTEM_CPM_RAW";
             return Result::ok();
         }
-        if (ext == ".fdd" && fsize == 839680) {
+        if (ext == ".fdd" && (fsize == 839680 || format_only)) {
             format_id = "FILE_RAW_MSB";
             type_id = "TYPE_CPM:VECTOR";
             filesystem_id = "FILESYSTEM_CPM_RAW";
             return Result::ok();
         }
-        if ((ext == ".odi" || ext == ".fdd") && fsize == 819200) {
+        if ((ext == ".odi" || ext == ".fdd") && (fsize == 819200 || format_only)) {
             format_id = "FILE_RAW_MSB";
             type_id = "TYPE_CPM:ORION";
             filesystem_id = "FILESYSTEM_CPM_RAW";

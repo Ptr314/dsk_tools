@@ -59,13 +59,22 @@ FFF:    dos33 (Apple/Агат DOS)
 Вывести список файлов на диске:
 
 ```bash
+# Автоопределение формата:
 >fddconv IKP7_140.DSK -l
+# Формат Вектор-06Ц:
+>fddconv disk.fdd -f vector -l
 ```
 
 Конвертировать в другой формат:
 
 ```bash
 >fddconv IKP7_140.DSK -o IKP7_140.nib
+```
+
+Добавить файлы к образу:
+
+```bash
+>fddconv disk.fdd -f vector -o disk1.fdd -a game.com -a game.dat
 ```
 
 Добавить файлы и результат сохранить в формате HFE с Volume ID = $AF:

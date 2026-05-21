@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
+// Copyright (C) 2025-2026 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: FDD image conversion utility command-line tool
 
@@ -13,6 +13,7 @@
 #include "fs_host.h"
 #include "host_helpers.h"
 #include "dsk_tools/dsk_tools.h"
+#include "diskdefs_embed.h"
 
 using namespace dsk_tools;
 
@@ -43,7 +44,7 @@ int main(int argc, char** argv)
     // Parsing parameters ----------------------------------------------------
 
     try {
-        cxxopts::Options opts("fddconv", "FDD images conversion utility.");
+        cxxopts::Options opts("fddconv", "FDD images conversion utility v1.1. https://github.com/Ptr314/dsk_tools");
 
         opts.add_options()
             ("v,verbose", "Print detailed information", cxxopts::value<bool>()->default_value("false"))
@@ -55,16 +56,31 @@ int main(int argc, char** argv)
             ("b,binary", "Save extracted files as binary, not FIL (For Apple DOS)", cxxopts::value<bool>()->default_value("false"))
             ("d,delete", "File to delete", cxxopts::value<std::vector<std::string>>())
             ("m,volume", "Volume id - decimal (i.e. 254) or hex (i.e. $FE)", cxxopts::value<std::string>())
-            ("f,input_format", "Input file format DDD:FFF \n"
-                                        "DDD: a140 (Apple/Agat 140k), \n"
-                                        "     a840 (Agat 840k). \n"
-                                        "FFF: dos33 (Apple DOS), \n"
-                                        "     sos (Sprite OS), \n"
-                                        "     cpm, cpm-do, cpm-po (CP/M raw, DOS sectors, ProDOS sectors)",
+            ("f,input_format", "Input file format DDD:FFF or DDD \n"
+                                        "DDD: a140 (Apple/Agat 140k)\n"
+                                        "     a840 (Agat 840k)\n"
+                                        "     i360i, i360s (Irisha 360k sides\n"
+                                        "                   interleaved / sequential)\n"
+                                        "     korvet (Korvet 800k CP/M)\n"
+                                        "     orion (Orion-128/PK8000 800k CP/M)\n"
+                                        "     vector (Vector-06C 800+k CP/M)\n"
+                                        "     pc360, pc720, pc1200, pc1440\n"
+                                        "                   (IBM PC 360-1.44 floppies)\n"
+                                        "FFF: dos33 (Apple DOS)\n"
+                                        "     sos (Sprite OS)\n"
+                                        "     cpm, cpm-do, cpm-po (CP/M raw,\n"
+                                        "                          DOS sectors,\n"
+                                        "                          ProDOS sectors)\n"
+                                        "     fat (MS-DOS FAT)",
                                         cxxopts::value<std::string>())
             ("h,help", "Help");
 
         opts.parse_positional({"input"});
+
+        if (argc < 2) {
+            std::cout << opts.help() << std::endl;
+            return EXIT_SUCCESS;
+        }
 
         const auto res = opts.parse(argc, argv);
 
@@ -123,7 +139,10 @@ int main(int argc, char** argv)
                 fs_str = format_str.substr(pos + 1);
                 std::transform(type_str.begin(), type_str.end(), type_str.begin(), ::tolower);
                 std::transform(fs_str.begin(), fs_str.end(), fs_str.begin(), ::tolower);
-            } else return bail("Incorrect input format");
+            } else {
+                type_str = format_str;
+                fs_str = "";
+            }
         }
 
         if (output_expected) {
@@ -164,12 +183,28 @@ int main(int argc, char** argv)
         if (res) {
             if (type_str == "a140") type_id = "TYPE_AGAT_140";
             if (type_str == "a840") type_id = "TYPE_AGAT_840";
+            if (type_str == "i360i") type_id = "TYPE_CPM:IRISHA-360-INT";
+            if (type_str == "i360s") type_id = "TYPE_CPM:IRISHA-360-SEQ";
+            if (type_str == "korvet") type_id = "TYPE_CPM:KORVET";
+            if (type_str == "orion") type_id = "TYPE_CPM:ORION";
+            if (type_str == "vector") type_id = "TYPE_CPM:VECTOR";
+            if (type_str == "pc360") type_id = "TYPE_FAT:PC-360";
+            if (type_str == "pc720") type_id = "TYPE_FAT:PC-720";
+            if (type_str == "pc1200") type_id = "TYPE_FAT:PC-1200";
+            if (type_str == "pc1440") type_id = "TYPE_FAT:PC-1440";
+
             if (type_id.empty()) return bail("Incorrect disk format");
+
+            if (type_id.rfind("TYPE_CPM:", 0) == 0) fs_str = "cpm";
+            if (type_id.rfind("TYPE_FAT:", 0) == 0) fs_str = "fat";
+
             if (fs_str == "dos33") filesystem_id = "FILESYSTEM_DOS33";
             if (fs_str == "sos") filesystem_id = "FILESYSTEM_SPRITE_OS";
             if (fs_str == "cpm") filesystem_id = "FILESYSTEM_CPM_RAW";
             if (fs_str == "cpm-do") filesystem_id = "FILESYSTEM_CPM_DOS";
             if (fs_str == "cpm-po") filesystem_id = "FILESYSTEM_CPM_PRODOS";
+            if (fs_str == "fat") filesystem_id = "FILESYSTEM_FAT";
+
             if (filesystem_id.empty()) return bail("Incorrect type of filesystem");
             if (verbose) {
                 std::cout << "Input file parameters:" << std::endl;
@@ -181,13 +216,15 @@ int main(int argc, char** argv)
             return bail("Input file error : %s : %s", decode_error(res).c_str(), res.message.c_str());
         }
     }
-    auto image = prepare_image(input_file, format_id, type_id);
+    const DiskDefs diskdefs = parse_diskdefs(embedded_diskdefs());
+
+    auto image = prepare_image(input_file, format_id, type_id, diskdefs);
     if (!image) return bail("Can't open image");
 
     auto load_res = image->load();
     if (!load_res) return bail("Can't load image : %s : %s", decode_error(load_res).c_str(), load_res.message.c_str());
 
-    auto filesystem = prepare_filesystem(image.get(), filesystem_id);
+    auto filesystem = prepare_filesystem(image.get(), filesystem_id, diskdefs);
     if (!filesystem) return bail("Can't prepare filesystem");
 
     auto open_res = filesystem->open();

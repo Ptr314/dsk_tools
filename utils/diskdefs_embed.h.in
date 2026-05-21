@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Generated at configure time from src/diskdefs. Do not edit.
+
+#pragma once
+
+#include <string>
+
+namespace dsk_tools {
+
+    inline const std::string & embedded_diskdefs()
+    {
+        static const std::string contents = R"DSKDEFS(@DISKDEFS_CONTENTS@)DSKDEFS";
+        return contents;
+    }
+
+} // namespace
