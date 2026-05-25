@@ -12,6 +12,11 @@ namespace dsk_tools {
 
     void ViewerText::init_charmap(std::string cm_name)
     {
+        crlf.clear();
+        ignore.clear();
+        txt_end.clear();
+        tab = 0;
+
         if (cm_name == "agat") {
             charmap = &agat_charmap;
             crlf = {0x8d, 0x0D};
