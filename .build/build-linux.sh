@@ -10,8 +10,8 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Read version from VERSION file if it exists, otherwise use default
 VERSION="1.0.0"
-if [ -f "$SCRIPT_DIR/../../../VERSION" ]; then
-    VERSION=$(cat "$SCRIPT_DIR/../../../VERSION" | tr -d '\n' | tr -d '\r')
+if [ -f "$SCRIPT_DIR/../VERSION" ]; then
+    VERSION=$(cat "$SCRIPT_DIR/../VERSION" | tr -d '\n' | tr -d '\r')
 fi
 
 # Detect system architecture
