@@ -41,10 +41,16 @@ dsk_tools &mdash; библиотека для работы с образами �
 ```
 DDD:    a140 (Apple/Агат 140k)
         a840 (Агат 840k)
-        
+        i360i, i360s (Ириша 360 Кб с чередованием сторон / без чередования
+        korvet (Корвет 800k CP/M)
+        orion (Орион-128/ПК8000 800 Кб CP/M)
+        vector (Вектор-06Ц 800+ Кб CP/M)
+        pc360, pc720, pc1200, pc1440 (IBM PC 360-1.44)
+                
 FFF:    dos33 (Apple/Агат DOS)
         sos (Sprite OS)
         cpm, cpm-do, cpm-po (CP/M raw, DOS sectors, ProDOS sectors)
+        fat (MS-DOS FAT)
 ```
 
 Формат выходного файла выбирается в соответствии с расширением. Доступны следующие варианты:
@@ -61,6 +67,7 @@ FFF:    dos33 (Apple/Агат DOS)
 ```bash
 # Автоопределение формата:
 >fddconv IKP7_140.DSK -l
+
 # Формат Вектор-06Ц:
 >fddconv disk.fdd -f vector -l
 ```
