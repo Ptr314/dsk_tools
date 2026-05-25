@@ -333,9 +333,9 @@ namespace dsk_tools {
             if (fsize == 860160 || fsize == 860164) {
                 type_id = "TYPE_AGAT_840";
             } else
-            if (fsize == 512*9*40*2) {
-                type_id = "TYPE_CPM:IRISHA-360-INT";
-            } else
+            // if (fsize == 512*9*40*2) {
+            //     type_id = "TYPE_CPM:IRISHA-360-INT";
+            // } else
             if (fsize == 128*26*77) {
                 type_id = "TYPE_CPM:GMD-7012";
             } else
