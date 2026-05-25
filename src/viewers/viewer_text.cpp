@@ -63,6 +63,27 @@ namespace dsk_tools {
             ignore = {0x0A};
             txt_end = {0x1A};
             tab = 8;
+        } else
+        if (cm_name == "cp866") {
+            charmap = &cp866_charmap;
+            crlf = {0x0D};
+            ignore = {0x0A};
+            txt_end = {0x1A};
+            tab = 8;
+        } else
+        if (cm_name == "cp1251") {
+            charmap = &cp1251_charmap;
+            crlf = {0x0D};
+            ignore = {0x0A};
+            txt_end = {0x1A};
+            tab = 8;
+        } else
+        if (cm_name == "iso8859_5") {
+            charmap = &iso8859_5_charmap;
+            crlf = {0x0D};
+            ignore = {0x0A};
+            txt_end = {0x1A};
+            tab = 8;
         } else {
             // TODO: Other encodings;
         }
