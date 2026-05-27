@@ -582,6 +582,10 @@ namespace dsk_tools {
 
     std::pair<std::string, std::string> suggest_file_type(const std::string file_name, const BYTES & data)
     {
+        std::string ext = get_file_ext(file_name);
+
+        if (ext == ".spr") return {"PICTURE_VECTOR", "SPR"};
+
         if (data.size() > sizeof(AGAT_EXIF_SECTOR)) {
             const AGAT_EXIF_SECTOR * exif = reinterpret_cast<const AGAT_EXIF_SECTOR *>(data.data() + data.size() - sizeof(AGAT_EXIF_SECTOR));
             if (exif->SIGNATURE[0] == 0xD6 && exif->SIGNATURE[1] == 0xD2) {
@@ -910,6 +914,8 @@ namespace dsk_tools {
         ViewerPicAgat_560x192DblHiResBW viewer_pic_agat_560x192DblHiResBW;
         ViewerPicAgat_80x48DblLoRes viewer_pic_agat_80x48DblLoRes;
         ViewerPicAgat_40x48LoRes viewer_pic_agat_40x48LoRes;
+
+        ViewerPicVectorSPR viewer_pic_vector_spr;
     }
 
     std::unique_ptr<Writer> create_writer(const std::string & format_id, const uint8_t volume_id, diskImage * image) {

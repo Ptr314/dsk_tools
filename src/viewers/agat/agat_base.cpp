@@ -81,7 +81,7 @@ namespace dsk_tools {
         };
     }
 
-    bool ViewerPicAgat::fits(const BYTES & data)
+    bool ViewerPicAgat::fits(const BYTES & data, const std::string & file_name)
     {
         if (m_sizes_to_fit.size() != 0)
             return std::find(m_sizes_to_fit.begin(), m_sizes_to_fit.end(), data.size()) != m_sizes_to_fit.end();

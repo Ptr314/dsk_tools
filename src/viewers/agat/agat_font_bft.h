@@ -34,7 +34,7 @@ namespace dsk_tools {
         Result prepare_data(const BYTES & data, diskImage & image, fileSystem & filesystem, std::string & error_msg) override;
 
     protected:
-        bool fits(const BYTES & data) override;
+        bool fits(const BYTES & data, const std::string & file_name) override;
         uint32_t get_pixel(int x, int y) override;
     private:
         Agat_BFT_header     m_bft_header;

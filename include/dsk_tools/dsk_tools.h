@@ -49,6 +49,7 @@
 #include "viewers/viewer_basic_vector.h"
 #include "viewers/viewer_basic_mbasic.h"
 #include "viewers/viewer_pics_agat.h"
+#include "viewers/viewer_pics_vector.h"
 
 
 namespace dsk_tools {

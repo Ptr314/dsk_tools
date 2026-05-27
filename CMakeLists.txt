@@ -74,6 +74,8 @@ add_library(${PROJECT_NAME} STATIC
     src/viewers/agat/agat_fonts.h
     src/viewers/agat/agat_font.h        src/viewers/agat/agat_font.cpp
     src/viewers/agat/agat_font_bft.h    src/viewers/agat/agat_font_bft.cpp
+        src/viewers/viewer_pics_vector.h
+        src/viewers/viewer_pics_vector.cpp
 )
 
 # Platform-specific compilation settings

@@ -9,7 +9,7 @@
 
 namespace dsk_tools {
 
-    bool ViewerPicAgatFontBFT::fits(const BYTES & data)
+    bool ViewerPicAgatFontBFT::fits(const BYTES & data, const std::string & file_name)
     {
         constexpr int data_pos = sizeof(Agat_BFT_header) + sizeof(m_glyph_width) + sizeof(m_glyph_shift);
         if (data.size() < data_pos) return false;

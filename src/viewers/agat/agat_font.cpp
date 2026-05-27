@@ -21,7 +21,7 @@ namespace dsk_tools {
         return result;
     }
 
-    bool ViewerPicAgatFont::fits(const BYTES & data)
+    bool ViewerPicAgatFont::fits(const BYTES & data, const std::string & file_name)
     {
         std::vector<int> sizes_to_fit = {2048, 2048+256};
         return std::find(sizes_to_fit.begin(), sizes_to_fit.end(), data.size()) != sizes_to_fit.end();

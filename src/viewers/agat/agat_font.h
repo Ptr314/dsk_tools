@@ -38,7 +38,7 @@ namespace dsk_tools {
         ViewerSelectorValues suggest_selectors(const std::string & file_name, const BYTES & data) override;
         void set_selectors(const ViewerSelectorValues& selectors) override;
     protected:
-        bool fits(const BYTES & data) override;
+        bool fits(const BYTES & data, const std::string & file_name) override;
         uint32_t get_pixel(int x, int y) override;
     private:
         int m_font_type = 0;

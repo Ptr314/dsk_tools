@@ -26,7 +26,7 @@ namespace dsk_tools {
         virtual ~Viewer() = default;
         virtual std::string process_as_text(const BYTES & data, const std::string & cm_name) {return "";}
         virtual ViewerOutput get_output_type() const {return ViewerOutput::Text;}
-        virtual bool fits(const BYTES & data) {return true;}
+        virtual bool fits(const BYTES & data, const std::string & file_name) {return true;}
         virtual std::string get_type() const = 0;
         virtual std::string get_subtype() const = 0;
         virtual std::string get_subtype_text() const = 0;

@@ -56,7 +56,7 @@ namespace dsk_tools {
         std::vector<int> m_sizes_to_fit;
         uint32_t convert_color(const int colors, const int palette_id, const int c);
         void start(const BYTES & data, const int frame ) override;
-        bool fits(const BYTES & data) override;
+        bool fits(const BYTES & data, const std::string & file_name) override;
     };
 
 
