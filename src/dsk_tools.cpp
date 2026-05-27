@@ -888,34 +888,40 @@ namespace dsk_tools {
     }
 
     void register_all_viewers() {
-        ViewerBinary viewer_binary;
-        ViewerText viewer_text;
-        ViewerBASIC_Agat viewer_basic_agat;
-        ViewerBASIC_Apple viewer_basic_apple;
-        ViewerBASIC_Vector viewer_basic_vector;
-        ViewerBASIC_MBASIC viewer_basic_mbasic;
-        ViewerPicAgat_256x256x1 viewer_pic_agat_256x256x1;
-        ViewerPicAgat_BMP viewer_pic_agat_bmp;
-        ViewerPicAgat_512x256x1 viewer_pic_agat_512x256x1;
-        ViewerPicAgat_64x64x16 viewer_pic_agat_64x64x16;
-        ViewerPicAgat_128x128x16 viewer_pic_agat_128x128x16;
-        ViewerPicAgat_256x256x4 viewer_pic_agat_256x256x4;
-        ViewerPicAgat_128x256x16 viewer_pic_agat_128x256x16;
+        static bool done = false;
+        if (done) return;
+        done = true;
 
-        ViewerPicAgatTextT32 viewer_pic_agat_TextT32;
-        ViewerPicAgatTextT64 viewer_pic_agat_TextT64;
+        register_viewer<ViewerBinary>();
+        register_viewer<ViewerText>();
 
-        ViewerPicAgatFont viewer_pic_agat_font;
-        ViewerPicAgatFontBFT viewer_pic_agat_font_bft;
+        register_viewer<ViewerBASIC_Agat>();
+        register_viewer<ViewerBASIC_Apple>();
+        register_viewer<ViewerBASIC_Vector>();
+        register_viewer<ViewerBASIC_MBASIC>();
 
-        ViewerPicAgat_280x192HiRes_Agat viewer_pic_agat_280x192HiRes_Agat;
-        ViewerPicAgat_280x192HiRes_Apple viewer_pic_agat_280x192HiRes_Apple;
-        ViewerPicAgat_140x192DblHiRes viewer_pic_agat_140x192DblHiRes;
-        ViewerPicAgat_560x192DblHiResBW viewer_pic_agat_560x192DblHiResBW;
-        ViewerPicAgat_80x48DblLoRes viewer_pic_agat_80x48DblLoRes;
-        ViewerPicAgat_40x48LoRes viewer_pic_agat_40x48LoRes;
+        register_viewer<ViewerPicAgat_256x256x1>();
+        register_viewer<ViewerPicAgat_BMP>();
+        register_viewer<ViewerPicAgat_512x256x1>();
+        register_viewer<ViewerPicAgat_64x64x16>();
+        register_viewer<ViewerPicAgat_128x128x16>();
+        register_viewer<ViewerPicAgat_256x256x4>();
+        register_viewer<ViewerPicAgat_128x256x16>();
 
-        ViewerPicVectorSPR viewer_pic_vector_spr;
+        register_viewer<ViewerPicAgatTextT32>();
+        register_viewer<ViewerPicAgatTextT64>();
+
+        register_viewer<ViewerPicAgatFont>();
+        register_viewer<ViewerPicAgatFontBFT>();
+
+        register_viewer<ViewerPicAgat_280x192HiRes_Agat>();
+        register_viewer<ViewerPicAgat_280x192HiRes_Apple>();
+        register_viewer<ViewerPicAgat_140x192DblHiRes>();
+        register_viewer<ViewerPicAgat_560x192DblHiResBW>();
+        register_viewer<ViewerPicAgat_80x48DblLoRes>();
+        register_viewer<ViewerPicAgat_40x48LoRes>();
+
+        register_viewer<ViewerPicVectorSPR>();
     }
 
     std::unique_ptr<Writer> create_writer(const std::string & format_id, const uint8_t volume_id, diskImage * image) {

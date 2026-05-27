@@ -75,7 +75,4 @@ namespace dsk_tools {
         return result;
     }
 
-    // Static registrar instantiation
-    ViewerRegistrar<ViewerPicAgatFont> ViewerPicAgatFont::registrar;
-
 }

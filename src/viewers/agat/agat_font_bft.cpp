@@ -94,7 +94,4 @@ namespace dsk_tools {
         return back;
     }
 
-    // Static registrar instantiation
-    ViewerRegistrar<ViewerPicAgatFontBFT> ViewerPicAgatFontBFT::registrar;
-
 }

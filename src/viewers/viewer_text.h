@@ -11,8 +11,6 @@ namespace dsk_tools {
 
     class ViewerText : public Viewer {
     public:
-        static ViewerRegistrar<ViewerText> registrar;
-
         std::string get_type() const override {return "TEXT";}
         std::string get_subtype() const override {return "";}
         std::string get_subtype_text() const override {return "";}

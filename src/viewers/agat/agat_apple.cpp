@@ -281,12 +281,4 @@ namespace dsk_tools {
         }
     }
 
-    // Static registrar instantiations
-    ViewerRegistrar<ViewerPicAgat_280x192HiRes_Agat> ViewerPicAgat_280x192HiRes_Agat::registrar;
-    ViewerRegistrar<ViewerPicAgat_280x192HiRes_Apple> ViewerPicAgat_280x192HiRes_Apple::registrar;
-    ViewerRegistrar<ViewerPicAgat_140x192DblHiRes> ViewerPicAgat_140x192DblHiRes::registrar;
-    ViewerRegistrar<ViewerPicAgat_560x192DblHiResBW> ViewerPicAgat_560x192DblHiResBW::registrar;
-    ViewerRegistrar<ViewerPicAgat_80x48DblLoRes> ViewerPicAgat_80x48DblLoRes::registrar;
-    ViewerRegistrar<ViewerPicAgat_40x48LoRes> ViewerPicAgat_40x48LoRes::registrar;
-
 }

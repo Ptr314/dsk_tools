@@ -11,8 +11,6 @@ namespace dsk_tools {
 
     class ViewerBinary : public ViewerText {
     public:
-        static ViewerRegistrar<ViewerBinary> registrar;
-
         std::string get_type() const override {return "BINARY";}
         std::string get_subtype() const override {return "";}
         std::string get_subtype_text() const override {return "";}

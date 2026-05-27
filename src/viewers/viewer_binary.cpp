@@ -7,7 +7,6 @@
 #include "utils.h"
 
 namespace dsk_tools {
-    ViewerRegistrar<ViewerBinary> ViewerBinary::registrar;
 
 std::string ViewerBinary::process_as_text(const BYTES & data, const std::string & cm_name) {
         std::string out;

@@ -17,8 +17,6 @@ namespace dsk_tools {
 
     class ViewerPicAgat_256x256x1 : public ViewerPicAgatMono {
     public:
-        static ViewerRegistrar<ViewerPicAgat_256x256x1> registrar;
-
         ViewerPicAgat_256x256x1() {m_sx = 256; m_sy = 256; m_sizes_to_fit = {8192, 8192+256};}
 
         std::string get_type() const override {return "PICTURE_AGAT";}
@@ -28,8 +26,6 @@ namespace dsk_tools {
 
     class ViewerPicAgat_BMP : public ViewerPicAgatMono {
     public:
-        static ViewerRegistrar<ViewerPicAgat_BMP> registrar;
-
         ViewerPicAgat_BMP() {m_sx = 256; m_sy = 256; m_sizes_to_fit = {8192}; m_data_offset=0;}
 
         std::string get_type() const override {return "PICTURE_AGAT";}
@@ -39,8 +35,6 @@ namespace dsk_tools {
 
     class ViewerPicAgat_512x256x1 : public ViewerPicAgatMono {
     public:
-        static ViewerRegistrar<ViewerPicAgat_512x256x1> registrar;
-
         ViewerPicAgat_512x256x1() {m_sx = 512; m_sy = 256; m_sizes_to_fit = {16384, 16384+256};}
 
         std::string get_type() const override {return "PICTURE_AGAT";}

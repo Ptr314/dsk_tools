@@ -8,7 +8,6 @@
 #include "utils.h"
 
 namespace dsk_tools {
-    ViewerRegistrar<ViewerBASIC_MBASIC> ViewerBASIC_MBASIC::registrar;
 
     std::string ViewerBASIC_MBASIC::process_as_text(const BYTES & data, const std::string & cm_name)
     {

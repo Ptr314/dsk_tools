@@ -11,8 +11,6 @@ namespace dsk_tools {
 
     class ViewerBASIC_Vector : public ViewerBASIC_Agat {
     public:
-        static ViewerRegistrar<ViewerBASIC_Vector> registrar;
-
         std::string get_type() const override {return "BASIC";}
         std::string get_subtype() const override {return "VECTOR";}
         std::string get_subtype_text() const override {return QT_TRANSLATE_NOOP("viewer", "Vector-06C BASIC");}

@@ -7,7 +7,6 @@
 #include "bas_tokens.h"
 
 namespace dsk_tools {
-    ViewerRegistrar<ViewerBASIC_Vector> ViewerBASIC_Vector::registrar;
 
     std::string ViewerBASIC_Vector::process_as_text(const BYTES & data, const std::string & cm_name)
     {

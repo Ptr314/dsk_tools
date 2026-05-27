@@ -8,7 +8,6 @@
 #include "utils.h"
 
 namespace dsk_tools {
-    ViewerRegistrar<ViewerText> ViewerText::registrar;
 
     void ViewerText::init_charmap(std::string cm_name)
     {

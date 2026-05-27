@@ -55,8 +55,6 @@ namespace dsk_tools {
     protected:
         void process_line(int y = 0) override;
     public:
-        static ViewerRegistrar<ViewerPicAgatTextT32> registrar;
-
         ViewerPicAgatTextT32() {m_sx = 256; m_sy = 256; m_sizes_to_fit = {2048, 2048+256};}
         int get_frame_delay() const override {return 1000;}
 
@@ -69,8 +67,6 @@ namespace dsk_tools {
     protected:
         void process_line(int y = 0) override;
     public:
-        static ViewerRegistrar<ViewerPicAgatTextT64> registrar;
-
         ViewerPicAgatTextT64() {m_sx = 512; m_sy = 256; m_sizes_to_fit = {2048, 2048+256};}
 
         std::string get_type() const override {return "PICTURE_AGAT";}

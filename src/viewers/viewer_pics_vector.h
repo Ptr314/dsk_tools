@@ -22,8 +22,6 @@ namespace dsk_tools {
         uint8_t m_screen[32768];
         uint32_t m_palette[16];
     public:
-        static ViewerRegistrar<ViewerPicVectorSPR> registrar;
-
         ViewerPicVectorSPR() {m_sx = 256; m_sy = 256;}
 
         std::string get_type() const override {return "PICTURE_VECTOR";}

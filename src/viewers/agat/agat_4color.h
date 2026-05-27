@@ -16,8 +16,6 @@ namespace dsk_tools {
 
     class ViewerPicAgat_256x256x4 : public ViewerPicAgat4 {
     public:
-        static ViewerRegistrar<ViewerPicAgat_256x256x4> registrar;
-
         ViewerPicAgat_256x256x4() {m_sx = 256; m_sy = 256; m_sizes_to_fit = {16384, 16384+256};}
 
         std::string get_type() const override {return "PICTURE_AGAT";}

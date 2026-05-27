@@ -12,8 +12,6 @@ namespace dsk_tools {
 
     class ViewerBASIC_MBASIC : public ViewerText {
     public:
-        static ViewerRegistrar<ViewerBASIC_MBASIC> registrar;
-
         std::string get_type() const override {return "BASIC";}
         std::string get_subtype() const override {return "MBASIC";}
         std::string get_subtype_text() const override {return QT_TRANSLATE_NOOP("viewer", "CP/M MBASIC");}

@@ -39,9 +39,4 @@ namespace dsk_tools {
         return res;
     }
 
-    // Static registrar instantiations
-    ViewerRegistrar<ViewerPicAgat_64x64x16> ViewerPicAgat_64x64x16::registrar;
-    ViewerRegistrar<ViewerPicAgat_128x128x16> ViewerPicAgat_128x128x16::registrar;
-    ViewerRegistrar<ViewerPicAgat_128x256x16> ViewerPicAgat_128x256x16::registrar;
-
 }

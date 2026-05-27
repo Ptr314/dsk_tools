@@ -56,8 +56,6 @@ namespace dsk_tools {
     protected:
         void process_line(int line_offset, int y = 0) override;
     public:
-        static ViewerRegistrar<ViewerPicAgat_280x192HiRes_Agat> registrar;
-
         ViewerPicAgat_280x192HiRes_Agat() {m_sx = 280; m_sy = 192; m_sizes_to_fit = {8192, 8192+256};}
 
         std::string get_type() const override {return "PICTURE_AGAT";}
@@ -71,8 +69,6 @@ namespace dsk_tools {
     protected:
         void process_line(int line_offset, int y = 0) override;
     public:
-        static ViewerRegistrar<ViewerPicAgat_280x192HiRes_Apple> registrar;
-
         ViewerPicAgat_280x192HiRes_Apple() {m_sx = 280; m_sy = 192; m_sizes_to_fit = {8192, 8192+256};}
 
         std::string get_type() const override {return "PICTURE_APPLE";}
@@ -86,8 +82,6 @@ namespace dsk_tools {
     protected:
         void process_line(int line_offset, int y = 0) override;
     public:
-        static ViewerRegistrar<ViewerPicAgat_140x192DblHiRes> registrar;
-
         ViewerPicAgat_140x192DblHiRes() {m_sx = 140; m_sy = 192; m_sizes_to_fit = {16384, 16384+256};}
 
         std::string get_type() const override {return "PICTURE_APPLE";}
@@ -100,8 +94,6 @@ namespace dsk_tools {
     protected:
         void process_line(int line_offset, int y = 0) override;
     public:
-        static ViewerRegistrar<ViewerPicAgat_560x192DblHiResBW> registrar;
-
         ViewerPicAgat_560x192DblHiResBW() {m_sx = 560; m_sy = 192; m_sizes_to_fit = {16384, 16384+256};}
 
         std::string get_type() const override {return "PICTURE_APPLE";}
@@ -115,8 +107,6 @@ namespace dsk_tools {
     protected:
         void process_line(int line_offset, int y = 0) override;
     public:
-        static ViewerRegistrar<ViewerPicAgat_40x48LoRes> registrar;
-
         ViewerPicAgat_40x48LoRes() {m_sx = 40; m_sy = 48; m_sizes_to_fit = {1280, 1280+256};}
 
         std::string get_type() const override {return "PICTURE_APPLE";}
@@ -130,8 +120,6 @@ namespace dsk_tools {
     protected:
         void process_line(int line_offset, int y = 0) override;
     public:
-        static ViewerRegistrar<ViewerPicAgat_80x48DblLoRes> registrar;
-
         ViewerPicAgat_80x48DblLoRes() {m_sx = 80; m_sy = 48; m_sizes_to_fit = {2048, 2048+256};}
 
         std::string get_type() const override {return "PICTURE_APPLE";}

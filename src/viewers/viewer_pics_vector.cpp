@@ -9,7 +9,6 @@
 #include "utils.h"
 
 namespace dsk_tools {
-    ViewerRegistrar<ViewerPicVectorSPR> ViewerPicVectorSPR::registrar;
 
     bool ViewerPicVectorSPR::fits(const BYTES & data, const std::string & file_name)
     {

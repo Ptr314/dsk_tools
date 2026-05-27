@@ -252,8 +252,4 @@ namespace dsk_tools {
         }
     }
 
-    // Static registrar instantiations
-    ViewerRegistrar<ViewerPicAgatTextT32> ViewerPicAgatTextT32::registrar;
-    ViewerRegistrar<ViewerPicAgatTextT64> ViewerPicAgatTextT64::registrar;
-
 }

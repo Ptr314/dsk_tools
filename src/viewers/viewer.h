@@ -90,14 +90,16 @@ namespace dsk_tools {
     };
 
     template<typename T>
-    class ViewerRegistrar {
-    public:
-        ViewerRegistrar() {
-            T temp;
-            ViewerManager::instance().register_viewer(temp.get_type(), temp.get_subtype(), temp.get_subtype_text(), []() -> std::unique_ptr<Viewer> {
+    void register_viewer() {
+        T temp;
+        ViewerManager::instance().register_viewer(
+            temp.get_type(),
+            temp.get_subtype(),
+            temp.get_subtype_text(),
+            []() -> std::unique_ptr<Viewer> {
                 return std::unique_ptr<Viewer>(new T());
-            });
-        }
-    };
+            }
+        );
+    }
 
 }

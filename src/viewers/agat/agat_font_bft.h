@@ -24,7 +24,6 @@ namespace dsk_tools {
 
     class ViewerPicAgatFontBFT : public ViewerPic {
     public:
-        static ViewerRegistrar<ViewerPicAgatFontBFT> registrar;
         ViewerPicAgatFontBFT() {m_sx = 100; m_sy = 100;}
 
         std::string get_type() const override {return "PICTURE_AGAT";}
