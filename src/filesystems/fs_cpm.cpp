@@ -552,6 +552,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         if (!found) return Result::error(ErrorCode::FileDeleteError);
 
         is_changed = true;
+        stats_valid = false;
         return Result::ok();
     }
 
@@ -744,6 +745,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
 
             if (!found) return Result::error(ErrorCode::FileMetadataError);
             is_changed = true;
+            stats_valid = false;
         }
 
         // Step 2: rename via rename_file(). Build a temp UniversalFile whose metadata
@@ -963,7 +965,75 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         }
 
         is_changed = true;
+        stats_valid = false;
         return Result::ok();
+    }
+
+    void fsCPM::update_stats()
+    {
+        m_stats.int_values.clear();
+
+        const unsigned image_size = image->get_heads() * image->get_tracks()
+                                  * image->get_sectors() * image->get_sector_size();
+
+        if (!is_open) {
+            m_stats.int_values["image_size"]     = image_size;
+            m_stats.int_values["total_space"]    = 0;
+            m_stats.int_values["occupied_space"] = 0;
+            m_stats.int_values["free_space"]     = 0;
+            stats_valid = true;
+            return;
+        }
+
+        const int sector_size = static_cast<int>(image->get_sector_size());
+        const int BLS         = 1 << (DPB.BSH + 7);
+        const int total_blocks = DPB.DSM + 1;
+        const int catalog_size = DPB.DRM + 1;
+        const int entries_in_sector = static_cast<int>(sector_size / sizeof(CPM_DIR_ENTRY));
+        const int directory_sectors = catalog_size / entries_in_sector;
+
+        const bool al_16bit = (DPB.DSM >= 256);
+        const int al_entries_per_extent = al_16bit ? 8 : 16;
+
+        // Reserved directory blocks per AL0:AL1 (top bits = first blocks).
+        unsigned dir_blocks = 0;
+        const uint16_t reserved = (static_cast<uint16_t>(DPB.AL0) << 8) | DPB.AL1;
+        for (int b = 0; b < 16 && b < total_blocks; b++)
+            if (reserved & (1u << (15 - b)))
+                dir_blocks++;
+
+        // Walk catalog and mark blocks used by live (non-deleted, non-password) entries.
+        std::vector<bool> block_used(total_blocks, false);
+        for (int i = 0; i < directory_sectors; i++) {
+            uint8_t * sector = image->get_sector_data(0, DPB.OFF, translate_sector(i));
+            if (!sector) continue;
+            for (int j = 0; j < entries_in_sector; j++) {
+                const auto * de = reinterpret_cast<const CPM_DIR_ENTRY *>(sector + j * sizeof(CPM_DIR_ENTRY));
+                if (de->ST == 0xE5 || de->ST == 0x1F) continue;
+                for (int idx = 0; idx < al_entries_per_extent; idx++) {
+                    uint16_t blk = al_16bit
+                        ? static_cast<uint16_t>(de->AL[idx*2] | (de->AL[idx*2+1] << 8))
+                        : static_cast<uint16_t>(de->AL[idx]);
+                    if (blk != 0 && blk < total_blocks) block_used[blk] = true;
+                }
+            }
+        }
+
+        unsigned used_blocks = 0;
+        for (int b = 0; b < total_blocks; b++)
+            if (block_used[b]) used_blocks++;
+
+        const unsigned data_blocks  = (total_blocks > static_cast<int>(dir_blocks))
+                                          ? (total_blocks - dir_blocks) : 0u;
+        const unsigned file_blocks  = (used_blocks > dir_blocks) ? (used_blocks - dir_blocks) : 0u;
+        const unsigned free_blocks  = (data_blocks > file_blocks) ? (data_blocks - file_blocks) : 0u;
+
+        m_stats.int_values["image_size"]     = image_size;
+        m_stats.int_values["total_space"]    = data_blocks * static_cast<unsigned>(BLS);
+        m_stats.int_values["occupied_space"] = file_blocks * static_cast<unsigned>(BLS);
+        m_stats.int_values["free_space"]     = free_blocks * static_cast<unsigned>(BLS);
+
+        stats_valid = true;
     }
 
 }

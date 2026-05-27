@@ -71,5 +71,6 @@ namespace dsk_tools {
         Result file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata) override;
         Result rename_file(const UniversalFile & fd, const std::string & new_name) override;
         Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace) override;
+        void update_stats() override;
     };
 }

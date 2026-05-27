@@ -28,12 +28,18 @@ namespace dsk_tools {
         std::vector<std::pair<std::string, std::string>> enumOptions; // Только для Enum
     };
 
+    struct OSStats {
+        std::map<std::string, unsigned> int_values;
+    };
+
     class fileSystem {
     protected:
         diskImage * image;
         bool is_open = false;
         int volume_id = -1;
         bool is_changed = false;
+        OSStats m_stats = {};
+        bool stats_valid = false;
 
         virtual bool sector_is_free(int head, int track, int sector) { return false;};
         virtual Result sector_free(int head, int track, int sector) {return Result::error(ErrorCode::NotImplementedYet);}
@@ -51,6 +57,8 @@ namespace dsk_tools {
         virtual std::string get_delimiter();
         virtual std::vector<std::string> get_save_file_formats() = 0;
         virtual std::vector<std::string> get_add_file_formats() {return {};} ;
+        virtual void update_stats() {stats_valid = true;};
+        virtual OSStats get_stats() {if (!stats_valid) update_stats(); return m_stats;};
 
         // Disk functions
         virtual std::string information() {return "Not implemented";};
