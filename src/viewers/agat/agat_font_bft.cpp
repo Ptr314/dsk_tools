@@ -18,7 +18,7 @@ namespace dsk_tools {
         int glyphs_count = 0;
         for (const uint8_t w : m_glyph_width) glyphs_count += w ? 1 : 0;
         const int total_size = data_pos + glyphs_count * m_bft_header.glyph_height;
-        if (data.size() != total_size) return false;
+        if (data.size() < total_size) return false;
 
         return true;
     }
