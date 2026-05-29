@@ -1113,7 +1113,7 @@ namespace dsk_tools {
                             // Skip malformed entries
                         }
                     }
-                } else if (key == "os" || key == "sides") {
+                } else if (key == "os" || key == "sides" || key == "charmap") {
                     current.str_params[key] = value;
                 } else {
                     try {

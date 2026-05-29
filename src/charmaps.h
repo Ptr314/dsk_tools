@@ -5,10 +5,23 @@
 #pragma once
 
 
+#include <cstdint>
 #include <string>
 #include <map>
+#include <set>
 
 namespace dsk_tools {
+
+    struct CharmapInfo {
+        const std::string (*charmap)[256] = nullptr;
+        std::set<uint8_t> crlf;
+        std::set<uint8_t> ignore;
+        std::set<uint8_t> txt_end;
+        int tab = 0;
+        bool is_koi7 = false;
+    };
+
+    CharmapInfo init_charmap(const std::string & cm_name);
 
     // http://forum.agatcomp.ru//viewtopic.php?id=378
     static const std::string agat_charmap[256] =  {

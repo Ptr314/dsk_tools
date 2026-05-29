@@ -91,6 +91,11 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
 
         DPB = {SPT, BSH, BLM, EXM, DSM, DRM, AL0, AL1, CKS, OFF};
 
+        std::string cm_name;
+        if (get_map_value(diskdef.str_params, std::string("charmap"), cm_name, "", false)) {
+            m_charmap = init_charmap(cm_name);
+        }
+
         return Result::ok();
     }
 
@@ -125,12 +130,18 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         return Result::ok();
     }
 
-    std::string fsCPM::make_file_name(CPM_DIR_ENTRY & di)
+    std::string fsCPM::make_file_name(CPM_DIR_ENTRY & di) const
     {
-        std::string ext;
-        for (const unsigned char i : di.E) i ? ext += static_cast<char>(i & 0x7F) : "";
+        std::string name, ext;
+        if (m_charmap.charmap) {
+            for (const unsigned char i : di.F) name += (*m_charmap.charmap)[i];
+            for (const unsigned char i : di.E) ext += (*m_charmap.charmap)[i];
+        } else {
+            for (const unsigned char i : di.F) i ? name += static_cast<char>(i & 0x7F) : "";
+            for (const unsigned char i : di.E) i ? ext += static_cast<char>(i & 0x7F) : "";
+        }
         ext = trim(ext);
-        return trim(std::string(reinterpret_cast<char*>(&di.F), 8)) + ((!ext.empty())?("."+ext):"");
+        return trim(name) + ((!ext.empty())?("."+ext):"");
     }
 
     int fsCPM::translate_sector(int sector) const

@@ -13,7 +13,7 @@ endif()
 add_library(${PROJECT_NAME} STATIC
     include/dsk_tools/dsk_tools.h       src/dsk_tools.cpp
     src/definitions.h
-    src/charmaps.h
+    src/charmaps.h                      src/charmaps.cpp
     src/bas_tokens.h
     src/utils.h                         src/utils.cpp
     src/bit_enums.h

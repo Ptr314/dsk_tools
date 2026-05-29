@@ -6,6 +6,7 @@
 #pragma once
 
 #include "viewer.h"
+#include "charmaps.h"
 
 namespace dsk_tools {
 
@@ -17,13 +18,7 @@ namespace dsk_tools {
         std::string process_as_text(const BYTES & data, const std::string & cm_name) override;
 
     protected:
-        const std::string (*charmap)[256];
-        std::set<uint8_t> crlf;
-        std::set<uint8_t> ignore = {};
-        std::set<uint8_t> txt_end = {};
-        int tab = 0;
-        virtual void init_charmap(std::string cm_name);
-
+        CharmapInfo cm;
     };
 
 }

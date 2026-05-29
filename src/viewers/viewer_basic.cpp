@@ -195,7 +195,7 @@ namespace dsk_tools {
             out += "</div>\n";
         };
 
-        init_charmap(cm_name);
+        cm = init_charmap(cm_name);
 
         int a=0;
         int vars_count = 0;
@@ -269,9 +269,9 @@ namespace dsk_tools {
                             // Ordinal char
                             std::string cc;
                             if (cm_name == "agat")
-                                cc = (*charmap)[c | 0x80];
+                                cc = (*cm.charmap)[c | 0x80];
                             else
-                                cc = (*charmap)[c];
+                                cc = (*cm.charmap)[c];
                             add_char(cc);
                         }
                     }

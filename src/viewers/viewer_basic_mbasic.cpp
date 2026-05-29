@@ -15,7 +15,7 @@ namespace dsk_tools {
         // https://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html
 
         std::string out;
-        init_charmap(cm_name);
+        cm = init_charmap(cm_name);
 
         int a=0;
         uint8_t is_protected = data[a++]; // FF / FE, just skipping
@@ -119,7 +119,7 @@ namespace dsk_tools {
                                 // :ELSE - just skipping the colon
                             } else {
                                 // Ordinal char
-                                line += (*charmap)[c];
+                                line += (*cm.charmap)[c];
                             }
                     break;
                 }

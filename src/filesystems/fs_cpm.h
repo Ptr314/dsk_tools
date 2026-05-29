@@ -5,6 +5,7 @@
 #pragma once
 
 
+#include "charmaps.h"
 #include "filesystem.h"
 
 namespace dsk_tools {
@@ -48,7 +49,8 @@ namespace dsk_tools {
         CPM_DPB DPB{};
         std::string m_filesystem_id;
         DiskDefs m_diskdefs;
-        static std::string make_file_name(CPM_DIR_ENTRY & di);
+        CharmapInfo m_charmap = {};
+        std::string make_file_name(CPM_DIR_ENTRY & di) const;
         void load_file(const BYTES & dir_records, BYTES & out) const;
 
     public:
