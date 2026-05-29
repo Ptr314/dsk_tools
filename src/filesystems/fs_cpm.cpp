@@ -1047,4 +1047,103 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         stats_valid = true;
     }
 
+    SectorTypeMap fsCPM::get_sector_type_map()
+    {
+        SectorTypeMap result;
+        if (!is_open) return result;
+
+        const unsigned heads       = image->get_heads();
+        const unsigned tracks      = image->get_tracks();
+        const unsigned sectors     = image->get_sectors();
+        const unsigned sector_size = image->get_sector_size();
+        const unsigned BLS         = 1u << (DPB.BSH + 7);
+        const unsigned spb         = BLS / sector_size;                 // sectors per block
+
+        // 1. Reserved / boot tracks at the beginning of the disk.
+        for (unsigned h = 0; h < heads; h++)
+            for (unsigned t = 0; t < DPB.OFF; t++)
+                for (unsigned s = 0; s < sectors; s++)
+                    result[{h, t, s}] = SectorType::System;
+
+        // 2. Directory area — directory_sectors sectors at track DPB.OFF, head 0.
+        const unsigned catalog_size      = DPB.DRM + 1u;
+        const unsigned entries_in_sector = sector_size / sizeof(CPM_DIR_ENTRY);
+        if (entries_in_sector == 0) return result;
+        const unsigned directory_sectors = catalog_size / entries_in_sector;
+
+        for (unsigned i = 0; i < directory_sectors; i++) {
+            const unsigned s = static_cast<unsigned>(translate_sector(static_cast<int>(i)));
+            result[{0u, static_cast<unsigned>(DPB.OFF), s}] = SectorType::Catalog;
+        }
+
+        // 3. Walk directory entries and mark allocated blocks as File / DeletedFile.
+        //    Live files override DeletedFile entries that happen to claim the same block.
+        std::vector<const CPM_DIR_ENTRY*> catalog(catalog_size, nullptr);
+        for (unsigned i = 0; i < directory_sectors; i++) {
+            uint8_t * sector = image->get_sector_data(0, DPB.OFF, translate_sector(static_cast<int>(i)));
+            if (!sector) continue;
+            for (unsigned j = 0; j < entries_in_sector; j++) {
+                catalog[i * entries_in_sector + j] =
+                    reinterpret_cast<const CPM_DIR_ENTRY*>(sector + j * sizeof(CPM_DIR_ENTRY));
+            }
+        }
+
+        const unsigned index_shift = DPB.OFF * sectors  * image->get_heads();
+
+        // CP/M allocation map layout depends on disk size:
+        //   DSM <  256 → AL[] holds 16 single-byte block numbers
+        //   DSM >= 256 → AL[] holds  8 little-endian uint16_t block numbers
+        const bool     wide_al  = DPB.DSM >= 256;
+        const unsigned al_count = wide_al ? 8u : 16u;
+
+        for (unsigned i = 0; i < catalog_size; i++) {
+            const CPM_DIR_ENTRY * de = catalog[i];
+            if (!de) continue;
+
+            const uint8_t ST = de->ST;
+            if (ST == 0x1F) continue;                                   // CP/M 3 password entry
+            if (ST == 0xE5 && de->F[0] == 0xE5) continue;               // never-used slot
+
+            const bool deleted = (ST == 0xE5);
+            const SectorType type = deleted ? SectorType::DeletedFile : SectorType::File;
+
+            for (unsigned idx = 0; idx < al_count; idx++) {
+                const unsigned AL = wide_al
+                    ? (static_cast<unsigned>(de->AL[idx * 2])
+                       | (static_cast<unsigned>(de->AL[idx * 2 + 1]) << 8))
+                    : static_cast<unsigned>(de->AL[idx]);
+                if (AL == 0) continue;                                  // unallocated slot
+                if (AL > DPB.DSM) continue;                             // out-of-range block number
+
+                for (unsigned k = 0; k < spb; k++) {
+                    const unsigned sector_index = AL * spb + k + index_shift;
+                    const unsigned track_index  = sector_index / sectors;
+                    unsigned h, t;
+                    if (heads == 1) {
+                        h = 0;
+                        t = track_index;
+                    } else {
+                        h = track_index & 1u;
+                        t = track_index >> 1;
+                    }
+                    if (t >= tracks) continue;                          // block points past the disk
+                    const unsigned s =
+                        static_cast<unsigned>(translate_sector(static_cast<int>(sector_index % sectors)));
+
+                    const std::array<unsigned, 3> key{h, t, s};
+                    auto it = result.find(key);
+                    if (it == result.end()) {
+                        result[key] = type;
+                    } else if (it->second == SectorType::DeletedFile && type == SectorType::File) {
+                        it->second = type;                              // live entry wins
+                    }
+                    if (h==0 && t==1 && s==4 && type!=SectorType::DeletedFile) std::cout << "!!! " << i << std::endl;
+                    // System / Catalog entries are left untouched (higher priority).
+                }
+            }
+        }
+
+        return result;
+    }
+
 }

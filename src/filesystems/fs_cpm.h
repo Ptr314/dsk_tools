@@ -74,5 +74,6 @@ namespace dsk_tools {
         Result rename_file(const UniversalFile & fd, const std::string & new_name) override;
         Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace) override;
         void update_stats() override;
+        SectorTypeMap get_sector_type_map() override;
     };
 }

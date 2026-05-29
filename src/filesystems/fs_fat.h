@@ -100,5 +100,6 @@ namespace dsk_tools {
         std::vector<std::string> get_add_file_formats() override;
         std::string information() override;
         bool is_root() override;
+        SectorTypeMap get_sector_type_map() override;
     };
 }

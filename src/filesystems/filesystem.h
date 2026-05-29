@@ -6,6 +6,7 @@
 #pragma once
 
 #include "disk_image.h"
+#include <array>
 #include <map>
 
 namespace dsk_tools {
@@ -31,6 +32,13 @@ namespace dsk_tools {
     struct OSStats {
         std::map<std::string, unsigned> int_values;
     };
+
+    enum class SectorType { Empty, Ok, Bad, System, Catalog, File, DeletedFile };
+
+    // Key is {head, track, sector}. std::array (not C-style unsigned[3]) is used so
+    // the type satisfies std::map's key requirements (Copy/MoveConstructible, default
+    // operator<) and allows brace-list initialization at call sites.
+    typedef std::map<std::array<unsigned, 3>, SectorType> SectorTypeMap;
 
     class fileSystem {
     protected:
@@ -90,6 +98,8 @@ namespace dsk_tools {
         virtual Result file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata) {return Result::error(ErrorCode::NotImplementedYet);};
         virtual std::string exattr(const UniversalFile & fd) {return "";}
         virtual std::pair<std::string, std::string> exattr_caption() {return {"", ""};};
+
+        virtual SectorTypeMap get_sector_type_map() {return {};}
     };
 
 } // namespace

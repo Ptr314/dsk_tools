@@ -416,6 +416,156 @@ namespace dsk_tools {
         return Result::ok();
     }
 
+    SectorTypeMap fsFAT::get_sector_type_map()
+    {
+        SectorTypeMap result;
+        if (!is_open) return result;
+
+        const unsigned spt    = image->get_sectors();
+        const unsigned heads  = image->get_heads();
+        const unsigned tracks = image->get_tracks();
+        const unsigned spc    = BPB.sectorsPerCluster;
+        if (spt == 0 || spc == 0) return result;
+
+        // Mirrors read_lba(): translates an LBA to image (head, track, sector).
+        // Returns false if the LBA falls outside the image geometry.
+        auto lba_to_hts = [&](unsigned lba, unsigned & h, unsigned & t, unsigned & s) -> bool {
+            if (heads <= 1) {
+                h = 0;
+                t = lba / spt;
+            } else {
+                h = (lba / spt) % heads;
+                t = (lba / spt) / heads;
+            }
+            s = lba % spt;
+            return t < tracks;
+        };
+
+        // Mark a single LBA. `priority_set` is the set of states a previously-stored
+        // value must NOT belong to in order for the new value to overwrite it. Pass
+        // an empty set to mean "only set if currently unmarked".
+        auto mark_lba = [&](unsigned lba, SectorType type, bool overwrite_any) {
+            unsigned h, t, s;
+            if (!lba_to_hts(lba, h, t, s)) return;
+            const std::array<unsigned, 3> key{h, t, s};
+            const auto it = result.find(key);
+            if (it == result.end() || overwrite_any) {
+                result[key] = type;
+            }
+        };
+
+        auto mark_cluster = [&](unsigned cluster, SectorType type, bool overwrite_any) {
+            if (cluster < 2) return;
+            const unsigned first_lba = data_start + (cluster - 2) * spc;
+            for (unsigned k = 0; k < spc; k++)
+                mark_lba(first_lba + k, type, overwrite_any);
+        };
+
+        // 1. Reserved area (boot sector + BPB-declared reserved sectors).
+        for (unsigned lba = 0; lba < BPB.reservedSectors; lba++)
+            mark_lba(lba, SectorType::System, false);
+
+        // 2. FAT table copies.
+        const unsigned sectors_per_fat = BPB.sectorsPerFAT16;
+        const unsigned fats_end = fat_start + static_cast<unsigned>(BPB.numFATs) * sectors_per_fat;
+        for (unsigned lba = fat_start; lba < fats_end; lba++)
+            mark_lba(lba, SectorType::System, false);
+
+        // 3. Root directory area (FAT12/16 — fixed location, fixed size).
+        for (unsigned lba = root_dir_start; lba < root_dir_start + root_dir_sectors; lba++)
+            mark_lba(lba, SectorType::Catalog, false);
+
+        // 4. Walk the FAT once: mark every claimed cluster as File. Bad-marked
+        //    clusters become Bad. Free clusters (entry == 0) stay unmarked so
+        //    they fall back to Empty.
+        const unsigned bad_marker = (fat_type == FATType::FAT12) ? 0x0FF7u : 0xFFF7u;
+        for (unsigned c = 2; c < total_clusters + 2; c++) {
+            const unsigned v = read_fat_entry(c);
+            if (v == 0) continue;
+            if (v == bad_marker) {
+                mark_cluster(c, SectorType::Bad, false);
+            } else {
+                mark_cluster(c, SectorType::File, false);
+            }
+        }
+
+        // 5. Walk every directory we can reach, starting at the root. For each
+        //    subdirectory found, override its cluster chain from File to Catalog
+        //    (subdir clusters are claimed in the FAT so they were tagged File in
+        //    step 4). Deleted entries get their first cluster tagged DeletedFile
+        //    if it's currently Empty — after a DOS-style delete the FAT chain is
+        //    typically zeroed out, so the recovered fragment is just one cluster.
+        std::vector<uint32_t> dir_queue;
+        std::set<uint32_t>    visited;
+        dir_queue.push_back(0);                              // 0 = root for FAT12/16
+        visited.insert(0);
+
+        const unsigned guard_max = (total_clusters > 0) ? total_clusters + 2 : 1u << 20;
+
+        while (!dir_queue.empty()) {
+            const uint32_t cluster = dir_queue.back();
+            dir_queue.pop_back();
+
+            BYTES buffer;
+            if (!read_directory(cluster, buffer)) continue;
+
+            const size_t entries = buffer.size() / sizeof(FAT_DIR_ENTRY);
+            for (size_t i = 0; i < entries; i++) {
+                const auto * de = reinterpret_cast<const FAT_DIR_ENTRY *>(buffer.data() + i * sizeof(FAT_DIR_ENTRY));
+                const uint8_t first = de->name[0];
+
+                if (first == 0x00) break;                     // end-of-directory marker
+                if (de->attr == FAT_ATTR_LONG_NAME) continue; // LFN sub-entry — ignore
+                if (de->attr & FAT_ATTR_VOLUME_ID) continue;  // volume label
+
+                const uint32_t first_cluster =
+                    (static_cast<uint32_t>(de->firstClusterHi) << 16) | de->firstClusterLo;
+                if (first_cluster == 0) continue;             // empty file / zero-cluster entry
+
+                const bool is_dir     = (de->attr & FAT_ATTR_DIRECTORY) != 0;
+                const bool is_deleted = (first == 0xE5);
+
+                if (is_deleted) {
+                    // Mark just the first cluster — chain is usually gone.
+                    unsigned h, t, s;
+                    const unsigned first_lba = data_start + (first_cluster - 2) * spc;
+                    for (unsigned k = 0; k < spc; k++) {
+                        if (!lba_to_hts(first_lba + k, h, t, s)) continue;
+                        const std::array<unsigned, 3> key{h, t, s};
+                        const auto it = result.find(key);
+                        if (it == result.end()) {
+                            result[key] = SectorType::DeletedFile;
+                        }
+                        // Don't override anything live (File / Catalog / System).
+                    }
+                    continue;
+                }
+
+                if (!is_dir) continue;
+
+                // Live subdirectory. Skip on-disk "." and ".." records: they
+                // point at this directory's own cluster and its parent's, which
+                // we'd otherwise re-walk or loop on.
+                if (first == '.') continue;
+                if (visited.count(first_cluster) != 0) continue;
+                visited.insert(first_cluster);
+
+                // Override the subdirectory's whole chain to Catalog
+                uint32_t c = first_cluster;
+                unsigned guard = 0;
+                while (!is_eoc(c) && c >= 2) {
+                    mark_cluster(c, SectorType::Catalog, true);
+                    c = read_fat_entry(c);
+                    if (++guard > guard_max) break;
+                }
+
+                dir_queue.push_back(first_cluster);
+            }
+        }
+
+        return result;
+    }
+
     Result fsFAT::dir(std::vector<UniversalFile> & files, bool show_deleted)
     {
         if (!is_open) return Result::error(ErrorCode::OpenNotLoaded);
