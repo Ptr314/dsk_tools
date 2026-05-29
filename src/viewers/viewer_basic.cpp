@@ -255,11 +255,16 @@ namespace dsk_tools {
                     } else {
                         if (c & 0x80 && !in_str) {
                             // Token
-                            std::string token = std::string(tokens[c & 0x7F]);
-                            if (token=="&")
-                                add_char(token);
-                            else
-                                add_entity(EntityType::TOKEN, token);
+                            const auto t = tokens[c & 0x7F];
+                            if (t) {
+                                const auto token = std::string(t);
+                                if (token=="&")
+                                    add_char(token);
+                                else
+                                    add_entity(EntityType::TOKEN, token);
+                            } else {
+                                add_entity(EntityType::TOKEN, " ??"+std::to_string(c)+"??");
+                            }
                         } else {
                             // Ordinal char
                             std::string cc;
