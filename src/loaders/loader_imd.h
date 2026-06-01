@@ -12,7 +12,7 @@ namespace dsk_tools {
         uint8_t     mode;
         uint8_t     cylinder;
         uint8_t     head;
-        uint8_t     sectors;
+        uint8_t     sectors_count;
         uint8_t     sector_size;
     };
 
@@ -21,6 +21,7 @@ namespace dsk_tools {
     public:
         LoaderIMD(const std::string & file_name, const std::string & format_id, const std::string & type_id);
         Result load(BYTES & buffer, const DiskFormatParams &format = DiskFormatParams()) override;
+        Result load_structured(StructDisk & result, const DiskFormatParams &format = DiskFormatParams()) override;
         std::string file_info() override;
 
     };

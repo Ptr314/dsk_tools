@@ -118,4 +118,9 @@ namespace dsk_tools {
         return Result::ok();
     }
 
+    Result diskImage::load_structured(StructDisk & result)
+    {
+        return m_loader->load_structured(result, m_format);
+    }
+
 }

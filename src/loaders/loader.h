@@ -30,6 +30,7 @@ namespace dsk_tools {
             const BadSectorTable & bad_sectors() const { return m_bad_sectors; };
 
             virtual Result load(BYTES & buffer, const DiskFormatParams &format = DiskFormatParams()) = 0;
+            virtual Result load_structured(StructDisk & result, const DiskFormatParams &format = DiskFormatParams()) {return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Not implemented"));};
             virtual std::string file_info() = 0;
     };
 

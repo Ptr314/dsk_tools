@@ -379,4 +379,24 @@ namespace dsk_tools {
         "Custom Font"
     };
 
+    struct StructSector {
+        bool is_bad;
+        BYTES data;
+    };
+
+    struct StructTrack {
+        unsigned sector_size;
+        uint8_t cylinder;
+        uint8_t head;
+        std::vector<StructSector> sectors;
+        BYTES sector_map;                       // IMD-specific, sector number remap
+        BYTES cylinder_map;                     // IMD-specific, cylinder number remap
+        BYTES head_map;                         // IMD-specific, head number remap
+    };
+
+    struct StructDisk {
+        unsigned heads;
+        std::vector<StructTrack> tracks;
+    };
+
 }

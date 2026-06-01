@@ -51,13 +51,13 @@ namespace dsk_tools {
             if (!file.good()) break;
             if (heads && track_header.head + 1 > heads) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect head index"));
             if (tracks && track_header.cylinder >= tracks) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect track index"));
-            if (sectors && track_header.sectors != sectors) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect sector count"));
+            if (sectors && track_header.sectors_count != sectors) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect sector count"));
             const int s_size = 1 << (track_header.sector_size+7);
             if (sector_size && s_size != sector_size) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect sector size"));
 
             // Sector map
             BYTES sector_map;
-            sector_map.resize(track_header.sectors);
+            sector_map.resize(track_header.sectors_count);
             file.read(reinterpret_cast<char*>(sector_map.data()), sector_map.size());
             if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
 
@@ -65,7 +65,7 @@ namespace dsk_tools {
             static bool cm_presents = (track_header.head & 0x80) != 0;
             if (cm_presents) {
                 BYTES cylinder_map;
-                cylinder_map.resize(track_header.sectors);
+                cylinder_map.resize(track_header.sectors_count);
                 file.read(reinterpret_cast<char*>(cylinder_map.data()), cylinder_map.size());
                 if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
             }
@@ -74,12 +74,12 @@ namespace dsk_tools {
             static bool hm_presents = (track_header.head & 0x40) != 0;
             if (hm_presents) {
                 BYTES head_map;
-                head_map.resize(track_header.sectors);
+                head_map.resize(track_header.sectors_count);
                 file.read(reinterpret_cast<char*>(head_map.data()), head_map.size());
                 if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
             }
 
-            for (unsigned sector=0; sector<track_header.sectors; sector++) {
+            for (unsigned sector=0; sector<track_header.sectors_count; sector++) {
                 unsigned track_pos, sector_pos;
                 if (heads == 2) track_pos = track_header.cylinder * heads + track_header.head;
                 else if (heads == 1) track_pos = track_header.cylinder;
@@ -185,13 +185,13 @@ namespace dsk_tools {
             int sector_size = 1 << (track_header.sector_size+7);
             track_tbl += "{$SIDE}: " + std::to_string(track_header.head & 0x3F)
                         + ", {$TRACK}: " + std::to_string(track_header.cylinder)
-                        + ", {$CPM_SECTORS}: " + std::to_string(track_header.sectors)
+                        + ", {$CPM_SECTORS}: " + std::to_string(track_header.sectors_count)
                         + ", {$CPM_SECTOR_SIZE}: " + std::to_string(sector_size)
                         +"\n";
             bad_tbl += "H" + std::to_string(track_header.head & 0x3F) + "T" + pad_number(track_header.cylinder, 2, '0') + ": ";
             // Sector map
             BYTES sector_map;
-            sector_map.resize(track_header.sectors);
+            sector_map.resize(track_header.sectors_count);
             file.read(reinterpret_cast<char*>(sector_map.data()), sector_map.size());
             if (!file.good()) {
                 result += "{$UNEXPECTED_END_OF_FILE}\n";
@@ -203,7 +203,7 @@ namespace dsk_tools {
             static bool cm_presents = (track_header.head & 0x80) != 0;
             if (cm_presents) {
                 BYTES cylinder_map;
-                cylinder_map.resize(track_header.sectors);
+                cylinder_map.resize(track_header.sectors_count);
                 file.read(reinterpret_cast<char*>(cylinder_map.data()), cylinder_map.size());
                 if (!file.good()) {
                     result += "{$UNEXPECTED_END_OF_FILE}\n";
@@ -216,7 +216,7 @@ namespace dsk_tools {
             static bool hm_presents = (track_header.head & 0x40) != 0;
             if (hm_presents) {
                 BYTES head_map;
-                head_map.resize(track_header.sectors);
+                head_map.resize(track_header.sectors_count);
                 file.read(reinterpret_cast<char*>(head_map.data()), head_map.size());
                 if (!file.good()) {
                     result += "{$UNEXPECTED_END_OF_FILE}\n";
@@ -225,7 +225,7 @@ namespace dsk_tools {
                 track_tbl += "    {$HEAD_MAP}: " + toHexList(head_map.data(), head_map.size()) + "\n";
             }
 
-            for (unsigned sector=0; sector<track_header.sectors; sector++) {
+            for (unsigned sector=0; sector<track_header.sectors_count; sector++) {
                 track_tbl += "    " + int_to_hex(static_cast<uint8_t>(sector+1)) + " (" + int_to_hex(sector_map[sector]) + "): ";
 
                 uint8_t data_marker = 0;
@@ -311,6 +311,124 @@ namespace dsk_tools {
         result += "\n\n";
         result += bad_tbl + "\n\n" + track_tbl + "\n";
         return result;
+    }
+
+    Result LoaderIMD::load_structured(StructDisk & result, const DiskFormatParams &format)
+    {
+        // IMD carries its own geometry per track header, so the supplied format hints are unused.
+        (void)format;
+
+        UTF8_ifstream file(file_name, std::ios::binary);
+
+        if (!file.good()) return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Cannot open file"));
+
+        constexpr unsigned signature_length = 29;
+        char header[signature_length];
+        file.read(header, signature_length);
+
+        if (std::string(header, 3) != "IMD") return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect file format"));
+
+        std::string comment;
+        char c;
+        while (file.read(&c, 1) && c != 0x1A) {
+            comment += c;
+        }
+        if (c != 0x1A) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
+
+        result.tracks.clear();
+
+        int min_cylinder = 1000000;
+        int max_cylinder = -1;
+        int min_head = 1000000;
+        int max_head = -1;
+
+        while (file.good()) {
+            StructTrack track = {};
+
+            // Track header
+            IMD_TRACK_HEADER track_header{};
+            file.read(reinterpret_cast<char*>(&track_header), sizeof(IMD_TRACK_HEADER));
+            if (!file.good()) break;
+
+            track.sector_size = 1 << (track_header.sector_size+7);
+            track.cylinder = track_header.cylinder;
+            track.head = track_header.head;
+
+            if (track.cylinder < min_cylinder) min_cylinder = track.cylinder;
+            if (track.cylinder > max_cylinder) max_cylinder = track.cylinder;
+            if (track.head < min_head) min_head = track.head;
+            if (track.head > max_head) max_head = track.head;
+
+            // Sector map
+            track.sector_map.resize(track_header.sectors_count);
+            file.read(reinterpret_cast<char*>(track.sector_map.data()), track.sector_map.size());
+            if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
+
+            //Cylinder map
+            static bool cm_presents = (track_header.head & 0x80) != 0;
+            if (cm_presents) {
+                track.cylinder_map.resize(track_header.sectors_count);
+                file.read(reinterpret_cast<char*>(track.cylinder_map.data()), track.cylinder_map.size());
+                if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
+            }
+
+            //Head map
+            static bool hm_presents = (track_header.head & 0x40) != 0;
+            if (hm_presents) {
+                track.head_map.resize(track_header.sectors_count);
+                file.read(reinterpret_cast<char*>(track.head_map.data()), track.head_map.size());
+                if (!file.good()) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
+            }
+
+            for (unsigned i=0; i<track_header.sectors_count; i++) {
+                StructSector sector = {};
+                uint8_t data_marker;
+                unsigned data_len;
+
+                file.read(reinterpret_cast<char*>(&data_marker), 1);
+
+                switch (data_marker) {
+                    case 0x00:
+                        data_len = 0; break;
+                    case 0x01: case 0x03: case 0x05: case 0x07:
+                        data_len = track.sector_size; break;
+                    case 0x02: case 0x04: case 0x06: case 0x08:
+                        data_len = 1;  break;
+                    default:
+                        return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
+                        break;
+                }
+
+                sector.is_bad = (data_marker == 0x00 || data_marker >= 0x05);
+                sector.data.resize(track.sector_size);
+
+                if (data_len == 0) {
+                    constexpr uint8_t data_value = 0xE5;
+                    std::memset(sector.data.data(), data_value, track.sector_size);
+                } else
+                if (data_len == 1) {
+                    uint8_t data_value = 0;
+                    file.read(reinterpret_cast<char*>(&data_value), 1);
+                    std::memset(sector.data.data(), data_value, track.sector_size);
+                } else
+                if (data_len > 0) {
+                    file.read(reinterpret_cast<char*>(sector.data.data()), track.sector_size);
+                }
+
+                track.sectors.push_back(sector);
+            }
+
+            result.tracks.push_back(track);
+        }
+
+        if (min_head==0) {
+            if (max_head==0) result.heads = 1;
+            else
+                if (max_head==1) result.heads = 2;
+                else return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Incorrect data or unsupported disk type"));
+        }
+
+        return Result::ok();
     }
 
 }

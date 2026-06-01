@@ -30,9 +30,12 @@ namespace dsk_tools {
             virtual unsigned physical_sector(unsigned logical) const;
             virtual Result check();                                            // Check physical image parameters
             virtual Result load();
+            virtual Result load_structured(StructDisk & result);
+
             virtual uint8_t *get_sector_data(unsigned head, unsigned track, unsigned sector);      // Uses sector translation
 
             std::string file_name() {return m_loader->get_file_name();};
+            std::string file_info() {return m_loader->file_info();};      // loader's image-level info text (with placeholders)
             bool get_loaded() const {return m_is_loaded;};
             const DiskFormatParams& get_format() const {return m_format;};
             unsigned get_heads() const {return m_format.heads;};
