@@ -89,3 +89,38 @@ diskdef pc-1440
   tracks 80
   sectrk 18
 end
+
+diskdef st-360
+  seclen 512
+  heads 2
+  tracks 40
+  sectrk 9
+end
+
+diskdef st-720
+  seclen 512
+  heads 2
+  tracks 80
+  sectrk 9
+end
+
+diskdef st-800
+  seclen 512
+  heads 2
+  tracks 80
+  sectrk 10
+end
+
+diskdef st-820
+  seclen 512
+  heads 2
+  tracks 82
+  sectrk 10
+end
+
+diskdef st-1440
+  seclen 512
+  heads 2
+  tracks 80
+  sectrk 18
+end

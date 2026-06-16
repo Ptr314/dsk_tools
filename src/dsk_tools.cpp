@@ -317,6 +317,36 @@ namespace dsk_tools {
             return Result::ok();
         }
 
+        if (ext == ".st") {
+            format_id = "FILE_RAW_MSB";
+
+            if (format_only) {
+                type_id = "";
+                filesystem_id = "";
+                return Result::ok();
+            }
+
+            if (fsize == 512*9*40*2) {
+                type_id = "TYPE_FAT:ST-360";
+            } else
+            if (fsize == 512*9*80*2) {
+                type_id = "TYPE_FAT:ST-720";
+            } else
+            if (fsize == 512*10*80*2) {
+                type_id = "TYPE_FAT:ST-800";
+            } else
+            if (fsize == 512*10*82*2) {
+                type_id = "TYPE_FAT:ST-820";
+            } else
+            if (fsize == 512*18*80*2) {
+                type_id = "TYPE_FAT:ST-1440";
+            } else
+                return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid file size for DSK format"));
+
+            filesystem_id = "FILESYSTEM_FAT";
+            return Result::ok();
+        }
+
         if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd" || ext == ".fdd" || ext == ".img") {
             format_id = "FILE_RAW_MSB";
 
