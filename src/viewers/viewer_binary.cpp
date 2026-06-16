@@ -8,7 +8,8 @@
 
 namespace dsk_tools {
 
-std::string ViewerBinary::process_as_text(const BYTES & data, const std::string & cm_name) {
+    std::string ViewerBinary::make_dump(const BYTES & data, const std::string & cm_name, const unsigned offset)
+    {
         std::string out;
 
         cm = init_charmap(cm_name);
@@ -17,15 +18,21 @@ std::string ViewerBinary::process_as_text(const BYTES & data, const std::string 
         for (int a=0; a < data.size(); a++) {
             if (a % 16 == 0)  {
                 if (a != 0) out += text + "\n";
-                out += int_to_hex(static_cast<uint16_t>(a)) + " ";
-                text = "    ";
+                out += int_to_hex(static_cast<uint16_t>(a + offset)) + " |";
+                text = " | ";
             }
             out += " " + int_to_hex(static_cast<uint8_t>(data[a]));
+            if (a % 16 == 7) out += " ";
             text += (*cm.charmap)[data[a]];
         }
         out += text;
 
         return escapeHtml(out);
+    }
+
+    std::string ViewerBinary::process_as_text(const BYTES & data, const std::string & cm_name)
+    {
+        return make_dump(data, cm_name, 0);
     }
 
 }

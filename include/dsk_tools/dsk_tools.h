@@ -43,6 +43,7 @@
 
 #include "viewers/viewer.h"
 #include "viewers/viewer_binary.h"
+#include "viewers/agat/agat_binary.h"
 #include "viewers/viewer_text.h"
 #include "viewers/viewer_basic_agat.h"
 #include "viewers/viewer_basic_apple.h"

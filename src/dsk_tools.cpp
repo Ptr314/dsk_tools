@@ -923,6 +923,7 @@ namespace dsk_tools {
         done = true;
 
         register_viewer<ViewerBinary>();
+        register_viewer<ViewerBinaryAgat>();
         register_viewer<ViewerText>();
 
         register_viewer<ViewerBASIC_Agat>();
