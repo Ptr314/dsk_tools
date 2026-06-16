@@ -112,7 +112,7 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
                     // A sector filled entirely with 0xBD marks an unreadable/bad sector.
                     constexpr uint8_t bad_filler = 0xBD;
                     sector.is_bad = std::all_of(sector.data.begin(), sector.data.end(),
-                                                [](uint8_t b){ return b == bad_filler; });
+                                                [bad_filler](uint8_t b){ return b == bad_filler; });
 
                     track.sector_map[slot] = (slot_to_logical.empty() ? slot : slot_to_logical[slot]) + 1;
                     track.sectors.push_back(sector);
