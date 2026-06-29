@@ -43,35 +43,51 @@ namespace dsk_tools {
 
     Result fsSpriteOS::load_file(const SPRITE_OS_DIR_ENTRY & dir_entry, BYTES & out, const bool strict_size) const
     {
-        std::vector<uint8_t> buffer;
-        int tr;
-        uint8_t * p;
+        BYTES buffer;
+        const auto sectors_count = image->get_sectors();
+
+        auto read_blocks = [this, &buffer](uint16_t INFADR) {
+            const auto sectors_count = image->get_sectors();
+            auto tr = INFADR / sectors_count;
+            auto p = image->get_sector_data(0, tr, INFADR % sectors_count);
+            const auto * BLOCKS_LIST = reinterpret_cast<const uint16_t*>(p);
+
+            int i = 0;
+            while (BLOCKS_LIST[i] != 0 && i<128) {
+                tr = BLOCKS_LIST[i] / sectors_count;
+                p = image->get_sector_data(0, tr, BLOCKS_LIST[i] % sectors_count);
+                if (p == nullptr) return Result::error(ErrorCode::ReadError, QT_TRANSLATE_NOOP("errors", "Incorrect file entry"));
+                buffer.insert(buffer.end(), p, p + 256);
+                i++;
+            }
+            return Result::ok();
+        };
 
         if (dir_entry.LEVEL == 1) {
             buffer.resize(256);
-            tr = dir_entry.INFADR / image->get_sectors();
-            p = image->get_sector_data(0, tr, dir_entry.INFADR % image->get_sectors());
+            const auto tr = dir_entry.INFADR / sectors_count;
+            const auto p = image->get_sector_data(0, tr, dir_entry.INFADR % sectors_count);
+            if (p == nullptr) return Result::error(ErrorCode::ReadError, QT_TRANSLATE_NOOP("errors", "Incorrect file entry"));
             memcpy(buffer.data(), p, 256);
         } else
         if (dir_entry.LEVEL == 2) {
-            uint16_t BLOCKS_LIST[128];
-            tr = dir_entry.INFADR / image->get_sectors();
-            p = image->get_sector_data(0, tr, dir_entry.INFADR % image->get_sectors());
-            memcpy(BLOCKS_LIST, p, 256);
+            auto res = read_blocks(dir_entry.INFADR);
+            if (!res) return res;
+        } else
+        if (dir_entry.LEVEL == 3) {
+            const auto tr = dir_entry.INFADR / sectors_count;
+            const auto p = image->get_sector_data(0, tr, dir_entry.INFADR % sectors_count);
+            if (p == nullptr) return Result::error(ErrorCode::ReadError, QT_TRANSLATE_NOOP("errors", "Incorrect file entry"));
+            const auto * BLOCKS_LIST = reinterpret_cast<const uint16_t*>(p);
 
             int i = 0;
-            std::vector<uint8_t> block;
-            block.resize(256);
             while (BLOCKS_LIST[i] != 0 && i<128) {
-                tr = BLOCKS_LIST[i] / image->get_sectors();
-                p = image->get_sector_data(0, tr, BLOCKS_LIST[i] % image->get_sectors());
-
-                memcpy(block.data(), p, 256);
-                buffer.insert(buffer.end(), block.begin(), block.end());
-                i++;
+                auto res = read_blocks(BLOCKS_LIST[i++]);
+                if (!res) return res;
             }
-        } else
+        } else {
             return Result::error(ErrorCode::ReadError, std::string(QT_TRANSLATE_NOOP("errors", "Unknown DIR_ENTRY.LEVEL value")) + ": " + std::to_string(dir_entry.LEVEL));
+        }
 
         if (strict_size) {
             const int expected_size = dir_entry.FILELEN[0] + (dir_entry.FILELEN[1]<<8) + (dir_entry.FILELEN[2]<<16);
