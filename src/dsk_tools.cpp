@@ -8,6 +8,8 @@
 #include <algorithm>
 
 #include "dsk_tools/dsk_tools.h"
+
+#include "fs_iskra226.h"
 #include "host_helpers.h"
 
 namespace dsk_tools {
@@ -68,8 +70,8 @@ namespace dsk_tools {
         if (type_id == "TYPE_AGAT_140")   return dsk_tools::make_unique<imageAgat140>(std::move(loader));
         if (type_id == "TYPE_AGAT_840")   return dsk_tools::make_unique<imageAgat840>(std::move(loader));
         if (type_id == "TYPE_FIL")        return dsk_tools::make_unique<imageFIL>(std::move(loader));
-         if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0) {
-            const std::string diskdef_id = to_lower(type_id.substr(9));
+        if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0 || type_id.rfind("TYPE_OTHER:", 0)==0) {
+            const std::string diskdef_id = to_lower(type_id.substr(type_id.find(':') + 1));
             const auto it = diskdefs.find(diskdef_id);
             if (it == diskdefs.end()) return nullptr;
             const DiskDef &diskdef = it->second;
@@ -114,7 +116,6 @@ namespace dsk_tools {
                                               )
                                           );
         }
-
         return nullptr;
     }
 
@@ -134,6 +135,9 @@ namespace dsk_tools {
         }
         if (filesystem_id == "FILESYSTEM_FAT") {
             return dsk_tools::make_unique<fsFAT>(image);
+        }
+        if (filesystem_id == "FILESYSTEM_ISKRA-226") {
+            return dsk_tools::make_unique<fsIskra226>(image);
         }
         return nullptr;
     }
@@ -1083,7 +1087,7 @@ namespace dsk_tools {
     {
         if (type_id == "TYPE_AGAT_840") return 2*80*21*256;
         if (type_id == "TYPE_AGAT_140") return 1*35*16*256;
-        if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0)
+        if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0 || type_id.rfind("TYPE_OTHER:", 0)==0)
             return format.heads * format.tracks * format.sectors * format.sector_size;
         return 0;
     }

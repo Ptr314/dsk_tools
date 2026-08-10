@@ -50,7 +50,7 @@ namespace dsk_tools {
 
     ENABLE_ENUM_FLAG_OPERATORS(FSCaps);
 
-    enum class FS {None, Host, DOS33, Sprite, CPM, FAT};
+    enum class FS {None, Host, DOS33, Sprite, CPM, FAT, Iskra226};
     enum class PreferredType {Binary, Text, AgatBASIC, AppleBASIC, MBASIC, VectorBASIC, AgatBFT, AgatBMP};
 
     struct UniversalFile {

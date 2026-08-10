@@ -40,6 +40,7 @@
 #include "fs_cpm.h"
 #include "fs_fil.h"
 #include "fs_fat.h"
+#include "fs_iskra226.h"
 
 #include "viewers/viewer.h"
 #include "viewers/viewer_binary.h"

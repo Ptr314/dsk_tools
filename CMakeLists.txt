@@ -76,6 +76,7 @@ add_library(${PROJECT_NAME} STATIC
     src/viewers/agat/agat_font_bft.h    src/viewers/agat/agat_font_bft.cpp
     src/viewers/viewer_pics_vector.h    src/viewers/viewer_pics_vector.cpp
     src/viewers/agat/agat_binary.h      src/viewers/agat/agat_binary.cpp
+    src/filesystems/fs_iskra226.h       src/filesystems/fs_iskra226.cpp
 )
 
 # Platform-specific compilation settings

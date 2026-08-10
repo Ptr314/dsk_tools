@@ -124,3 +124,10 @@ diskdef st-1440
   tracks 80
   sectrk 18
 end
+
+diskdef iskra-226
+  seclen 128
+  heads 1
+  tracks 77
+  sectrk 26
+end
