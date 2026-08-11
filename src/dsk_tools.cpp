@@ -934,6 +934,7 @@ namespace dsk_tools {
         register_viewer<ViewerBASIC_Apple>();
         register_viewer<ViewerBASIC_Vector>();
         register_viewer<ViewerBASIC_MBASIC>();
+        register_viewer<ViewerBASIC_Iskra226>();
 
         register_viewer<ViewerPicAgat_256x256x1>();
         register_viewer<ViewerPicAgat_BMP>();

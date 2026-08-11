@@ -50,6 +50,7 @@
 #include "viewers/viewer_basic_apple.h"
 #include "viewers/viewer_basic_vector.h"
 #include "viewers/viewer_basic_mbasic.h"
+#include "viewers/viewer_basic_iskra226.h"
 #include "viewers/viewer_pics_agat.h"
 #include "viewers/viewer_pics_vector.h"
 

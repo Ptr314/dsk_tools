@@ -126,6 +126,9 @@ namespace dsk_tools
         return std::to_string(byte >> 4) + std::to_string(byte & 0xF);
     }
 
+    unsigned fromBCD(const uint8_t b) {
+        return (b >> 4) * 10 + (b & 0xF);
+    }
 
     constexpr char BASE64_CHARS[] =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

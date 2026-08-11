@@ -38,6 +38,8 @@ namespace dsk_tools {
         FS get_fs() const override {return FS::Iskra226;};
         Result open() override;
         FSCaps get_caps() override;
+        std::string exattr(const UniversalFile & fd) override;
+        std::pair<std::string, std::string> exattr_caption() override;
         Result dir(std::vector<UniversalFile> & files, bool show_deleted) override;
         std::vector<std::string> get_save_file_formats() override;
         Result get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const override;

@@ -19,7 +19,7 @@ namespace dsk_tools {
 
     FSCaps fsIskra226::get_caps()
     {
-        return FSCaps::Types;
+        return FSCaps::Types | FSCaps::ExAttr;
     }
 
     Result fsIskra226::open()
@@ -46,6 +46,17 @@ namespace dsk_tools {
         return {"FILE_BINARY"};
     }
 
+    std::pair<std::string, std::string> fsIskra226::exattr_caption()
+    {
+        return {"Z", QT_TRANSLATE_NOOP("attributes", "Tokenized")};
+    }
+
+    std::string fsIskra226::exattr(const UniversalFile & fd)
+    {
+        // const unsigned u = (fd.attributes >> 8) & 0xFF;
+        return (fd.attributes & 1)?std::string("+"):"";
+    }
+
     Result fsIskra226::dir(std::vector<UniversalFile> & files, bool show_deleted)
     {
         if (!is_open) return Result::error(ErrorCode::OpenNotLoaded);
@@ -64,16 +75,29 @@ namespace dsk_tools {
                     std::string file_name;
                     for (const unsigned char j : dir[i].NM) file_name += (*m_charmap.charmap)[j];
 
-                    unsigned T = FROM_BE_16(dir[i].T);
+                    const unsigned T = FROM_BE_16(dir[i].T);
+                    const unsigned first_sector = FROM_BE_16(dir[i].FI);
+                    const unsigned last_sector = FROM_BE_16(dir[i].LA);
 
                     UniversalFile f;
                     f.is_dir = false;
                     f.is_deleted = (T==0x1180) || (T==0x1100);
                     f.name = trim(file_name);
-                    f.size = (FROM_BE_16(dir[i].LA) - FROM_BE_16(dir[i].FI)) * 256;
+                    f.size = (last_sector - first_sector + 1) * 256;
 
                     if (T==0x1080 || T==0x1180) f.type_label = "ПФ";
                     if (T==0x1000 || T==0x1100) f.type_label = "ФД";
+
+                    f.attributes = 0;
+                    if (first_sector<=last_sector && last_sector<=m_size_total && (T==0x1080 || T==0x1180)) {
+                        // For BASIC files, we get their 9th byte from the very first sector
+                        // To determine whether they are plain text or tokenized
+                        const unsigned ls2 = first_sector*2;
+                        const unsigned track2 = ls2 / SPT;
+                        const unsigned sector2 = ls2 % SPT;
+                        const auto * file_data = image->get_sector_data(0, track2, sector2);
+                        f.attributes = file_data[9];
+                    }
 
                     f.metadata.resize(sizeof(ISKRA226_DIR_ENTRY));
                     std::memcpy(f.metadata.data(), &dir[i], sizeof(ISKRA226_DIR_ENTRY));
