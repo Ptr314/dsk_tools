@@ -9,6 +9,7 @@
 #include <charconv>
 #include <cstring>
 #include <stack>
+#include <utility>
 
 #include "utils.h"
 
@@ -62,83 +63,361 @@ struct var_params
     bool is_short;
 };
 
-struct oper_definition
+enum class OperClass {Function, ImplFunc, Operation, Operand, VerbPart, Closer, VarRef, Error};
+
+struct OperDefinition
 {
     const char * as_operand;
+    OperClass class_as_operand;
     const char * as_operation;
+    OperClass class_as_operation;
     bool next_is_operand;
 };
 
 using table1_rec = uint16_t[4];
 
-constexpr std::array<oper_definition, 0x100-0xC0> Iskra226_operations = {{
-    /* C0 */ { "",       "",       true  },
-    /* C1 */ { "",       "",       true  },
-    /* C2 */ { "",       "",       true  },
-    /* C3 */ { "",       "",       true  },
-    /* C4 */ { "",       "",       true  },
-    /* C5 */ { "",       "",       true  },
-    /* C6 */ { "",       "",       true  },
-    /* C7 */ { "",       "",       true  },
-    /* C8 */ { "",       "",       true  },
-    /* C9 */ { "",       "",       true  },
-    /* CA */ { "FROM",   "FROM",   true  },
-    /* CB */ { "ALL",    "ALL",    true  },   // RETURN CLEAR ...
-    /* CC */ { "GOSUB",  "GOSUB",  true  },   // ON ...
-    /* CD */ { "GOTO",   "GOTO",   true  },   // ON ...
-    /* CE */ { "",       "",       true  },
-    /* CF */ { "",       "",       true  },
-    /* D0 */ { ")",      ")",      false },
-    /* D1 */ { "TO",     "TO",     true  },
-    /* D2 */ { "STEP",   "STEP",   true  },
-    /* D3 */ { "THEN",   "THEN",   true  },   // + 2 bytes BCD
-    /* D4 */ { ">",      ">",      true  },
-    /* D5 */ { "AT(",    "<>",     true  },
-    /* D6 */ { "<=",     "<=",     true  },
-    /* D7 */ { "<",      "<",      true  },
-    /* D8 */ { ">=",     ">=",     true  },
-    /* D9 */ { "=",      "=",      true  },
-    /* DA */ { "",       "",       true  },
-    /* DB */ { "#",      "#",      true  },
-    /* DC */ { "/",      "/",      true  },
-    /* DD */ { ";",      ";",      true  },
-    /* DE */ { ",",      ",",      true  },
-    /* DF */ { "TAB(",   "*",      true  },
-    /* E0 */ { "@",      "^",      true  },   // операнд: ссылка на массив целиком, далее индекс
-    /* E1 */ { "STR(",   "STR(",   true  },
-    /* E2 */ { "HEX(",   "HEX(",   false },   // + байт длины + данные
-    /* E3 */ { "\"",     "\"",     false },   // + байт длины + КОИ-8
-    /* E4 */ { "",       "",       true  },
-    /* E5 */ { "#",      "#",      false },   // + описатель + BCD
-    /* E6 */ { "#",      "OR",     false },   // константа 2 байта BCD + порядок
-    /* E7 */ { "#",      "AND",    false },   // константа 2 байта BCD
-    /* E8 */ { "#",      "#",      false },   // + 1 байт BCD
-    /* E9 */ { "-",      "-",      true  },   // унарный / бинарный
-    /* EA */ { "+",      "+",      true  },
-    /* EB */ { "(",      "(",      true  },
-    /* EC */ { "POS(",   "POS(",   true  },
-    /* ED */ { "LEN(",   "LEN(",   true  },
-    /* EE */ { "NUM(",   "NUM(",   true  },
-    /* EF */ { "VAL(",   "VAL(",   true  },
-    /* F0 */ { "",       "",       true  },
-    /* F1 */ { "",       "",       true  },
-    /* F2 */ { "ABS(",   "ABS(",   true  },
-    /* F3 */ { "INT(",   "INT(",   true  },
-    /* F4 */ { "",       "",       true  },
-    /* F5 */ { "",       "",       true  },
-    /* F6 */ { "SQR(",   "SQR(",   true  },
-    /* F7 */ { "LOG(",   "LOG(",   true  },
-    /* F8 */ { "EXP(",   "EXP(",   true  },
-    /* F9 */ { "",       "",       true  },
-    /* FA */ { "",       "",       true  },
-    /* FB */ { "",       "",       true  },
-    /* FC */ { "",       "",       true  },
-    /* FD */ { "",       "",       true  },
-    /* FE */ { "",       "",       true  },   // разделитель записей, вне выражений
-    /* FF */ { "",       "",       true  },
+constexpr std::array<OperDefinition, 0x100-0xC0> Iskra226_operations = {{
+    /* C0 */ { "",     OperClass::Operation, "",       OperClass::Operation, true  },
+    /* C1 */ { "",     OperClass::Operation, "",       OperClass::Operation, true  },
+    /* C2 */ { "",     OperClass::Operation, "",       OperClass::Operation, true  },
+    /* C3 */ { "",     OperClass::Operation, "",       OperClass::Operation, true  },
+    /* C4 */ { "",     OperClass::Operation, "",       OperClass::Operation, true  },
+    /* C5 */ { "",     OperClass::Operation, "",       OperClass::Operation, true  },
+    /* C6 */ { "",     OperClass::Operation, "",       OperClass::Operation, true  },
+    /* C7 */ { "",     OperClass::Operation, "",       OperClass::Operation, true  },
+    /* C8 */ { "",     OperClass::Operation, "",       OperClass::Operation, true  },
+    /* C9 */ { "",     OperClass::Operation, "",       OperClass::Operation, true  },
+    /* CA */ { "FROM", OperClass::VerbPart,  "FROM",   OperClass::VerbPart,  true  },
+    /* CB */ { "ALL",  OperClass::VerbPart,  "ALL",    OperClass::VerbPart,  true  },   // RETURN CLEAR ...
+    /* CC */ { "GOSUB",OperClass::VerbPart,  "GOSUB",  OperClass::VerbPart,  true  },   // ON ...
+    /* CD */ { "GOTO", OperClass::VerbPart,  "GOTO",   OperClass::VerbPart,  true  },   // ON ...
+    /* CE */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* CF */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* D0 */ { ")",      OperClass::Closer,    ")",    OperClass::Closer,    false },
+    /* D1 */ { "TO",     OperClass::VerbPart,  "TO",   OperClass::VerbPart,  true  },
+    /* D2 */ { "STEP",   OperClass::VerbPart,  "STEP", OperClass::VerbPart,  true  },
+    /* D3 */ { "THEN",   OperClass::Operand,   "THEN", OperClass::VerbPart,  true  },   // + 2 bytes BCD
+    /* D4 */ { ">",      OperClass::Operation, ">",    OperClass::Operation, true  },
+    /* D5 */ { "AT(",    OperClass::Operation, "<>",   OperClass::Operation, true  },
+    /* D6 */ { "<=",     OperClass::Operation, "<=",   OperClass::Operation, true  },
+    /* D7 */ { "<",      OperClass::Operation, "<",    OperClass::Operation, true  },
+    /* D8 */ { ">=",     OperClass::Operation, ">=",   OperClass::Operation, true  },
+    /* D9 */ { "=",      OperClass::Operation, "=",    OperClass::Operation, true  },
+    /* DA */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* DB */ { "#",      OperClass::Operation, "#",    OperClass::Operation, true  },
+    /* DC */ { "/",      OperClass::Operation, "/",    OperClass::Operation, true  },
+    /* DD */ { ";",      OperClass::VerbPart,  ";",    OperClass::VerbPart,  true  },
+    /* DE */ { ",",      OperClass::Operation, ",",    OperClass::Operation, true  },
+    /* DF */ { "TAB(",   OperClass::Operation, "*",    OperClass::Operation, true  },
+    /* E0 */ { "@",      OperClass::Operand,   "^",    OperClass::Operation, true  },   // операнд: ссылка на массив целиком, далее индекс
+    /* E1 */ { "STR(",   OperClass::Function,  "STR(", OperClass::Function,  true  },
+    /* E2 */ { "HEX(",   OperClass::Function,   "HEX(",OperClass::Function,  false },   // + байт длины + данные
+    /* E3 */ { "\"",     OperClass::Operand,   "\"",   OperClass::Operand,   false },   // + байт длины + КОИ-8
+    /* E4 */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* E5 */ { "#",      OperClass::Operand,   "#",    OperClass::Operand,   false },   // + описатель + BCD
+    /* E6 */ { "#",      OperClass::Operand,   "OR",   OperClass::Function,  false },   // константа 2 байта BCD + порядок
+    /* E7 */ { "#",      OperClass::Operand,   "AND",  OperClass::Function,  false },   // константа 2 байта BCD
+    /* E8 */ { "#",      OperClass::Operand,   "#",    OperClass::Operand,   false },   // + 1 байт BCD
+    /* E9 */ { "-",      OperClass::Operation, "-",    OperClass::Operation, true  },   // унарный / бинарный
+    /* EA */ { "+",      OperClass::Operation, "+",    OperClass::Operation, true  },
+    /* EB */ { "(",      OperClass::Function,  "(",    OperClass::Function,  true  },
+    /* EC */ { "POS(",   OperClass::ImplFunc,  "POS(", OperClass::ImplFunc,  true  },
+    /* ED */ { "LEN(",   OperClass::ImplFunc,  "LEN(", OperClass::ImplFunc,  true  },
+    /* EE */ { "NUM(",   OperClass::ImplFunc,  "NUM(", OperClass::ImplFunc,  true  },
+    /* EF */ { "VAL(",   OperClass::ImplFunc,  "VAL(", OperClass::ImplFunc,  true  },
+    /* F0 */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* F1 */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* F2 */ { "ABS(",   OperClass::Function,  "ABS(", OperClass::Function,  true  },
+    /* F3 */ { "INT(",   OperClass::Function,  "INT(", OperClass::Function,  true  },
+    /* F4 */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* F5 */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* F6 */ { "SQR(",   OperClass::Function,  "SQR(", OperClass::Function,  true  },
+    /* F7 */ { "LOG(",   OperClass::Function,  "LOG(", OperClass::Function,  true  },
+    /* F8 */ { "EXP(",   OperClass::Function,  "EXP(", OperClass::Function,  true  },
+    /* F9 */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* FA */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* FB */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* FC */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* FD */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
+    /* FE */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },   // разделитель записей, вне выражений
+    /* FF */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
 }};
 
 namespace dsk_tools {
+
+    class Iskra226Parser
+    {
+    private:
+            var_params all_vars[256];
+            table1_rec * table1 = nullptr;
+            uint8_t * table2 = nullptr;
+            uint8_t * table3 = nullptr;
+            unsigned L1;
+            unsigned p;
+            BYTES code={};
+            CharmapInfo cm;
+            bool is_operand = true;
+            unsigned dim_vars = 0;
+    public:
+        Iskra226Parser(const CharmapInfo & charmap, table1_rec * table1, const unsigned L1):
+            table1(table1),
+            L1(L1),
+            cm(charmap)
+        {
+            for (auto & var : all_vars) {var.is_known = false; var.is_string = false; var.is_array = false; var.is_short = false;}
+        }
+
+        static std::string verb_by_id(const uint16_t verb_id)
+        {
+            std::string verb;
+            if (verb_id > 0xFF) {
+                // Extended codes
+                switch (verb_id)
+                {
+                case 0x0601: verb = "MAT"; break;
+                case 0x0602: verb = "MAT REDIM"; break;
+                case 0x060F: verb = "¤OPEN"; break;
+                case 0x0615: verb = "DRAW"; break;
+                case 0x0619: verb = "NPLOT"; break;
+                case 0x061E: verb = "LABEL"; break;
+                case 0x061F: verb = "¤COPY"; break;
+                case 0x0625: verb = "ASMB"; break;
+                default: verb = "?"; break;
+                }
+            } else if (verb_id < 0x84)
+                verb = std::string(Iskra226_verbs[verb_id]);
+            else
+                verb = "?";
+            if (verb == "?") verb = "?" + int_to_hex(verb_id) + "?";
+
+            return verb;
+        }
+
+        static OperClass classify_oper(const uint8_t oper, const bool is_operand_place)
+        {
+            if (is_operand_place) {
+                if (oper < 0xC0) return OperClass::VarRef;
+                return Iskra226_operations[oper-0xC0].class_as_operand;
+            }
+            if (oper < 0xC0) return OperClass::Error;
+            return Iskra226_operations[oper-0xC0].class_as_operation;
+        }
+
+        std::string process_operands()
+        {
+            std::string out;
+            is_operand = true;
+            while (p < code.size()) {
+                const uint8_t oper_id = code[p++];
+                const OperClass oper_class = classify_oper(oper_id, is_operand);
+                std::string oper;
+                if (oper_class != OperClass::VarRef && oper_class != OperClass::Error)
+                    oper = is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation;
+                switch (oper_class)
+                {
+                case OperClass::Error:
+                    {
+                        out += "?ERROR?" + int_to_hex(oper_id) + '?';
+                        break;
+                    }
+                case OperClass::VarRef:
+                    {
+                        out += 'V' + int_to_hex(oper_id);
+                        is_operand = false;
+                        break;
+                    }
+                case OperClass::Operand:
+                    {
+                        if (!is_operand) out += "?OPERAND?";
+                        switch (oper_id)
+                        {
+                        case 0xE7: // BCD 2 bytes big-endian constant
+                            {
+                                const uint16_t v = FROM_BCD_BE_16(code, p);
+                                out += std::to_string(v);
+                                p += 2;
+                                is_operand = false;
+                                break;
+                            }
+                        case 0xE8: // BCD byte constant
+                            {
+                                const uint8_t v = fromBCD(code[p++]);
+                                out += std::to_string(v);
+                                is_operand = false;
+                            }
+                        default:
+                            break;
+                        }
+                        break;
+                    }
+                case OperClass::Operation:
+                    {
+                        if (is_operand) out += "?OPERATION?";
+                        out += std::string(is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation);
+                        is_operand = Iskra226_operations[oper_id-0xC0].next_is_operand;
+                        break;
+                    }
+                case OperClass::VerbPart:
+                    {
+                        out += ' ' + std::string(is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation);
+                        out += ' ' + std::string(is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation);
+                        switch (oper_id)
+                        {
+                        case 0xD3: //THEN + 2 bytes BCD
+                            {
+                                const uint16_t v = FROM_BCD_BE_16(code, p);
+                                out += ' '+std::to_string(v);
+                                p += 2;
+                                break;
+                            }
+                        }
+                        is_operand = Iskra226_operations[oper_id-0xC0].next_is_operand;
+                        break;
+                    }
+                case OperClass::ImplFunc:
+                case OperClass::Function:
+                    {
+                        switch (oper_id) {
+                        case 0xE2: // HEX literal
+                            {
+                                const uint8_t hex_len = code[p++];
+                                for (int i=0; i<hex_len; i++) oper += int_to_hex(code[p++]);
+                                oper += ')';
+                                is_operand = false;
+                                break;
+                            }
+                        case 0xE3: // String literal
+                            {
+                                const uint8_t str_len = code[p++];
+                                out += '"';
+                                for (int i=0; i<str_len; i++) {
+                                    out += (*cm.charmap)[code[p++]];
+                                }
+                                out += '"';
+                                is_operand = false;
+                                break;
+                            }
+                        default:
+                            {
+                                break;
+                            }
+                        }
+                        out += oper;
+                        break;
+                    }
+                default:
+                    out += "?DEF?" + std::string(is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation);
+                    break;
+                }
+            }
+
+            return out;
+        }
+
+        std::string parse(const BYTES & line_code, const bool is_first)
+        {
+            std::string out;
+            code = line_code;
+            p = 0;
+
+            out += "\n-> ";
+            out += toHexList(code);
+            out += '\n';
+            if (!is_first) { out += ':'; }
+            uint16_t verb_id = code[p++];
+            if (verb_id == 0x06) verb_id = (verb_id << 8) + code[p++];
+
+            // if (verb_id == 0x35 || verb_id == 0x36) preprocess_let();
+
+            out += verb_by_id(verb_id) + ' ';
+
+            const uint8_t oper_len = code[p++];
+            if (oper_len > 0)
+            {
+                switch (verb_id) {
+                case 0x21: //GOTO
+                case 0x22: //GOSUB
+                case 0x2F: //RUN
+                    {
+                        //len, 2 bytes BCD line number
+                        const uint16_t goto_line = FROM_BCD_BE_16(code, p);
+                        out += std::to_string(goto_line);
+                        p += 2;
+                        break;
+                    }
+                case 0x27: //DEFFN'
+                    {
+                        if (oper_len > 0) {
+                            const unsigned oper_start = p;
+                            const uint8_t gosub_id = code[p++];
+                            out += std::to_string(gosub_id);
+                            p += 4; //Skip 4 shadow bytes
+                            if (p < code.size()) process_operands();
+                        }
+                        break;
+                    }
+
+                case 0x3F: //Short REM (%)
+                case 0x56: //REM
+                    {
+                        // string literal
+                        for (uint8_t i=0; i<oper_len; i++) out += (*cm.charmap)[code[p++]];
+                        break;
+                    }
+                case 0x46: //DIM
+                case 0x4E: //COM
+                    {
+                        // Variables list
+                        bool first_var = true;
+                        while (p < code.size()) {
+                            const uint8_t var_id = code[p++];
+                            if (!first_var) out += ','; first_var = false;
+                            std::cout << int_to_hex(var_id) << std::endl;
+                            if (table1 && dim_vars < L1)
+                            {
+                                //Table is reversed
+                                const unsigned t1i = L1 - dim_vars - 1;
+                                const auto ad = table1[t1i][0];
+                                const auto ln = table1[t1i][2];
+                                const auto sz = table1[t1i][3];
+                                const uint32_t adelta = (dim_vars?(table1[t1i+1][0]):0x10000) - ad;
+                                if (!all_vars[var_id].is_known) dim_vars++;
+                                all_vars[var_id].is_known = true;
+                                if (sz==4) {
+                                    out += "V"+int_to_hex(var_id) + "%(" + std::to_string(ln) + ")";
+                                    all_vars[var_id].is_short = true;
+                                    all_vars[var_id].is_array = true;
+                                } else if (sz==16) {
+                                    out += "V"+int_to_hex(var_id) + "(" + std::to_string(ln) + ")";
+                                    all_vars[var_id].is_array = true;
+                                } else if (sz & 1) {
+                                    all_vars[var_id].is_string = true;
+                                    const unsigned str_len = (sz-1)/2;
+                                    out += "V"+int_to_hex(var_id) + "¤";
+                                    if (adelta > str_len + 6 ) {
+                                        out += "(" + std::to_string(ln) + ")";
+                                        all_vars[var_id].is_array = true;
+                                    }
+                                    out += std::to_string(str_len);
+                                }
+                                else out += " V"+int_to_hex(var_id) + "? ";
+                            } else out += " V"+int_to_hex(var_id) + "? ";
+                        }
+                        break;
+                    }
+                default:
+                    {
+                        out += process_operands();
+                        break;
+                    }
+                }
+            }
+
+            out += '\n';
+
+            return out;
+        }
+    };
 
     std::string ViewerBASIC_Iskra226::process_as_text(const BYTES & data, const std::string & cm_name)
     {
@@ -183,7 +462,6 @@ namespace dsk_tools {
             out += "TOKENIZED BASIC\n\n";
 
             BYTES code;
-
 
             // Collecting parts of the code to a single stream removing header bytes
             const unsigned char * part = &data[256];
@@ -395,16 +673,11 @@ namespace dsk_tools {
                         } else if (verb_id == 0x0602) {
                             // MAT REDIM
                         } else {
-                            // Other var reference
-                            // if (is_left_let) {
-                            //     dgdgdfgdfg
-                            // } else {
-                                // Insert a comma in a vars list, after a ")" and HEX()
-                                if ((IS_VAR(prev) && !all_vars[prev].is_array) || prev == 0xD0 || prev == 0xE2) out += ',';
-                                out += var_ref(oper);
-                                if (prev == 0xE1) out += ','; //First argument of STR()
-                                is_operand = false;
-                            // }
+                            // Insert a comma in a vars list, after a ")" and HEX()
+                            if ((IS_VAR(prev) && !all_vars[prev].is_array) || prev == 0xD0 || prev == 0xE2) out += ',';
+                            out += var_ref(oper);
+                            if (prev == 0xE1 || prev == 0xE0) out += ','; //First argument of STR()
+                            is_operand = false;
                             if (verb_id == 0x57 && oper_count == 0) out+='='; // "=" after first var in FOR
                         }
                     } else if (oper == 0xCC) {
@@ -440,7 +713,7 @@ namespace dsk_tools {
                         // Array reference
                         if (verb_id != 0x0602) { // not MAT REDIM
                             const uint8_t var_n = code[p++];
-                            out += "V" + int_to_hex(var_n) + '(';
+                            out += "V" + int_to_hex(var_n) + "()";
                             is_operand = false;
                         } else {
                             const uint8_t var_n = code[p++];
@@ -485,7 +758,7 @@ namespace dsk_tools {
                         out += std::to_string(v);
                         is_operand = false;
                     } else {
-                        const oper_definition * oper_def = &Iskra226_operations[oper-0xC0];
+                        const OperDefinition * oper_def = &Iskra226_operations[oper-0xC0];
                         std::string oper_name;
                         if (is_operand)
                             oper_name = oper_def->as_operand;
@@ -602,6 +875,30 @@ namespace dsk_tools {
                 return oper_stack.empty();
             }; // preprocess_let
 
+            // auto classify_oper = [](const uint8_t oper, const bool is_operand) -> OperClass
+            // {
+            //
+            // };
+            //
+            // auto parse_expression = [&](const unsigned oper_len) -> bool
+            // {
+            //     const unsigned oper_start = p;
+            //     unsigned lp = p;
+            //     std::stack<uint8_t> vars_stack;
+            //     std::stack<uint8_t> oper_stack;
+            //     while (lp < oper_start + oper_len) {
+            //         uint8_t oper = code[lp];
+            //         switch (classify_oper(oper, is_operand))
+            //         {
+            //
+            //         }
+            //
+            //     }
+            //     return true;
+            // }; //parse_expression
+
+            Iskra226Parser parser(cm, table1, L1/8);
+
             while (p < code.size()) {
                 // In some cases a previous line can be padded by several zeroes to a full 256 segment
                 // So we need to skip them
@@ -610,7 +907,7 @@ namespace dsk_tools {
                 const uint16_t line_num = FROM_BCD_BE_16(code, p);
                 const uint8_t line_len = code[p+2];
 
-                if (line_num > 442)
+                if (line_num > 0)
                     out += '\n' + toHexList(std::vector<uint8_t>(code.begin() + p, code.begin() + p + line_len + 3)) + '\n';
 
                 p += 3;
@@ -621,6 +918,8 @@ namespace dsk_tools {
                 const unsigned line_end = line_start + line_len - 1;
 
                 while (p < line_end) {
+                    const unsigned operator_start = p;
+                    unsigned operator_len = 0;
                     uint16_t verb_id = code[p++];
 
                     if (verb_id == 0x35 || verb_id == 0x36) preprocess_let();
@@ -647,11 +946,17 @@ namespace dsk_tools {
                         verb = "?";
                     if (verb == "?") verb = "?" + int_to_hex(verb_id) + "?";
 
+                    operator_len = code[p]+2;
+                    const auto operator_code = BYTES(code.begin() + operator_start, code.begin() + operator_start + operator_len);
+
+                    out += parser.parse(operator_code, p==line_start+1);
+
                     out += ((p > line_start + 1)?std::string(":"):"") +
                             // "[" + int_to_hex(static_cast<uint8_t>(verb_id)) + "]" +
                             verb + (verb.empty()?"":" "); // Do not add a space for (LET)
 
                     is_operand = true;
+
 
                     switch (verb_id){
                         case 0x10: //An unknown verb without arguments
@@ -679,6 +984,11 @@ namespace dsk_tools {
                                 }
                                 break;
                             }
+                        // case 0x24: // IF
+                        //     {
+                        //         uint8_t oper_len = code[p++];
+                        //         parse_expression(oper_len);
+                        //     }
                         case 0x25: //KEYIN
                             {
                                 // var, line1, line2
@@ -738,6 +1048,7 @@ namespace dsk_tools {
                                         p+=2; oper_len-=2; // skip DC DE
                                         const uint8_t dev_id = code[p++]; oper_len--;
                                         out += '/'+int_to_hex(dev_id);
+                                        if (code[p]==0xDE) {p++; oper_len--; out += ',';}
                                     }
                                     if (p < line_end) process_operands(verb_id, oper_len);
                                 }
