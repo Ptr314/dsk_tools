@@ -107,16 +107,16 @@ constexpr std::array<OperDefinition, 0x100-0xC0> Iskra226_operations = {{
     /* DB */ { "#",      OperClass::Operation, "#",    OperClass::Operation, true  },
     /* DC */ { "/",      OperClass::Operation, "/",    OperClass::Operation, true  },
     /* DD */ { ";",      OperClass::VerbPart,  ";",    OperClass::VerbPart,  true  },
-    /* DE */ { ",",      OperClass::Operation, ",",    OperClass::Operation, true  },
+    /* DE */ { "#",      OperClass::Operand,   ",",    OperClass::Operation, true  },   // as operand: 1 byte constant
     /* DF */ { "TAB(",   OperClass::Function,  "*",    OperClass::Operation, true  },
     /* E0 */ { "@",      OperClass::Operand,   "^",    OperClass::Operation, true  },   // операнд: ссылка на массив целиком, далее индекс
     /* E1 */ { "STR(",   OperClass::Function,  "STR(", OperClass::Function,  true  },
-    /* E2 */ { "HEX(",   OperClass::Function,   "HEX(",OperClass::Function,  false },   // + байт длины + данные
+    /* E2 */ { "HEX(",   OperClass::Operand,   "HEX(",OperClass::Operand,    false },   // + байт длины + данные
     /* E3 */ { "\"",     OperClass::Operand,   "\"",   OperClass::Operand,   false },   // + байт длины + КОИ-8
     /* E4 */ { "",       OperClass::Operation, "",     OperClass::Operation, true  },
     /* E5 */ { "#",      OperClass::Operand,   "#",    OperClass::Operand,   false },   // + описатель + BCD
-    /* E6 */ { "#",      OperClass::Operand,   "OR",   OperClass::Function,  false },   // константа 2 байта BCD + порядок
-    /* E7 */ { "#",      OperClass::Operand,   "AND",  OperClass::Function,  false },   // константа 2 байта BCD
+    /* E6 */ { "#",      OperClass::Operand,   "OR",   OperClass::Operation,  false },   // константа 2 байта BCD + порядок
+    /* E7 */ { "#",      OperClass::Operand,   "AND",  OperClass::Operation,  false },   // константа 2 байта BCD
     /* E8 */ { "#",      OperClass::Operand,   "#",    OperClass::Operand,   false },   // + 1 байт BCD
     /* E9 */ { "-",      OperClass::Operation, "-",    OperClass::Operation, true  },   // унарный / бинарный
     /* EA */ { "+",      OperClass::Operation, "+",    OperClass::Operation, true  },
@@ -160,6 +160,8 @@ namespace dsk_tools {
             unsigned dim_vars = 0;
             bool is_let_left = false;
             bool impl_paren = false;
+            bool is_pos_func = false;
+            bool is_val_func = false;;
     public:
         Iskra226Parser(const CharmapInfo & charmap, table1_rec * table1, const unsigned L1):
             table1(table1),
@@ -178,11 +180,14 @@ namespace dsk_tools {
                 {
                 case 0x0601: verb = "MAT"; break;
                 case 0x0602: verb = "MAT REDIM"; break;
+                case 0x060A: verb = "MAT SEARCH"; break;
+                case 0x060C: verb = "¤TRAN("; break;
                 case 0x060F: verb = "¤OPEN"; break;
                 case 0x0615: verb = "DRAW"; break;
                 case 0x0619: verb = "NPLOT"; break;
                 case 0x061E: verb = "LABEL"; break;
                 case 0x061F: verb = "¤COPY"; break;
+                case 0x0624: verb = "LINPUT"; break;
                 case 0x0625: verb = "ASMB"; break;
                 default: verb = "?"; break;
                 }
@@ -206,7 +211,7 @@ namespace dsk_tools {
             return Iskra226_operations[oper-0xC0].class_as_operation;
         }
 
-        std::string var_ref (const uint8_t b, const bool mark_arrays=true) const
+        std::string var_ref(const uint8_t b, const bool mark_arrays=true) const
         {
             std::string res = "V" + int_to_hex(b);
             if (all_vars[b].is_short) res += '%';
@@ -215,7 +220,7 @@ namespace dsk_tools {
             return res;
         };
 
-        static std::string device_letter (const uint8_t b)
+        static std::string device_letter(const uint8_t b)
         {
             switch (b) {
             case 0: return "F";
@@ -224,15 +229,8 @@ namespace dsk_tools {
             }
         };
 
-        // // Function returns true for POS(), LEN(), NUM(), VAL()
-        // // which never have a closing parenthesis and should be processes special way
-        // static bool implicit_paren (const uint8_t oper)
-        // {
-        //     return oper>=0xEC && oper <=0xEF;
-        // };
-
         // Function return true for operations that should close an implicit parentesis
-        static bool closes_implicit_paren (const uint8_t t)
+        static bool closes_implicit_paren(const uint8_t t)
         {
             switch (t) {
                 // arithmetics
@@ -245,7 +243,7 @@ namespace dsk_tools {
             case 0xD4:      // >
             case 0xD5:      // <>
             case 0xD6:      // <=
-            case 0xD7:      //
+            case 0xD7:      // <
             case 0xD8:      // >=
             case 0xD9:      // =
                 // logic
@@ -269,6 +267,32 @@ namespace dsk_tools {
             }
         };
 
+        static bool conditions(const uint8_t t)
+        {
+            switch (t) {
+            case 0xD4:      // >
+            case 0xD5:      // <>
+            case 0xD6:      // <=
+            case 0xD7:      // <
+            case 0xD8:      // >=
+            case 0xD9:      // =
+                return true;
+            default:
+                return false;
+            }
+        };
+
+        static bool add_spaces(const uint8_t t)
+        {
+            switch (t) {
+            case 0xE6:      // OR
+            case 0xE7:      // AND
+                return true;
+            default:
+                return false;
+            }
+        };
+
         std::string process_operands(const uint16_t verb_id)
         {
             std::string out;
@@ -276,7 +300,13 @@ namespace dsk_tools {
             uint8_t prev_oper = 0xFF;
             while (p < code.size()) {
                 const uint8_t oper_id = code[p++];
-                const OperClass oper_class = classify_oper(oper_id, is_operand);
+                OperClass oper_class = classify_oper(oper_id, is_operand);
+                if (oper_id==0xDE && prev_oper == 0xE0) {
+                    // "," after A() must be treated as operation, not operand
+                    oper_class = OperClass::Operation;
+                    is_operand = false;
+                }
+
                 std::string oper;
                 if (oper_class != OperClass::VarRef && oper_class != OperClass::Error)
                     oper = is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation;
@@ -294,7 +324,21 @@ namespace dsk_tools {
                         }
                         if (!(IS_VAR(prev_oper) && all_vars[prev_oper].is_array)) out += ',';
                     } else {
-                        if (!(IS_VAR(prev_oper) && all_vars[prev_oper].is_array) && verb_id != 0x0602) out += ',';
+                        if (verb_id != 0x0602) { // Not MAT REDIM
+                            if (IS_VAR(prev_oper) && (oper_class==OperClass::VarRef || oper_class==OperClass::Operand)) {
+                                // if (!all_vars[prev_oper].is_array) {
+                                    if (all_vars[prev_oper].is_array)
+                                        out += '(';
+                                    else
+                                        out += ',';
+                                // }
+                            }
+                            if (prev_oper == 0xD0 && oper_class == OperClass::Function) {
+                                // INIT STR(),STR()
+                                out += ',';
+                            }
+                        }
+                        // if (!(IS_VAR(prev_oper) && all_vars[prev_oper].is_array) && verb_id != 0x0602 && oper_class != OperClass::Function) out += ',';
                     }
                 }
 
@@ -307,17 +351,35 @@ namespace dsk_tools {
                     }
                 case OperClass::VarRef:
                     {
-                        out += var_ref(oper_id, true);
+                        out += var_ref(oper_id, false);
                         is_operand = false;
                         break;
                     }
                 case OperClass::Operand:
                     {
+                        if (is_operand && prev_oper == 0xE0) out += ','; // index after first argument of STR(A()
                         switch (oper_id) {
+                        case 0xDE: // 1 byte binary constant
+                            {
+                                const uint8_t v = code[p++];
+                                out += int_to_hex(v);
+                                is_operand = false;
+                                break;
+                            }
                         case 0xE0: // Array reference
                             {
                                 const uint8_t var_id = code[p++];
                                 out += var_ref(var_id, false);
+                                if (verb_id != 0x0602) out += "()"; // Needs "()" except MAT REDIM
+                                is_operand = true;
+                                break;
+                            }
+                        case 0xE2: // HEX literal
+                            {
+                                const uint8_t hex_len = code[p++];
+                                out += "HEX(";
+                                for (int i=0; i<hex_len; i++) out += int_to_hex(code[p++]);
+                                out += ')';
                                 is_operand = false;
                                 break;
                             }
@@ -353,13 +415,29 @@ namespace dsk_tools {
                     }
                 case OperClass::Operation:
                     {
-                        if (is_operand) out += "?OPERATION?";
+                        // Special processing for 2ns parameter of VAL()
+                        if (is_val_func && prev_oper==0xDE && oper_id==0xDB) {
+                            is_val_func = false;
+                            out += '2';
+                            is_operand =  false;
+                            break;
+                        }
 
-                        if (impl_paren && closes_implicit_paren(oper_id)) { out += ')'; impl_paren = false; }
+                        if (is_operand && verb_id!=0x060A) out += "?OPERATION?";
+
+                        if (impl_paren && closes_implicit_paren(oper_id) && !(is_pos_func && conditions(oper_id))) {
+                            // We close some functions, but not for the first condition in POS()
+                            out += ')';
+                            impl_paren = false;
+                        }
+
+
+                        if (is_pos_func && conditions(oper_id)) is_pos_func = false;
 
                         if (oper_id == 0xD9 && is_let_left) is_let_left = false; // "=" cancels processing of the left part of LETs
 
-                        out += std::string(is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation);
+                        const bool sp = add_spaces(oper_id);
+                        out += (sp?" ":"") + std::string(is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation) + (sp?" ":"");
                         is_operand = Iskra226_operations[oper_id-0xC0].next_is_operand;
                         break;
                     }
@@ -404,25 +482,16 @@ namespace dsk_tools {
                     {
                         if (oper_class == OperClass::ImplFunc) impl_paren = true;
                         switch (oper_id) {
-                        case 0xE2: // HEX literal
+                        case 0xEC: // POS() needs special processing
                             {
-                                const uint8_t hex_len = code[p++];
-                                for (int i=0; i<hex_len; i++) oper += int_to_hex(code[p++]);
-                                oper += ')';
-                                is_operand = false;
+                                is_pos_func = true;
                                 break;
                             }
-                        // case 0xE3: // String literal
-                        //     {
-                        //         const uint8_t str_len = code[p++];
-                        //         out += '"';
-                        //         for (int i=0; i<str_len; i++) {
-                        //             out += (*cm.charmap)[code[p++]];
-                        //         }
-                        //         out += '"';
-                        //         is_operand = false;
-                        //         break;
-                        //     }
+                        case 0xEF: // VAL() needs special processing
+                            {
+                                is_val_func = true;
+                                break;
+                            }
                         default:
                             {
                                 break;
@@ -448,22 +517,26 @@ namespace dsk_tools {
             code = line_code;
             p = 0;
             impl_paren = false;
+            is_pos_func = false;
+            is_val_func = false;
 
             out += "\n-> ";
             out += toHexList(code);
             out += '\n';
+
             if (!is_first) { out += ':'; }
             uint16_t verb_id = code[p++];
             if (verb_id == 0x06) verb_id = (verb_id << 8) + code[p++];
 
-            // if (verb_id == 0x35 || verb_id == 0x36) preprocess_let();
-
             std::string verb = verb_by_id(verb_id);
-            if (!verb.empty()) out +=  verb + ' ';
+            out +=  verb;
 
             const uint8_t oper_len = code[p++];
             if (oper_len > 0)
             {
+                // Except (LET), ¤TRAN(, PACK(, UNPACK(
+                if (!verb.empty() && verb_id!=0x060C && verb_id != 0x48 && verb_id != 0x5D) out +=  ' ';
+
                 switch (verb_id) {
                 case 0x21: //GOTO
                 case 0x22: //GOSUB
@@ -518,46 +591,88 @@ namespace dsk_tools {
                         out += process_operands(verb_id);
                         break;
                     }
-
                 case 0x46: //DIM
                 case 0x4E: //COM
                     {
-                        // Variables list
                         bool first_var = true;
                         while (p < code.size()) {
                             const uint8_t var_id = code[p++];
-                            if (!first_var) out += ','; first_var = false;
-                            std::cout << int_to_hex(var_id) << std::endl;
-                            if (table1 && dim_vars < L1)
-                            {
-                                //Table is reversed
-                                const unsigned t1i = L1 - dim_vars - 1;
-                                const auto ad = table1[t1i][0];
-                                const auto ln = table1[t1i][2];
-                                const auto sz = table1[t1i][3];
-                                const uint32_t adelta = (dim_vars?(table1[t1i+1][0]):0x10000) - ad;
-                                if (!all_vars[var_id].is_known) dim_vars++;
-                                all_vars[var_id].is_known = true;
-                                if (sz==4) {
-                                    out += "V"+int_to_hex(var_id) + "%(" + std::to_string(ln) + ")";
-                                    all_vars[var_id].is_short = true;
-                                    all_vars[var_id].is_array = true;
-                                } else if (sz==16) {
-                                    out += "V"+int_to_hex(var_id) + "(" + std::to_string(ln) + ")";
-                                    all_vars[var_id].is_array = true;
-                                } else if (sz & 1) {
-                                    all_vars[var_id].is_string = true;
-                                    const unsigned str_len = (sz-1)/2;
-                                    out += "V"+int_to_hex(var_id) + "¤";
-                                    if (adelta > str_len + 6 ) {
+                            if (!first_var) out += ',';
+                            first_var = false;
+
+                            if (!table1 || dim_vars >= L1) { out += " V"+int_to_hex(var_id)+"? "; continue; }
+
+                            // Таблица заполняется с конца: первая переменная DIM — последняя запись
+                            const unsigned t1i  = L1 - dim_vars - 1;
+                            const auto ad       = table1[t1i][0];
+                            const auto type     = table1[t1i][1];
+                            const auto ln       = table1[t1i][2];
+                            const auto sz       = table1[t1i][3];
+                            ++dim_vars;                              // слот занимается всегда
+
+                            // Разность адресов: проверяем по t1i, а не по счётчику
+                            const bool     has_next  = (t1i + 1 < L1);
+                            const uint32_t next_ad   = has_next ? table1[t1i+1][0] : 0xFFFE;
+                            const bool     has_delta = (ad != 0) && (!has_next || next_ad != 0);
+                            const uint32_t adelta    = has_delta ? (next_ad - ad) : 0;
+
+                            all_vars[var_id].is_known = true;
+                            out += "V"+int_to_hex(var_id);
+
+                            if (type == 0x0800) {                    // символьная
+                                all_vars[var_id].is_string = true;
+                                const bool explicit_len = (sz & 1);
+                                const unsigned str_len  = explicit_len ? (sz - 1) / 2 : sz / 2;
+
+                                if (has_delta) {
+                                    const bool as_scalar = (adelta == str_len + (str_len & 1));
+                                    const bool as_array  = (adelta == ln * str_len + 6);
+                                    if (as_array == as_scalar) {     // оба или ни одного
+                                        out += "¤?";
+                                        if (explicit_len) out += std::to_string(str_len);
+                                        continue;
+                                    }
+                                    out += "¤";
+                                    if (as_array) {
                                         out += "(" + std::to_string(ln) + ")";
                                         all_vars[var_id].is_array = true;
                                     }
-                                    out += std::to_string(str_len);
+                                } else {
+                                    // адресов нет — различить скаляр и массив нечем
+                                    out += "¤?";
                                 }
-                                else out += " V"+int_to_hex(var_id) + "? ";
-                            } else out += " V"+int_to_hex(var_id) + "? ";
+                                if (explicit_len) out += std::to_string(str_len);
+                            }
+                            else if (type == 0x082D) {               // числовая или целая, одномерная
+                                all_vars[var_id].is_array = true;
+                                if (sz == 4)       { all_vars[var_id].is_short = true; out += "%"; }
+                                else if (sz != 16) { out += "? "; continue; }
+                                out += "(" + std::to_string(ln) + ")";
+                            }
+                            else {                                   // двумерный массив
+                                // байты 2-3 заняты второй размерностью, признака типа не остаётся
+                                all_vars[var_id].is_array = true;
+                                if (sz == 4) { all_vars[var_id].is_short = true; out += "%"; }
+                                else if (sz != 16) { out += "? "; continue; }
+                                out += "(" + std::to_string(ln) + "," + std::to_string(type) + ")";
+                            }
                         }
+                        break;
+                    }
+                case 0x48: // PACK(
+                case 0x5D: // UNPACK(
+                    {
+                        // String literal, then other
+                        const uint8_t next_part = code[p];
+                        if (next_part == 0xE3) {
+                            p++;
+                            const uint8_t str_len = code[p++];
+                            for (int i=0; i<str_len; i++) {
+                                out += (*cm.charmap)[code[p++]];
+                            }
+                            out += ')';
+                        }
+                        out += process_operands(verb_id);
                         break;
                     }
                 case 0x4C: //PRINT
@@ -600,7 +715,8 @@ namespace dsk_tools {
                             out += "PRINT" + int_to_hex(dev_id);
                             if (code[p] == 0xEB) {
                                 p++;
-                                out += "(" + std::to_string(FROM_BCD_BE_16(code, p)) + ")"; p+=2;
+                                const uint16_t n = FROM_BE_16(code, p); p+=2;
+                                out += "(" + std::to_string(n) + ")";
                             }
                         } else {
 
@@ -630,7 +746,7 @@ namespace dsk_tools {
             }
             if (impl_paren) out += ')';
 
-            out += '\n';
+            // out += '\n';
 
             return out;
         }
@@ -750,369 +866,6 @@ namespace dsk_tools {
             out += "PROGRAM AT: 0x" + int_to_hex(0x100 + 2 + 6 + L1 + L2 + L3) + "\n\n";
 
             unsigned p = 6 + L1 + L2 + L3;
-            unsigned known_count = 0;
-            bool is_operand = true;
-            bool is_implicit_paren = false;
-
-            auto process_float = [=](std::string & result, unsigned & lp)
-            {
-                result = "";
-                const uint8_t num_def = code[lp++];
-                const unsigned left_part = num_def >> 4;
-                const unsigned dig_total = num_def & 0xF;
-                const unsigned bcount = (dig_total & 1)? dig_total / 2 + 1 : dig_total / 2;
-                for (int i=0; i<bcount; i++) result += toBCD(code[lp++]);
-
-                // An odd digit count means the last nibble is a padding
-                if (result.size() > dig_total) result.resize(dig_total);
-
-                // left_part digits go before the dot, 0 means the dot leads the number
-                if (left_part < result.size())
-                    result.insert(left_part, ".");
-                else
-                    // Not enough digits for the integer part, pad it with zeroes
-                        result.append(left_part - result.size(), '0');
-            };
-
-            auto device_letter = [](const uint8_t b) -> std::string
-            {
-                switch (b) {
-                    case 0: return "F";
-                    case 1: return "R";
-                    default: return "???";
-                }
-            };
-
-            auto var_ref = [&](const uint8_t b, const bool mark_arrays=true) -> std::string
-            {
-                std::string res = "V" + int_to_hex(b);
-                if (all_vars[b].is_short) res += '%';
-                if (all_vars[b].is_string) res += "¤";
-                if (mark_arrays && all_vars[b].is_array) res += '(';
-                // res += ' ';
-                return res;
-            };
-
-            // Function returns true for POS(), LEN(), NUM(), VAL()
-            // which never have a closing parenthesis and should be processes special way
-            auto implicit_paren = [](const uint8_t oper) -> bool
-            {
-                return oper>=0xEC && oper <=0xEF;
-            };
-
-            // Function return true for operations that should close an implicit parentesis
-            auto closes_implicit_paren = [](const uint8_t t) -> bool
-            {
-                switch (t) {
-                    // arithmetics
-                case 0xE0:      // ^
-                case 0xDF:      // *
-                case 0xDC:      // /
-                case 0xEA:      // +
-                case 0xE9:      // -
-                    // conditions
-                case 0xD4:      // >
-                case 0xD5:      // <>
-                case 0xD6:      // <=
-                case 0xD7:      //
-                case 0xD8:      // >=
-                case 0xD9:      // =
-                    // logic
-                case 0xE6:      // OR
-                case 0xE7:      // AND
-                    // delimiters
-                case 0xD0:      // )
-                case 0xDD:      // ;
-                case 0xDE:      // ,
-                case 0xDB:      // #
-                    // second keywords
-                case 0xD1:      // TO
-                case 0xD2:      // STEP
-                case 0xD3:      // THEN
-                case 0xCA:      // FROM
-                case 0xCC:      // GOSUB at ON
-                case 0xCD:      // GOTO at ON
-                    return true;
-                default:
-                    return false;
-                }
-            };
-
-            auto process_operands = [&](const uint16_t verb_id, const uint8_t oper_len)
-            {
-                const unsigned oper_start = p;
-                unsigned oper_count = 0;
-                unsigned prev = 1000; //Greater than any possible
-                while (p < oper_start + oper_len) {
-                    const uint8_t oper = code[p++];
-
-                    if (implicit_paren(oper)) is_implicit_paren = true;
-                    if (is_implicit_paren && closes_implicit_paren(oper)) {
-                        is_implicit_paren = false;
-                        out += ')';
-                    }
-
-                    if ((verb_id == 0x7D || verb_id == 0x80 || verb_id == 0x81) && oper_count==0) {
-                        // First parameter of file instructions - a disk id
-                        out += device_letter(oper);
-                    } else if (IS_VAR(oper)) {
-                        //Variable by index
-                        if ((verb_id == 0x46 || verb_id == 0x4E) && table1)
-                        {
-                            // DIM, COM
-                            if (oper_count>0) out += ',';
-                            //Table is reversed
-                            const unsigned t1i = L1/8 - known_count - 1;
-                            const auto ad = table1[t1i][0];
-                            const auto ln = table1[t1i][2];
-                            const auto sz = table1[t1i][3];
-                            const uint32_t adelta = (known_count?(table1[t1i+1][0]):0x10000) - ad;
-                            if (!all_vars[oper].is_known) known_count++;
-                            all_vars[oper].is_known = true;
-                            if (sz==4) {
-                                out += "V"+int_to_hex(oper) + "%(" + std::to_string(ln) + ")";
-                                all_vars[oper].is_short = true;
-                                all_vars[oper].is_array = true;
-                            } else if (sz==16) {
-                                out += "V"+int_to_hex(oper) + "(" + std::to_string(ln) + ")";
-                                all_vars[oper].is_array = true;
-                            } else if (sz & 1) {
-                                all_vars[oper].is_string = true;
-                                const unsigned str_len = (sz-1)/2;
-                                out += "V"+int_to_hex(oper) + "¤";
-                                if (adelta > str_len + 6 ) {
-                                    out += "(" + std::to_string(ln) + ")";
-                                    all_vars[oper].is_array = true;
-                                }
-                                out += std::to_string(str_len);
-                            }
-                            else out += " V"+int_to_hex(oper) + "? ";
-                        } else if (verb_id == 0x0602) {
-                            // MAT REDIM
-                        } else {
-                            // Insert a comma in a vars list, after a ")" and HEX()
-                            if ((IS_VAR(prev) && !all_vars[prev].is_array) || prev == 0xD0 || prev == 0xE2) out += ',';
-                            out += var_ref(oper);
-                            if (prev == 0xE1 || prev == 0xE0) out += ','; //First argument of STR()
-                            is_operand = false;
-                            if (verb_id == 0x57 && oper_count == 0) out+='='; // "=" after first var in FOR
-                        }
-                    } else if (oper == 0xCC) {
-                        out += " GOSUB"; // From ON ... GOSUB ...
-                        unsigned c = 0;
-                        while (p < oper_start + oper_len) {
-                            const uint16_t goto_line = FROM_BCD_BE_16(code, p);
-                            out += ((c++>0)?", ":" ") + std::to_string(goto_line);
-                            p+=2;
-                        }
-                        // is_operand doesn't matter here
-                    } else if (oper == 0xCD) {
-                        out += " GOTO"; // From ON ... GOTO ...
-                        unsigned c = 0;
-                        while (p < oper_start + oper_len) {
-                            const uint16_t goto_line = FROM_BCD_BE_16(code, p);
-                            out += ((c++>0)?", ":" ") + std::to_string(goto_line);
-                            p+=2;
-                        }
-                        // is_operand doesn't matter here
-                    } else if (oper == 0xD3) {
-                        out += " THEN";
-                        const uint16_t v = FROM_BCD_BE_16(code, p);
-                        out += ' '+std::to_string(v);
-                        p += 2;
-                        // is_operand doesn't matter here
-                    } else if (oper == 0xDE && is_operand) {
-                        // BCD byte constant
-                        const uint8_t v = fromBCD(code[p++]);
-                        out += std::to_string(v);
-                        is_operand = false;
-                    } else if (oper == 0xE0) {
-                        // Array reference
-                        if (verb_id != 0x0602) { // not MAT REDIM
-                            const uint8_t var_n = code[p++];
-                            out += "V" + int_to_hex(var_n) + "()";
-                            is_operand = false;
-                        } else {
-                            const uint8_t var_n = code[p++];
-                            out += var_ref(var_n, false);
-                        }
-                    } else if (oper == 0xE2) {
-                        // HEX literal
-                        const uint8_t hex_len = code[p++];
-                        out += "HEX(";
-                        for (int i=0; i<hex_len; i++) out += int_to_hex(code[p++]);
-                        out += ')';
-                        is_operand = false;
-                    } else if (oper == 0xE3) {
-                        // String literal
-                        const uint8_t str_len = code[p++];
-                        out += '"';
-                        for (int i=0; i<str_len; i++) {
-                            out += (*cm.charmap)[code[p++]];
-                        }
-                        out += '"';
-                        is_operand = false;
-                    } else if (oper == 0xE5) {
-                        std::string num_str;
-                        process_float(num_str, p);
-                        out += num_str;
-                        is_operand = false;
-                    } else if (oper == 0xE6 && is_operand) {
-                        std::string num_str;
-                        process_float(num_str, p);
-                        const uint8_t exp = code[p++];
-                        out += num_str + 'E' + toBCD(exp);
-                        is_operand = false;
-                    } else if (oper == 0xE7 && is_operand) {
-                        // BCD 2 bytes big-endian constant
-                        const uint16_t v = FROM_BCD_BE_16(code, p);
-                        out += std::to_string(v);
-                        p += 2;
-                        is_operand = false;
-                    } else if (oper == 0xE8) {
-                        // BCD byte constant
-                        const uint8_t v = fromBCD(code[p++]);
-                        out += std::to_string(v);
-                        is_operand = false;
-                    } else {
-                        const OperDefinition * oper_def = &Iskra226_operations[oper-0xC0];
-                        std::string oper_name;
-                        if (is_operand)
-                            oper_name = oper_def->as_operand;
-                        else
-                            oper_name= oper_def->as_operation;
-                        if (oper_name.empty()) oper_name = "{" + int_to_hex(oper) + "}";
-                        is_operand = oper_def->next_is_operand;
-
-                        out += oper_name;
-                    }
-                    if (verb_id != 0x0602 || oper != 0xE0) oper_count++;
-                    prev = oper;
-                }
-                if (is_implicit_paren) out += ')';
-                is_implicit_paren = false;
-            }; // process_operands
-
-            // Check whether a token can begin an operand (that is, whether it
-            // opens an index list if it follows a variable reference)
-            // used below in preprocess_let()
-            auto begins_operand = [](const uint8_t t) -> bool
-            {
-                if (t < 0xC0) return true;              // var reference
-                switch (t) {
-                    case 0xE5: case 0xE6:               // float constants
-                    case 0xE7: case 0xE8:               // BCD-constants
-                    case 0xEB:                          // "("
-                    case 0xE9:                          // unary "-"
-                    case 0xE1:                          // STR(
-                    case 0xF2: case 0xF3:               // ABS( INT(
-                    case 0xF6: case 0xF7: case 0xF8:    // SQR( LOG( EXP(
-                        return true;
-                    default:
-                        return false;
-                }
-            }; // begins_operand
-
-            // The function scans the left part of LETs
-            // And tries to find array references
-            auto preprocess_let = [&]() -> bool
-            {
-                const unsigned oper_start = p;
-                unsigned lp = p;
-                std::stack<uint8_t> vars_stack;
-                std::stack<uint8_t> oper_stack;
-                bool prev_ends_operand = false;
-                std::string str;
-
-                const uint8_t oper_len = code[lp++];
-                while (lp < oper_start + oper_len)
-                {
-                    const uint8_t oper = code[lp++];
-                    if (oper == 0xD9) break;            // "=" - left part ends
-
-                    if (oper < 0xC0) {                  // variable reference
-                        vars_stack.push(oper);
-                        // if the next is an operand, open list
-                        if (lp < oper_start + oper_len && begins_operand(code[lp]))
-                            oper_stack.push(0xFE);
-                        prev_ends_operand = true;
-                    }
-                    else if (oper == 0xE5) {            // float
-                        vars_stack.push(0xFE);
-                        process_float(str, lp);
-                        prev_ends_operand = true;
-                    }
-                    else if (oper == 0xE6) {            // fload with order
-                        vars_stack.push(0xFE);
-                        process_float(str, lp);
-                        lp++;
-                        prev_ends_operand = true;
-                    }
-                    else if (oper == 0xE7) {            // BCD, 2 bytes
-                        vars_stack.push(0xFE);
-                        lp += 2;
-                        prev_ends_operand = true;
-                    }
-                    else if (oper == 0xE8) {            // BCD, 1 byte
-                        vars_stack.push(0xFE);
-                        lp++;
-                        prev_ends_operand = true;
-                    }
-                    else if (oper == 0xE9 && !prev_ends_operand) {
-                        // unary minus, nothing changes, just skipping it
-                    }
-                    else if (oper == 0xD0) {            // ")"
-                        // "execute" operations on the top of the stack
-                        while (!oper_stack.empty() && oper_stack.top() != 0xFE
-                               && vars_stack.size() > 1) {
-                            oper_stack.pop();
-                            vars_stack.pop(); vars_stack.pop();
-                            vars_stack.push(0xFF);
-                        }
-                        if (oper_stack.empty() || oper_stack.top() != 0xFE) return false;
-                        if (vars_stack.size() < 2) return false;
-
-                        oper_stack.pop();
-                        vars_stack.pop();
-                        const uint8_t array_var = vars_stack.top(); vars_stack.pop();
-                        vars_stack.push(0xFF);          // push "result"
-
-                        if (!all_vars[array_var].is_known) {
-                            all_vars[array_var].is_known = true;
-                            all_vars[array_var].is_array  = true;
-                        }
-                        prev_ends_operand = true;
-                    }
-                    else {                              // прочие операции и разделители
-                        oper_stack.push(oper);
-                        prev_ends_operand = false;
-                    }
-                }
-
-                return oper_stack.empty();
-            }; // preprocess_let
-
-            // auto classify_oper = [](const uint8_t oper, const bool is_operand) -> OperClass
-            // {
-            //
-            // };
-            //
-            // auto parse_expression = [&](const unsigned oper_len) -> bool
-            // {
-            //     const unsigned oper_start = p;
-            //     unsigned lp = p;
-            //     std::stack<uint8_t> vars_stack;
-            //     std::stack<uint8_t> oper_stack;
-            //     while (lp < oper_start + oper_len) {
-            //         uint8_t oper = code[lp];
-            //         switch (classify_oper(oper, is_operand))
-            //         {
-            //
-            //         }
-            //
-            //     }
-            //     return true;
-            // }; //parse_expression
 
             Iskra226Parser parser(cm, table1, L1/8);
 
@@ -1124,8 +877,8 @@ namespace dsk_tools {
                 const uint16_t line_num = FROM_BCD_BE_16(code, p);
                 const uint8_t line_len = code[p+2];
 
-                if (line_num > 0)
-                    out += '\n' + toHexList(std::vector<uint8_t>(code.begin() + p, code.begin() + p + line_len + 3)) + '\n';
+                // if (line_num > 0)
+                //     out += '\n' + toHexList(std::vector<uint8_t>(code.begin() + p, code.begin() + p + line_len + 3)) + '\n';
 
                 p += 3;
 
@@ -1139,216 +892,13 @@ namespace dsk_tools {
                     unsigned operator_len = 0;
                     uint16_t verb_id = code[p++];
 
-                    if (verb_id == 0x35 || verb_id == 0x36) preprocess_let();
+                    if (verb_id == 0x06) verb_id = (verb_id << 8) + code[p++]; // Extended codes
 
-                    std::string verb;
-                    if (verb_id == 0x06) {
-                        // Extended codes
-                        verb_id = (verb_id << 8) + code[p++];
-                        switch (verb_id)
-                        {
-                            case 0x0601: verb = "MAT"; break;
-                            case 0x0602: verb = "MAT REDIM"; break;
-                            case 0x060F: verb = "¤OPEN"; break;
-                            case 0x0615: verb = "DRAW"; break;
-                            case 0x0619: verb = "NPLOT"; break;
-                            case 0x061E: verb = "LABEL"; break;
-                            case 0x061F: verb = "¤COPY"; break;
-                            case 0x0625: verb = "ASMB"; break;
-                            default: verb = "?"; break;
-                        }
-                    } else if (verb_id < 0x84)
-                        verb = std::string(Iskra226_verbs[verb_id]);
-                    else
-                        verb = "?";
-                    if (verb == "?") verb = "?" + int_to_hex(verb_id) + "?";
-
-                    operator_len = code[p] + (verb_id<0x100 ? 2 : 3 );
+                    const unsigned ld = (verb_id<0x100 ? 1 : 2);
+                    operator_len = code[p] + ld + 1;
                     const auto operator_code = BYTES(code.begin() + operator_start, code.begin() + operator_start + operator_len);
-
-                    out += parser.parse(operator_code, p==line_start+1);
-
-                    out += ((p > line_start + 1)?std::string(":"):"") +
-                            // "[" + int_to_hex(static_cast<uint8_t>(verb_id)) + "]" +
-                            verb + (verb.empty()?"":" "); // Do not add a space for (LET)
-
-                    is_operand = true;
-
-
-                    switch (verb_id){
-                        case 0x10: //An unknown verb without arguments
-                            break;
-                        case 0x21: //GOTO
-                        case 0x22: //GOSUB
-                        case 0x2F: //RUN
-                            {
-                                //len, 2 bytes BCD line number
-                                uint8_t oper_len = code[p++];
-                                const uint16_t goto_line = FROM_BCD_BE_16(code, p);
-                                out += " " + std::to_string(goto_line);
-                                p += 2;
-                                break;
-                            }
-                        case 0x23: //GOSUB'
-                            {
-                                uint8_t oper_len = code[p++];
-                                const uint16_t gosub_id = code[p++];
-                                out += " " + std::to_string(gosub_id);
-                                if (oper_len > 1){
-                                    out += '(';
-                                    process_operands(verb_id, oper_len-1);
-                                    out += ')';
-                                }
-                                break;
-                            }
-                        // case 0x24: // IF
-                        //     {
-                        //         uint8_t oper_len = code[p++];
-                        //         parse_expression(oper_len);
-                        //     }
-                        case 0x25: //KEYIN
-                            {
-                                // var, line1, line2
-                                uint8_t oper_len = code[p++]; //TODO: check if it can be less parameters
-                                uint8_t var_num = code[p++];
-                                const uint16_t first_line = FROM_BCD_BE_16(code, p);
-                                p+=2;
-                                const uint16_t sec_line = FROM_BCD_BE_16(code, p);
-                                p+=2;
-                                out += var_ref(var_num) +", " + std::to_string(first_line) + ", " + std::to_string(sec_line);
-                                break;
-                            }
-                        case 0x27: //DEFFN'
-                            {
-                                uint8_t oper_len = code[p++];
-                                if (oper_len > 0) {
-                                    const unsigned oper_start = p;
-                                    const uint8_t gosub_id = code[p++];
-                                    out += std::to_string(gosub_id);
-                                    // while (p < oper_start + oper_len) {
-                                    //     out += "{"+int_to_hex(code[p++])+"}";
-                                    // }
-                                    p += 4; //Skip 4 shadow bytes
-                                    if (p < line_end) process_operands(verb_id, oper_len-5);
-                                }
-                                break;
-                            }
-                        case 0x3F: //Short REM (%)
-                        case 0x56: //REM
-                            {
-                                // <len> + string literal
-                                uint8_t rem_len = code[p++];
-                                for (uint8_t i=0; i<rem_len; i++) out += (*cm.charmap)[code[p++]];
-                                break;
-                            }
-                        case 0x40: //$GIO
-                            {
-                                uint8_t oper_len = code[p++];
-                                uint8_t dev_id = code[p];
-                                if (dev_id == 0xD5) {out += '\''; p++; oper_len--;};
-                                if (p < line_end) process_operands(verb_id, oper_len);
-                                break;
-                            }
-                        case 0x45: //BOOL
-                            {
-                                // operation code, two operands
-                                uint8_t bool_code = code[p++];
-                                out += ' ' + int_to_hex(bool_code) + '(';
-                                break;
-                            }
-                        case 0x4C: //PRINT
-                            {
-                                uint8_t oper_len = code[p++];
-                                if (oper_len > 0) {
-                                    const uint8_t first_oper = code[p];
-                                    if (first_oper == 0xDC) {
-                                        p+=2; oper_len-=2; // skip DC DE
-                                        const uint8_t dev_id = code[p++]; oper_len--;
-                                        out += '/'+int_to_hex(dev_id);
-                                        if (code[p]==0xDE) {p++; oper_len--; out += ',';}
-                                    }
-                                    if (p < line_end) process_operands(verb_id, oper_len);
-                                }
-                                break;
-                            }
-                        case 0x54: //SELECT
-                            {
-                                const uint8_t oper_len = code[p++];
-                                const uint8_t dev_class = code[p];
-                                if (dev_class == 0)
-                                {
-                                    //up to 4 numbers 00 01 18 00 = #118L, 00 04 1C 01 = #41CR
-                                    for (int i=0; i<4; i++) {
-                                        if (line_end - p < 4) {p = line_end; break;}
-                                        uint8_t b0 = code[p++];
-                                        if (b0 == 0xDE) {
-                                            out += ',';
-                                            b0 = code[p++];
-                                        }
-                                        if (b0 != 0) {p = line_end; break;}
-                                        uint16_t n = FROM_BE_16(code, p); p+=2;
-                                        uint8_t b3 = code[p++];
-                                        out += "#" + int_to_hex(n, false) + device_letter(b3);
-                                    }
-                                } else if (dev_class == 7) {
-                                    p++;
-                                    const uint8_t dev_id = code[p++];
-                                    out += "PRINT" + int_to_hex(dev_id);
-                                    if (code[p] == 0xEB) {
-                                        p++;
-                                        out += "(" + std::to_string(FROM_BCD_BE_16(code, p)) + ")"; p+=2;
-                                    }
-                                } else {
-
-                                }
-                                break;
-                            }
-                        case 0x64: //INIT
-                            {
-                                // value, variable(s)
-                                const uint8_t oper_len = code[p++];
-                                const uint8_t first_oper = code[p];
-                                if (first_oper == 0xDE) {
-                                    p++;
-                                    const uint8_t v = code[p++];
-                                    out += "(" + int_to_hex(v) + ")";
-                                    process_operands(verb_id, oper_len-2);
-                                } else process_operands(verb_id, oper_len);
-                                break;
-                            }
-                        case 0x66: //DATA LOAD BT
-                        case 0x68: //DATA SAVE BT
-                        case 0x6E: //DATA SAVE BA
-                        case 0x6F: //DATA SAVE DA
-                        case 0x70: //DATA LOAD BA
-                        case 0x71: //DATA LOAD DA
-                        case 0x74: //DATA LOAD DC
-                        case 0x75: //DATA LOAD DC OPEN T
-                        case 0x78: //DATA SAVE DC OPEN T
-                            {
-                                uint8_t oper_len = code[p++];
-                                const uint8_t first_oper = code[p];
-                                if (first_oper == 0x02) { // "T" form
-                                    out += 'T'; p++; oper_len--;
-                                    const uint8_t second_oper = code[p];
-                                    if (second_oper == 0xD6) {out+="¤"; p++; oper_len--;}
-                                } else if (first_oper == 0xDB) {  // file ops
-                                    // nothing special?
-                                } else if (first_oper == 0xDC) {  // device ops
-                                    p+=2; oper_len-=2; //skip DC DB
-                                    uint8_t device_id = code[p++]; oper_len--;
-                                    out += '/'+std::to_string(device_id);
-                                }
-                                if (oper_len > 0) process_operands(verb_id, oper_len);
-                                break;
-                            }
-                        default:
-                            {
-                                const uint8_t oper_len = code[p++];
-                                if (oper_len > 0) process_operands(verb_id, oper_len);
-                                break;
-                            } //default
-                    } //switch
+                    out += parser.parse(operator_code, p==line_start+ld);
+                    p += operator_len - ld;
                 }
 
                 out += "\n";
