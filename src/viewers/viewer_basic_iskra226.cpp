@@ -6,7 +6,6 @@
 
 #include "viewer_basic_iskra226.h"
 
-#include <charconv>
 #include <cstring>
 #include <stack>
 #include <utility>
