@@ -100,6 +100,15 @@ namespace dsk_tools {
         virtual std::pair<std::string, std::string> exattr_caption() {return {"", ""};};
 
         virtual SectorTypeMap get_sector_type_map() {return {};}
+
+        // File I/O
+        virtual Result fopen(UniversalFile & uf, int & fd) {fd=-1; return Result::error(ErrorCode::NotImplementedYet);};
+        virtual Result fopen(const std::string & file_name, int & fd) {fd=-1; return Result::error(ErrorCode::NotImplementedYet);};
+        virtual Result fread(const int & fd, uint8_t * buffer, unsigned & len) {return Result::error(ErrorCode::NotImplementedYet);};
+        virtual Result fwrite(const int & fd, uint8_t * buffer, unsigned & len) {return Result::error(ErrorCode::NotImplementedYet);};
+        virtual Result fseek(const int & fd, const int pos_delta) {return Result::error(ErrorCode::NotImplementedYet);};
+        virtual Result fpos(const int & fd, unsigned & pos) {return Result::error(ErrorCode::NotImplementedYet);};
+        virtual Result fclose(const int & fd) {return Result::error(ErrorCode::NotImplementedYet);};
     };
 
 } // namespace
