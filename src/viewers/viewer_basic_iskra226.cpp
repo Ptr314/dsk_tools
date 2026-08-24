@@ -4,6 +4,7 @@
 // Description: Viewer for Iskra-226 BASIC
 
 
+#include "viewer_basic.h"
 #include "viewer_basic_iskra226.h"
 
 #include <cstring>
@@ -156,6 +157,7 @@ constexpr std::array<OperDefinition, 0x100-0xC0> Iskra226_operations = {{
 }};
 
 namespace dsk_tools {
+    enum class EntityType;
 
     class Iskra226Parser
     {
@@ -186,6 +188,11 @@ namespace dsk_tools {
         explicit Iskra226Parser(const CharmapInfo & charmap):
             cm(charmap)
         {}
+
+        static std::string basicEntity(const EntityType t, std::string v, const bool escape_nbsp=false)
+        {
+            return "<span class=\"" + entityTypeToString(t) + "\">" + escapeHtml(v, escape_nbsp) + "</span>";
+        }
 
         // Builds the variable model out of tables 2/3 and table 1.
         //
@@ -319,6 +326,7 @@ namespace dsk_tools {
             std::string res = "V" + int_to_hex(b);
             if (all_vars[b].is_short) res += '%';
             if (all_vars[b].is_string) res += "¤";
+            res = basicEntity(EntityType::VAR, res);
             if (mark_arrays && all_vars[b].is_array) res += '(';
             return res;
         };
@@ -330,6 +338,7 @@ namespace dsk_tools {
             std::string res = "V" + int_to_hex(b);
             if (v.is_short) res += '%';
             if (v.is_string) res += "¤";
+            res = basicEntity(EntityType::VAR, res);
             if (v.is_array) {
                 res += "(" + std::to_string(v.dim1);
                 if (v.dim2 != 0) res += "," + std::to_string(v.dim2);
@@ -573,12 +582,12 @@ namespace dsk_tools {
                 // element (the pen) is a keyword token rather than a constant
                 if (verb_id == 0x0600) {
                     if (oper_id == 0xD7 && is_operand) {
-                        out += '<';
+                        out += basicEntity(EntityType::TOKEN, "<");
                         prev_oper = oper_id;
                         continue;
                     }
                     if (oper_id == 0xD4) {
-                        out += '>';
+                        out += basicEntity(EntityType::TOKEN, ">");
                         is_operand = false;
                         prev_oper = oper_id;
                         continue;
@@ -715,7 +724,7 @@ namespace dsk_tools {
                         case 0xDE: // 1 byte binary constant
                             {
                                 const uint8_t v = code[p++];
-                                out += int_to_hex(v);
+                                out += basicEntity(EntityType::NUMBER, int_to_hex(v));
                                 is_operand = false;
                                 break;
                             }
@@ -746,21 +755,23 @@ namespace dsk_tools {
                         case 0xE4: // The same in apostrophes - a lower case literal
                             {
                                 // The image of CONVERT is already inside parentheses
+                                std::string s;
                                 const bool bare = (verb_id == 0x47 && wrap_open);
                                 const char q = (oper_id == 0xE3) ? '"' : '\'';
                                 const uint8_t str_len = code[p++];
-                                if (!bare) out += q;
+                                if (!bare) s += q;
                                 for (int i=0; i<str_len; i++) {
-                                    out += (*cm.charmap)[code[p++]];
+                                    s += (*cm.charmap)[code[p++]];
                                 }
-                                if (!bare) out += q;
+                                if (!bare) s += q;
+                                out += basicEntity(EntityType::STRING, s);
                                 is_operand = false;
                                 break;
                             }
                         case 0xE7: // BCD 2 bytes big-endian constant
                             {
                                 const uint16_t v = FROM_BCD_BE_16(code, p);
-                                out += std::to_string(v);
+                                out += basicEntity(EntityType::NUMBER, std::to_string(v));
                                 p += 2;
                                 is_operand = false;
                                 break;
@@ -768,14 +779,14 @@ namespace dsk_tools {
                         case 0xE8: // BCD byte constant
                             {
                                 const uint8_t v = fromBCD(code[p++]);
-                                out += std::to_string(v);
+                                out += basicEntity(EntityType::NUMBER, std::to_string(v));
                                 is_operand = false;
                                 break;
                             }
                         case 0xE5: // <descriptor> + BCD digits
                         case 0xE6: // the same + one more byte holding the exponent
                             {
-                                out += decode_number(oper_id == 0xE6);
+                                out += basicEntity(EntityType::NUMBER, decode_number(oper_id == 0xE6));
                                 is_operand = false;
                                 break;
                             }
@@ -784,14 +795,14 @@ namespace dsk_tools {
                                 out += '/';
                                 if (p + 1 < code.size() && code[p] == 0xDE) {
                                     p++;
-                                    out += int_to_hex(code[p++]);
+                                    out += basicEntity(EntityType::NUMBER, int_to_hex(code[p++]));
                                 }
                                 is_operand = false;
                                 break;
                             }
                         default:
                             // Everything else prints its own text (#PI and the like)
-                            out += oper;
+                            out += basicEntity(EntityType::TOKEN, oper);
                             is_operand = Iskra226_operations[oper_id-0xC0].next_is_operand;
                             break;
                         }
@@ -818,7 +829,7 @@ namespace dsk_tools {
                         if (oper_id == 0xD9 && is_let_left) is_let_left = false; // "=" cancels processing of the left part of LETs
 
                         const bool sp = add_spaces(oper_id);
-                        out += (sp?" ":"") + std::string(is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation) + (sp?" ":"");
+                        out += (sp?" ":"") + basicEntity(EntityType::TOKEN, std::string(is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation)) + (sp?" ":"");
                         is_operand = Iskra226_operations[oper_id-0xC0].next_is_operand;
                         break;
                     }
@@ -859,7 +870,7 @@ namespace dsk_tools {
                             break;
                         }
                         if (!out.empty() && out.back()!=' ' && oper_id!=0xDD) out += ' ';
-                        out += std::string(is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation);
+                        out += basicEntity(EntityType::TOKEN, std::string(is_operand ? Iskra226_operations[oper_id-0xC0].as_operand : Iskra226_operations[oper_id-0xC0].as_operation));
                         switch (oper_id) {
                         case 0xCC: // ON ... GOSUB ...
                             {
@@ -961,7 +972,7 @@ namespace dsk_tools {
             if (verb_id == 0x06) verb_id = (verb_id << 8) + code[p++];
 
             std::string verb = verb_by_id(verb_id);
-            out +=  verb;
+            out +=  basicEntity(EntityType::TOKEN,verb);
 
             const uint8_t oper_len = code[p++];
             if (oper_len > 0)
@@ -1323,7 +1334,7 @@ namespace dsk_tools {
         if (data[0] != 1 || !(attr==0x20 || attr==0x21 || attr==0x24 || attr==0x25)) return "NOT A BASIC";
 
         if ((attr & 1) == 0) {
-            out += "TEXT BASIC\n\n";
+            // out += "TEXT BASIC\n\n";
             const unsigned char * part = &data[256];
             const unsigned char * end = data.data() + data.size();
             while (part < end) {
@@ -1351,7 +1362,7 @@ namespace dsk_tools {
                 part += 256;
             }
         } else {
-            out += "TOKENIZED BASIC\n\n";
+            // out += "TOKENIZED BASIC\n\n";
 
             BYTES code;
 
@@ -1376,9 +1387,9 @@ namespace dsk_tools {
             const uint16_t L2 = FROM_BE_16(code, 2);
             const uint16_t L3 = FROM_BE_16(code, 4);
 
-            out += "L1: 0x" + int_to_hex(L1) + '\n';
-            out += "L2: 0x" + int_to_hex(L2) + '\n';
-            out += "L3: 0x" + int_to_hex(L3) + '\n';
+            // out += "L1: 0x" + int_to_hex(L1) + '\n';
+            // out += "L2: 0x" + int_to_hex(L2) + '\n';
+            // out += "L3: 0x" + int_to_hex(L3) + '\n';
 
             out += '\n';
 
@@ -1393,7 +1404,7 @@ namespace dsk_tools {
                 prog_start += 4;
             }
 
-            out += "PROGRAM AT: 0x" + int_to_hex(0x100 + 2 + prog_start) + "\n\n";
+            // out += "PROGRAM AT: 0x" + int_to_hex(0x100 + 2 + prog_start) + "\n\n";
 
             Iskra226Parser parser(cm);
             parser.build_vars(code, L1, L2, L3);
@@ -1415,7 +1426,7 @@ namespace dsk_tools {
 
                     p += 3;
 
-                    listing += pad_number(line_num, 4, '0') + " ";
+                    listing += Iskra226Parser::basicEntity(EntityType::LINE_NUMBER, pad_number(line_num, 4, '0')) + " ";
 
                     const unsigned line_start = p;
                     const unsigned line_end = line_start + line_len - 1;
@@ -1451,7 +1462,8 @@ namespace dsk_tools {
         }
 
 
-        return escapeHtml(out);
+        // return escapeHtml(out);
+        return out;
     }
 
 }

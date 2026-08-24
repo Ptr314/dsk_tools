@@ -9,7 +9,7 @@
 
 namespace dsk_tools {
 
-    std::string entityTypeToString(EntityType type) {
+    std::string entityTypeToString(const EntityType type) {
         switch (type) {
         case EntityType::NONE:          return "none";
         case EntityType::LINE_NUMBER:   return "line-number";
