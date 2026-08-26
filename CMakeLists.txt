@@ -78,6 +78,15 @@ add_library(${PROJECT_NAME} STATIC
     src/viewers/agat/agat_binary.h      src/viewers/agat/agat_binary.cpp
     src/filesystems/fs_iskra226.h       src/filesystems/fs_iskra226.cpp
     src/viewers/viewer_basic_iskra226.h src/viewers/viewer_basic_iskra226.cpp
+
+    # Detokenizer taken from the Iskra-226 emulator: https://github.com/Ptr314/Iskra-226
+    # Do not edit here, re-extract with its tools/detok_min.py instead.
+    src/viewers/iskra226/number.h       src/viewers/iskra226/number.cpp
+    src/viewers/iskra226/names.h        src/viewers/iskra226/names.cpp
+    src/viewers/iskra226/program.h      src/viewers/iskra226/program.cpp
+    src/viewers/iskra226/expr.h         src/viewers/iskra226/expr.cpp
+    src/viewers/iskra226/byte_source.h  src/viewers/iskra226/byte_source.cpp
+    src/viewers/iskra226/detokenize.h   src/viewers/iskra226/detokenize.cpp
 )
 
 # Platform-specific compilation settings
