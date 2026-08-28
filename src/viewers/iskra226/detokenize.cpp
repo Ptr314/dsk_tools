@@ -58,8 +58,9 @@ public:
 
     // Выражение до разделителя уровня оператора. stop_at_gt — остановиться
     // ещё и на `D4`: внутри группы `PLOT` это закрывающая скобка группы, а
-    // не знак «больше» (docs/format.md, разд. 5).
-    bool expr(bool stop_at_gt = false);
+    // не знак «больше» (docs/format.md, разд. 5). stop_at_star — на `DF`:
+    // у `ASMB` это признак, а не умножение.
+    bool expr(bool stop_at_gt = false, bool stop_at_star = false);
     // Приёмник: переменная, элемент массива либо STR(. by_table — решать
     // «скаляр или массив» строго по таблицам, без заглядывания вперёд:
     // нужно там, где за приёмником сразу идёт значение (CLAUDE.md).
@@ -345,7 +346,7 @@ bool Decoder::token(const Tok & t, bool operand_expected, bool & stop)
     return true;
 }
 
-bool Decoder::expr(bool stop_at_gt)
+bool Decoder::expr(bool stop_at_gt, bool stop_at_star)
 {
     bool first = true;
     for (;;) {
@@ -361,7 +362,8 @@ bool Decoder::expr(bool stop_at_gt)
         if (t.t == Tok::COMMA || t.t == Tok::SEMI || t.t == Tok::RPAR
             || t.t == Tok::KW_TO || t.t == Tok::KW_STEP || t.t == Tok::KW_THEN
             || t.t == Tok::KW_GOTO || t.t == Tok::KW_GOSUB
-            || (stop_at_gt && t.t == Tok::GT))
+            || (stop_at_gt && t.t == Tok::GT)
+            || (stop_at_star && t.t == Tok::STAR))
             return !first || fail("выражение пусто");
 
         ex_.consume();
@@ -1924,15 +1926,22 @@ bool decode_stmt(unsigned verb, const uint8_t * ops, unsigned len,
 
         case 0x0625: {                                 // ASMB
             d.emit("ASMB ");
+            // Аргументы идут списком через `DE`, и в позиции операнда этот
+            // байт здесь запятая, а не однобайтовый литерал: пропущенный
+            // первый аргумент даёт `DE` первым же байтом — `ASMB ,76200,A¤,
+            // M¤,Y¤,64` = `DE E5 55 76 20 00 DE 22 DE 2D DE 2C DE E8 64`
+            // (`EDITOR` 2612).
+            src.set_list_context();
             for (;;) {
-                if (src.at_end()) break;
                 Tok t;
                 if (!d.parser().peek(t, true)) { error = d.error(); return false; }
                 if (t.t == Tok::END) break;
                 if (t.t == Tok::COMMA) { d.parser().consume(); d.emit(","); continue; }
-                if (t.t == Tok::STAR) { d.parser().consume(); d.emit("*"); continue; }
-                if (!d.expr()) { error = d.error(); return false; }
+                if (!d.expr(false, true)) { error = d.error(); return false; }
                 if (!d.parser().peek(t, false)) { error = d.error(); return false; }
+                // `ASMB Z¤*` (`EDITOR` 3738 = `10 DF`): звёздочка — признак,
+                // а не умножение, и стоит она последней.
+                if (t.t == Tok::STAR) { d.parser().consume(); d.emit("*"); continue; }
                 if (t.t != Tok::COMMA) break;
                 d.parser().consume();
                 d.emit(",");
@@ -1973,8 +1982,18 @@ bool detokenize_line(const ProgramLine & line, const NameTable & names,
 
         if (!first) koi8 += ':';
         first = false;
-        if (!decode_stmt(verb, len ? &b[p] : 0, len, names, koi8, error))
+        if (!decode_stmt(verb, len ? &b[p] : 0, len, names, koi8, error)) {
+            // Какой из операторов строки споткнулся, из сообщения не видно:
+            // в строке их бывает с десяток. Глагол дописывается сюда, если
+            // разбор не назвал его сам.
+            if (error.compare(0, 12, "глагол") != 0) {
+                char vb[16];
+                std::sprintf(vb, "%02X", verb & 0xFF);
+                error = std::string("глагол ")
+                      + ((verb > 0xFF) ? "06 " : "") + vb + ": " + error;
+            }
             return false;
+        }
         p += len;
     }
     return true;
