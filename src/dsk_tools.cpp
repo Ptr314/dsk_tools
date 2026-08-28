@@ -351,7 +351,7 @@ namespace dsk_tools {
             return Result::ok();
         }
 
-        if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd" || ext == ".fdd" || ext == ".img") {
+        if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd" || ext == ".fdd" || ext == ".img" || ext == ".ima") {
             format_id = "FILE_RAW_MSB";
 
             if (format_only) {
