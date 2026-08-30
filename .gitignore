@@ -4,3 +4,4 @@ CMakeLists.txt.user*
 .idea/
 test/
 .claude/
+__pycache__/

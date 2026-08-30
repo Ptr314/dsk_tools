@@ -741,6 +741,11 @@ namespace dsk_tools {
 
     Result decode_agat_840_track(BYTES &out, const BYTES & in)
     {
+        // A sector is: 95 6A | Volume Track Sector 5A | ... | 6A 95 | 256 bytes | CRC 5A
+        const int ADDRESS_FIELD_LEN = 4;
+        const int DATA_FIELD_LEN = 256;
+        const int DATA_TAIL_LEN = 2;
+
         out.resize(21*256);
         int track_len = in.size();
         int in_p = 0;
@@ -751,16 +756,19 @@ namespace dsk_tools {
             while (in_p < track_len) {
                 if (!iterate_until(in, in_p, 0x95)) break;
                 if (in_p < track_len) {
-                    uint8_t b1 = in.at(in_p++);
+                    uint8_t b1 = in[in_p++];
                     if (b1 == 0x6A) {index_found = true; break;};
                 }
             }
             if (index_found) {
-                uint8_t r_v = in.at(in_p++);
-                uint8_t r_t = in.at(in_p++);
-                uint8_t r_s = in.at(in_p++);
+                // A truncated field means a damaged track, not a reason to read out of the buffer
+                if (in_p + ADDRESS_FIELD_LEN > track_len) {errors = true; break;};
+
+                uint8_t r_v = in[in_p++];
+                uint8_t r_t = in[in_p++];
+                uint8_t r_s = in[in_p++];
                 // Index end mark
-                uint8_t ie = in.at(in_p++);
+                uint8_t ie = in[in_p++];
                 if (ie != 0x5A) errors = true;
 
                 // Data mark
@@ -768,47 +776,42 @@ namespace dsk_tools {
                 while (in_p < track_len) {
                     if (!iterate_until(in, in_p, 0x6A)) break;
                     if (in_p < track_len) {
-                        uint8_t b1 = in.at(in_p++);
+                        uint8_t b1 = in[in_p++];
                         if (b1 == 0x95) {data_found = true; break;};
                     }
                 }
                 if (data_found) {
                     // Data
-                    bool error = false;
-                    uint16_t crc = 0;
                     int data_p = in_p;
 
-                    for (int i=0; i<256; i++) {
-                        if (in_p >= track_len) {error = true; break;};
-                        uint8_t  d = in.at(in_p++);
+                    if (in_p + DATA_FIELD_LEN + DATA_TAIL_LEN > track_len) {errors = true; break;};
+
+                    uint16_t crc = 0;
+                    for (int i=0; i<DATA_FIELD_LEN; i++) {
+                        uint8_t  d = in[in_p++];
                         if (crc > 0xFF) crc = (crc + 1) & 0xFF;
                         crc += d;
                     }
                     crc &= 0xFF;
-                    if (!error) {
-                        uint8_t r_crc = in.at(in_p++);
-                        if (r_crc != crc) errors = true;
 
-                        if (r_s < 21) {
-                            int offset = r_s * 256;
-                            std::copy(
-                                in.begin() + data_p,
-                                in.begin() + data_p + 256,
-                                out.begin() + offset
-                            );
-                        }
+                    uint8_t r_crc = in[in_p++];
+                    if (r_crc != crc) errors = true;
 
-                        // Data end mark
-                        uint8_t de = in.at(in_p++);
-                        if (de != 0x5A) errors = true;
-
-                    } else {
-                        errors = true;
+                    if (r_s < 21) {
+                        int offset = r_s * 256;
+                        std::copy(
+                            in.begin() + data_p,
+                            in.begin() + data_p + DATA_FIELD_LEN,
+                            out.begin() + offset
+                        );
                     }
+
+                    // Data end mark
+                    uint8_t de = in[in_p++];
+                    if (de != 0x5A) errors = true;
                 }
             }
         }
-
         if (!errors) {
             return Result::ok();
         } else {

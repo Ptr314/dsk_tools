@@ -12,6 +12,34 @@
 #include "utils.h"
 
 namespace dsk_tools {
+
+    namespace {
+
+        // An AIM track is a sequence of cells, each one being a data byte and an AIM command
+        const int AIM_TRACKS = 160;
+        const int AIM_TRACK_CELLS = 6464;
+        const int AIM_SECTORS = 21;
+        const int SECTOR_SIZE = 256;
+
+        // DESYNC 95 6A | Volume Track Sector $5A
+        const int ADDRESS_FIELD_CELLS = 7;
+        // DESYNC 6A 95 | 256 bytes | CRC $5A
+        const int DATA_FIELD_CELLS = 3 + SECTOR_SIZE + 2;
+
+        // A DESYNC is $01 or $80, some dumps set both bits at once
+        bool is_desync(const uint8_t cmd)
+        {
+            return cmd == 0x01 || cmd == 0x80 || cmd == 0x81;
+        }
+
+        // A track is read as a ring, so a field crossing its end continues at the beginning
+        uint8_t cell(const std::vector<uint16_t> & in, const int base, const int p)
+        {
+            return in[base + p % AIM_TRACK_CELLS] & 0xFF;
+        }
+
+    }
+
 LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id, const std::string &type_id):
         Loader(file_name, format_id, type_id)
     {}
@@ -40,37 +68,57 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
         auto fsize = file.tellg();
         file.seekg (0, std::ios::beg);
 
-        int image_size = 160*21*256;
-        buffer.resize(image_size);
+        if (fsize < static_cast<std::streamoff>(AIM_TRACKS) * AIM_TRACK_CELLS * 2) {
+            return Result::error(ErrorCode::LoadSizeMismatch, QT_TRANSLATE_NOOP("errors", "File is too small"));
+        }
 
         std::vector<uint16_t> in(fsize/2);
 
-        file.read (reinterpret_cast<char*>(in.data()), fsize);
+        file.read (reinterpret_cast<char*>(in.data()), in.size() * 2);
 
-        int in_p = 0;
-        int out_p = 0;
+        buffer.clear();
+        buffer.resize(AIM_TRACKS * AIM_SECTORS * SECTOR_SIZE);
 
-        for (int track=0; track<160; track++) {
-            for (int sector=0; sector<21; sector++) {
-                // Index
-                if (!iterate_until(in, in_p, 0x95)) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Invalid index mark"));
-                if (!iterate_until(in, in_p, 0x6A)) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Invalid index mark"));
-                // VTS
-                // uint8_t r_v = in.at(in_p++) & 0xFF;
-                // uint8_t r_t = in.at(in_p++) & 0xFF;
-                // uint8_t r_s = in.at(in_p++) & 0xFF;
-                in_p += 3;
-                // Data mark
-                if (!iterate_until(in, in_p, 0x6A)) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Invalid data mark"));
-                if (!iterate_until(in, in_p, 0x95)) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Invalid data mark"));
-                // Data
-                for (int i=0; i<256; i++) {
-                    if (in_p >= in.size()) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Unexpected end of data"));
-                    uint16_t b = in.at(in_p++);
-                    uint8_t  d = b & 0xFF;
-                    buffer[out_p++] = d;
-                }
+        int sectors_found = 0;
+
+        for (int track=0; track<AIM_TRACKS; track++) {
+            const int base = track * AIM_TRACK_CELLS;
+
+            // The sector number is taken from its address field, so a dump that
+            // starts at an arbitrary angle is not scrambled
+            int sector = -1;
+            int p = 0;
+
+            while (p < AIM_TRACK_CELLS) {
+                if (!is_desync(in[base + p] >> 8)) {p++; continue;};
+
+                // An AIM track is a bit longer than a revolution, so its last
+                // field can wrap to the beginning of the same track
+                uint8_t m1 = cell(in, base, p + 1);
+                uint8_t m2 = cell(in, base, p + 2);
+
+                if (m1 == 0x95 && m2 == 0x6A) {
+                    // Address field: Volume, Track, Sector, $5A
+                    sector = cell(in, base, p + 5);
+                    p += ADDRESS_FIELD_CELLS;
+                } else
+                if (m1 == 0x6A && m2 == 0x95) {
+                    // Data field: 256 bytes, CRC, $5A
+                    if (sector >= 0 && sector < AIM_SECTORS) {
+                        int out_p = (track * AIM_SECTORS + sector) * SECTOR_SIZE;
+                        for (int i=0; i<SECTOR_SIZE; i++)
+                            buffer[out_p + i] = cell(in, base, p + 3 + i);
+                        sectors_found++;
+                    }
+                    sector = -1;
+                    p += DATA_FIELD_CELLS;
+                } else
+                    p++;
             }
+        }
+
+        if (sectors_found == 0) {
+            return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Invalid index mark"));
         }
 
         loaded = true;

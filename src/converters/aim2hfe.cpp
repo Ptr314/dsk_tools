@@ -35,6 +35,9 @@ namespace dsk_tools
         const uint8_t AIM_INDEX_END     = 0x13;
         const uint8_t AIM_DESYNC_ALT    = 0x80;
 
+        // Some dumps set both DESYNC flags at once
+        const uint8_t AIM_DESYNC_BOTH   = AIM_DESYNC | AIM_DESYNC_ALT;
+
         // GAPs of this length or shorter are not deflated
         const int MINIMUM_GAP_LEN = 5;
 
@@ -125,7 +128,7 @@ namespace dsk_tools
                 const uint8_t aim_byte = src[i].data;
                 uint8_t aim_command = src[i].cmd;
 
-                if (aim_command == AIM_DESYNC_ALT) aim_command = AIM_DESYNC;
+                if (aim_command == AIM_DESYNC_ALT || aim_command == AIM_DESYNC_BOTH) aim_command = AIM_DESYNC;
                 if (aim_command == AIM_INDEX_START) {
                     aim_command = 0;
                     index_hole_ptr = static_cast<int>(i);
