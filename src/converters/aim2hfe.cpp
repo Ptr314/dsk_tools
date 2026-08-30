@@ -44,22 +44,36 @@ namespace dsk_tools
         // Sector data length expected after a DATA mark
         const int SECTOR_LEN = 256;
 
+        // A GAP is filled with this byte when written to a disk
+        const uint8_t GAP_FILLER = 0xAA;
+
+        // Some AIM dumps report the tail of every long GAP as 0x00 instead of the
+        // filler actually written to the disk. Such a cell is still a part of the
+        // GAP, so it is counted and restored to GAP_FILLER
+        const uint8_t GAP_UNREAD = 0x00;
+
         const int HFE_SIDES = 2;
         const int HFE_BLOCK = 512;
         const int HFE_BITRATE = 250;
 
         // A single AIM cell: a data byte and an AIM command. After the DESYNC
-        // expansion the command field of the first cell of a GAP holds its length
+        // expansion the command field of the first cell of a GAP holds its length,
+        // which can be longer than a byte, hence the type
         struct AIMCell
         {
             uint8_t data;
-            uint8_t cmd;
+            int cmd;
         };
 
         typedef std::vector<AIMCell> AIMTrack;
 
         enum class DecoderState {PreGap, Desync, Marker, IndexMarker, DataMarker, SectorHeader, SectorData};
         enum class DeflateState {Payload, Gap, Skip};
+
+        bool is_gap_filler(const uint8_t b)
+        {
+            return b == GAP_FILLER || b == GAP_UNREAD;
+        }
 
         std::string track_msg(const int track, const std::string & message)
         {
@@ -78,6 +92,14 @@ namespace dsk_tools
                 track.resize(track.size() - 2);
                 gap_len -= 2;
             }
+        }
+
+        // A GAP is complete, so its unread cells can be restored to the filler
+        // byte a disk really holds there
+        void restore_gap_filler(AIMTrack & track, const size_t gap_index)
+        {
+            for (size_t i = gap_index; i < track.size(); i++)
+                if (track[i].data == GAP_UNREAD) track[i].data = GAP_FILLER;
         }
 
         // Expands every DESYNC command into the 0xA4 0xFF sequence written to a disk,
@@ -123,7 +145,7 @@ namespace dsk_tools
 
                 // Copy protection may write sector data over the disk index hole
                 // or some payload at a GAP beginning
-                if (state == DecoderState::PreGap && aim_byte == 0xAA) {
+                if (state == DecoderState::PreGap && is_gap_filler(aim_byte)) {
                     gap_index = dst.size();
                     state = DecoderState::Desync;
                 }
@@ -131,7 +153,7 @@ namespace dsk_tools
 
                 if (state == DecoderState::Desync) {
                     if (aim_command != AIM_DESYNC) {
-                        if (aim_byte != 0xAA && aim_byte != exception_byte) {
+                        if (!is_gap_filler(aim_byte) && aim_byte != exception_byte) {
                             state = DecoderState::PreGap;
                             gap_len = 0;
                             exception_byte = 0xA4;
@@ -150,8 +172,10 @@ namespace dsk_tools
 
                         if (gap_len > 0) {
                             // End of a GAP
+                            if (gap_index < dst.size()) restore_gap_filler(dst, gap_index);
+
                             if (INFLATE_SMALL_GAPS && gap_len < MINIMUM_GAP_LEN)
-                                dst.insert(dst.end(), MINIMUM_GAP_LEN - gap_len, AIMCell{0xAA, 0});
+                                dst.insert(dst.end(), MINIMUM_GAP_LEN - gap_len, AIMCell{GAP_FILLER, 0});
 
                             if (gap_len > MINIMUM_GAP_LEN) {
                                 if (gap_index < dst.size()) dst[gap_index].cmd = gap_len;
@@ -239,7 +263,10 @@ namespace dsk_tools
 
             // End of GAP4
             if (gap_len > 0) {
-                if (gap_index < dst.size()) dst[gap_index].cmd = gap_len;
+                if (gap_index < dst.size()) {
+                    restore_gap_filler(dst, gap_index);
+                    dst[gap_index].cmd = gap_len;
+                }
                 if (gap_len > MINIMUM_GAP_LEN) gap_total_len += gap_len;
                 gap_len = 0;
             }
@@ -327,7 +354,7 @@ namespace dsk_tools
                     if (gap_len == 0) state = DeflateState::Payload;
                 } else
                 if (state == DeflateState::Skip) {
-                    if (cell.data != 0xAA)
+                    if (cell.data != GAP_FILLER)
                         log += track_msg(track, "WARNING: a GAP byte is not 0xAA. Payload in a GAP?");
                     gap_len--;
                     if (gap_len == 0 && i != src.size() - 1) state = DeflateState::Payload;
