@@ -87,6 +87,10 @@ add_library(${PROJECT_NAME} STATIC
     src/viewers/iskra226/expr.h         src/viewers/iskra226/expr.cpp
     src/viewers/iskra226/byte_source.h  src/viewers/iskra226/byte_source.cpp
     src/viewers/iskra226/detokenize.h   src/viewers/iskra226/detokenize.cpp
+
+    src/converters/converter.h          src/converters/converter.cpp
+    src/converters/aim2hfe.h            src/converters/aim2hfe.cpp
+
 )
 
 # Platform-specific compilation settings

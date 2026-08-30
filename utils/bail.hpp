@@ -5,9 +5,14 @@
 #include <cstdio>
 #include <cstdlib>
 
+// A tool may set its own name before including this header
+#ifndef BAIL_TOOL_NAME
+#define BAIL_TOOL_NAME "fddconv"
+#endif
+
 static void vprinterr(const char* format, std::va_list vlist) noexcept
 {
-    std::fputs("fddconv: \033[1;31merror:\033[0m ", stderr);
+    std::fputs(BAIL_TOOL_NAME ": \033[1;31merror:\033[0m ", stderr);
     std::vfprintf(stderr, format, vlist);
     std::fputs("\n", stderr);
 }

@@ -36,3 +36,25 @@ if(MINGW)
     target_link_options(fddconv PRIVATE -static-libgcc -static-libstdc++)
 endif()
 
+# Direct AIM -> HFE converter (no image/filesystem parsing, so no diskdefs needed)
+add_executable(aim2hfe
+    bail.hpp
+        aim2hfe.cpp
+        cli_helpers.cpp
+        cli_helpers.h
+)
+target_include_directories(aim2hfe PRIVATE cxxopts/include ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(aim2hfe PRIVATE dsk_tools)
+
+if(APPLE)
+    target_link_libraries(aim2hfe PRIVATE "-framework Foundation")
+endif()
+
+if(MSVC)
+    set_target_properties(aim2hfe PROPERTIES CXX_STANDARD 17)
+endif()
+
+if(MINGW)
+    target_link_options(aim2hfe PRIVATE -static-libgcc -static-libstdc++)
+endif()
+
