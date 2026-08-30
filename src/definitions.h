@@ -141,6 +141,9 @@ namespace dsk_tools {
         operator bool() const { return isOk(); } // convenience: allow `if (res)` syntax
     };
 
+    // Defined in errors.cpp
+    std::string decode_error(const Result & result);
+
     static const int agat_140_raw2logic[16] = {
         0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15
     };

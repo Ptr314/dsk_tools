@@ -10,7 +10,7 @@
 
 #include "cxxopts/cxxopts.hpp"
 #include "bail.hpp"
-#include "cli_helpers.h"
+#include "console.h"
 
 #include "converters/aim2hfe.h"
 

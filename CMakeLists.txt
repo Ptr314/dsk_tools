@@ -16,6 +16,8 @@ add_library(${PROJECT_NAME} STATIC
     src/charmaps.h                      src/charmaps.cpp
     src/bas_tokens.h
     src/utils.h                         src/utils.cpp
+                                        src/errors.cpp
+                                        src/agat_charconv.cpp
     src/bit_enums.h
 
     src/host_helpers.h                  src/host_helpers.cpp
@@ -52,6 +54,7 @@ add_library(${PROJECT_NAME} STATIC
 
     src/viewers/viewer.h
     src/viewers/viewer_selectors.h
+                                        src/viewers/register_viewers.cpp
 
     src/viewers/viewer_binary.h         src/viewers/viewer_binary.cpp
     src/viewers/viewer_text.h           src/viewers/viewer_text.cpp

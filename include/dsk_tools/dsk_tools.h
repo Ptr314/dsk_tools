@@ -83,7 +83,6 @@ namespace dsk_tools {
     std::unique_ptr<Loader> create_loader(const std::string& file_name, const std::string& format_id, const std::string& type_id);
     std::unique_ptr<Writer> create_writer(const std::string & format_id, const uint8_t volume_id, diskImage * image);
 
-    std::string decode_error(const Result& result);
 
     unsigned image_size_by_type(const std::string &type_id, const DiskFormatParams &format);
 

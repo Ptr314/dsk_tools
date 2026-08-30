@@ -9,6 +9,7 @@
 #include "cxxopts/cxxopts.hpp"
 #include "bail.hpp"
 #include "cli_helpers.h"
+#include "console.h"
 
 #include "fs_host.h"
 #include "host_helpers.h"

@@ -15,6 +15,8 @@ add_executable(fddconv
         fddconv.cpp
         cli_helpers.cpp
         cli_helpers.h
+        console.cpp
+        console.h
         ${CMAKE_CURRENT_BINARY_DIR}/diskdefs_embed.h
 )
 target_include_directories(fddconv PRIVATE cxxopts/include ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
@@ -40,8 +42,8 @@ endif()
 add_executable(aim2hfe
     bail.hpp
         aim2hfe.cpp
-        cli_helpers.cpp
-        cli_helpers.h
+        console.cpp
+        console.h
 )
 target_include_directories(aim2hfe PRIVATE cxxopts/include ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(aim2hfe PRIVATE dsk_tools)

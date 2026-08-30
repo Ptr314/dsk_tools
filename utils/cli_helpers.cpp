@@ -15,23 +15,6 @@
 
 namespace dsk_tools {
 
-    void setupConsole() {
-        #ifdef _WIN32
-            SetConsoleOutputCP(CP_UTF8);
-            SetConsoleCP(CP_UTF8);
-
-            HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-            DWORD mode;
-            if (GetConsoleMode(hOut, &mode)) {
-                // ENABLE_VIRTUAL_TERMINAL_PROCESSING not available in older Windows SDK versions
-        #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-        #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
-        #endif
-                SetConsoleMode(hOut, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-            }
-        #endif
-    }
-
     Result write_output_file(const std::string & output_file, const std::string & format_id, const uint8_t volume_id, diskImage * image, const bool verbose)
     {
         if (verbose) std::cout << "Writing to output: " << output_file << std::endl;
