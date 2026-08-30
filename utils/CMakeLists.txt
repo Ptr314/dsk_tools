@@ -30,10 +30,10 @@ if(MSVC)
     set_target_properties(fddconv PROPERTIES CXX_STANDARD 17)
 endif()
 
-# MinGW: Statically link GCC runtime to avoid DLL dependencies
-# Note: -static-libwinpthread not supported in MinGW 4.9.2
+# MinGW: link the GCC runtime, the C++ library and winpthread statically,
+# so that the tool is a single .exe with no DLLs to carry around
 if(MINGW)
-    target_link_options(fddconv PRIVATE -static-libgcc -static-libstdc++)
+    target_link_options(fddconv PRIVATE -static)
 endif()
 
 # Direct AIM -> HFE converter (no image/filesystem parsing, so no diskdefs needed)
@@ -55,6 +55,20 @@ if(MSVC)
 endif()
 
 if(MINGW)
-    target_link_options(aim2hfe PRIVATE -static-libgcc -static-libstdc++)
+    target_link_options(aim2hfe PRIVATE -static)
 endif()
+
+# Release binaries: drop the code and the data nothing refers to, and the symbol table
+foreach(TOOL fddconv aim2hfe)
+    if(MSVC)
+        target_compile_options(${TOOL} PRIVATE $<$<CONFIG:Release>:/Gy /Gw>)
+        target_link_options(${TOOL} PRIVATE $<$<CONFIG:Release>:/OPT:REF /OPT:ICF>)
+    elseif(APPLE)
+        target_compile_options(${TOOL} PRIVATE $<$<CONFIG:Release>:-ffunction-sections -fdata-sections>)
+        target_link_options(${TOOL} PRIVATE $<$<CONFIG:Release>:-Wl,-dead_strip -Wl,-x>)
+    else()
+        target_compile_options(${TOOL} PRIVATE $<$<CONFIG:Release>:-ffunction-sections -fdata-sections>)
+        target_link_options(${TOOL} PRIVATE $<$<CONFIG:Release>:-Wl,--gc-sections -s>)
+    endif()
+endforeach()
 

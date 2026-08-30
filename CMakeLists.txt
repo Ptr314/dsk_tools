@@ -103,6 +103,14 @@ if(WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE shell32)
 endif()
 
+# Put every function and every variable into its own section, so that a linker
+# with --gc-sections / -dead_strip / /OPT:REF can drop the unused ones
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:/Gy /Gw>)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:-ffunction-sections -fdata-sections>)
+endif()
+
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src/
