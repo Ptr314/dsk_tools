@@ -16,6 +16,7 @@
 #include "disk_image.h"
 #include "image_agat140.h"
 #include "image_agat840.h"
+#include "image_agat880.h"
 #include "image_fil.h"
 
 #include "loader.h"
@@ -37,6 +38,7 @@
 #include "filesystem.h"
 #include "fs_dos33.h"
 #include "fs_spriteos.h"
+#include "fs_prodos.h"
 #include "fs_cpm.h"
 #include "fs_fil.h"
 #include "fs_fat.h"
@@ -69,7 +71,8 @@ namespace dsk_tools {
     void encode_agat_mfm_array(BYTES &out, uint8_t data, uint16_t count, uint8_t & last_byte);
     uint8_t encode_agat_mfm_data(BYTES &out, uint8_t * data, uint16_t count, uint8_t & last_byte);
     void decode_agat_mfm_data(BYTES &out, const BYTES & in);
-    Result decode_agat_840_track(BYTES &out, const BYTES & in);
+    int detect_agat_sector_size(const BYTES & in);
+    Result decode_agat_840_track(BYTES &out, const BYTES & in, const int sectors = 21, const int sector_size = 256);
     Result decode_agat_840_image(BYTES &out, const BYTES & in);
     std::string agat_vtoc_info(const Agat_VTOC & VTOC);
     std::string agat_sos_info(const SPRITE_OS_DPB_DISK & DPB);

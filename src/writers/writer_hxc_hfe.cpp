@@ -69,7 +69,8 @@ WriterHxCHFE::WriterHxCHFE(const std::string & format_id, diskImage * image_to_s
     Result WriterHxCHFE::write(BYTES &buffer)
     {
         std::string type_id = image->get_type_id();
-        if (type_id != "TYPE_AGAT_840") return Result::error(ErrorCode::WriteUnsupported, QT_TRANSLATE_NOOP("errors", "Format not supported for HFE format"));
+        if (type_id != "TYPE_AGAT_840" && type_id != "TYPE_AGAT_880")
+            return Result::error(ErrorCode::WriteUnsupported, QT_TRANSLATE_NOOP("errors", "Format not supported for HFE format"));
 
         buffer.clear();
         buffer.reserve(buffer.size() + 512);

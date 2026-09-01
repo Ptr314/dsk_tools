@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2025 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
-// Description: A loader class for AIM (Agat 840 Kb psysical images)
+// Description: A loader class for AIM (Agat 840/880 Kb psysical images)
 
 #include <fstream>
 #include <iostream>
@@ -18,13 +18,21 @@ namespace dsk_tools {
         // An AIM track is a sequence of cells, each one being a data byte and an AIM command
         const int AIM_TRACKS = 160;
         const int AIM_TRACK_CELLS = 6464;
-        const int AIM_SECTORS = 21;
-        const int SECTOR_SIZE = 256;
+
+        // Two sector layouts are known: 21 sectors of 256 bytes (Agat 840 Kb) and
+        // 11 sectors of 512 bytes (Agat 880 Kb, the format used by ProDOS disks of the Nippel OS)
+        const int AIM_840_SECTORS = 21;
+        const int AIM_840_SECTOR_SIZE = 256;
+        const int AIM_880_SECTORS = 11;
+        const int AIM_880_SECTOR_SIZE = 512;
 
         // DESYNC 95 6A | Volume Track Sector $5A
         const int ADDRESS_FIELD_CELLS = 7;
-        // DESYNC 6A 95 | 256 bytes | CRC $5A
-        const int DATA_FIELD_CELLS = 3 + SECTOR_SIZE + 2;
+        // DESYNC 6A 95 | <sector_size> bytes | CRC $5A
+        int data_field_cells(const int sector_size)
+        {
+            return 3 + sector_size + 2;
+        }
 
         // A DESYNC is $01 or $80, some dumps set both bits at once
         bool is_desync(const uint8_t cmd)
@@ -56,6 +64,36 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
         return true;
     }
 
+    // The sector size is not recorded anywhere in an AIM dump, so it is deduced from the
+    // data itself: the checksum stored after a data field only matches the length the disk
+    // was formatted with. Every data field of the dump is summed up to both candidate
+    // lengths and the winner takes the disk.
+    int LoaderAIM::detect_sector_size(const std::vector<uint16_t> & in)
+    {
+        int matches_256 = 0;
+        int matches_512 = 0;
+
+        for (int track=0; track<AIM_TRACKS; track++) {
+            const int base = track * AIM_TRACK_CELLS;
+            for (int p=0; p<AIM_TRACK_CELLS; p++) {
+                if (!is_desync(in[base + p] >> 8)) continue;
+                if (cell(in, base, p + 1) != 0x6A || cell(in, base, p + 2) != 0x95) continue;
+
+                // The Agat checksum is an 8 bit sum with the carry added back
+                uint16_t crc = 0;
+                for (int i=0; i<AIM_880_SECTOR_SIZE; i++) {
+                    if (i == AIM_840_SECTOR_SIZE && (crc & 0xFF) == cell(in, base, p + 3 + i)) matches_256++;
+                    const uint8_t d = cell(in, base, p + 3 + i);
+                    if (crc > 0xFF) crc = (crc + 1) & 0xFF;
+                    crc += d;
+                }
+                if ((crc & 0xFF) == cell(in, base, p + 3 + AIM_880_SECTOR_SIZE)) matches_512++;
+            }
+        }
+
+        return (matches_512 > matches_256) ? AIM_880_SECTOR_SIZE : AIM_840_SECTOR_SIZE;
+    }
+
     Result LoaderAIM::load(BYTES & buffer, const DiskFormatParams &format)
     {
         UTF8_ifstream file(file_name, std::ios::binary);
@@ -76,8 +114,17 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
 
         file.read (reinterpret_cast<char*>(in.data()), in.size() * 2);
 
+        // An explicitly requested geometry wins, otherwise the dump decides
+        if (format.sectors != 0 && format.sector_size != 0) {
+            m_sectors = format.sectors;
+            m_sector_size = format.sector_size;
+        } else {
+            m_sector_size = detect_sector_size(in);
+            m_sectors = (m_sector_size == AIM_880_SECTOR_SIZE) ? AIM_880_SECTORS : AIM_840_SECTORS;
+        }
+
         buffer.clear();
-        buffer.resize(AIM_TRACKS * AIM_SECTORS * SECTOR_SIZE);
+        buffer.resize(AIM_TRACKS * m_sectors * m_sector_size);
 
         int sectors_found = 0;
 
@@ -103,15 +150,15 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
                     p += ADDRESS_FIELD_CELLS;
                 } else
                 if (m1 == 0x6A && m2 == 0x95) {
-                    // Data field: 256 bytes, CRC, $5A
-                    if (sector >= 0 && sector < AIM_SECTORS) {
-                        int out_p = (track * AIM_SECTORS + sector) * SECTOR_SIZE;
-                        for (int i=0; i<SECTOR_SIZE; i++)
+                    // Data field: <sector_size> bytes, CRC, $5A
+                    if (sector >= 0 && sector < m_sectors) {
+                        int out_p = (track * m_sectors + sector) * m_sector_size;
+                        for (int i=0; i<m_sector_size; i++)
                             buffer[out_p + i] = cell(in, base, p + 3 + i);
                         sectors_found++;
                     }
                     sector = -1;
-                    p += DATA_FIELD_CELLS;
+                    p += data_field_cells(m_sector_size);
                 } else
                     p++;
             }
@@ -151,12 +198,17 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
 
         file.read (reinterpret_cast<char*>(in.data()), fsize);
 
+        // A 512 byte sector disk parsed as a 256 byte one reports an error on every sector
+        const int sector_size = (in.size() >= static_cast<size_t>(AIM_TRACKS) * AIM_TRACK_CELLS)
+                                ? detect_sector_size(in)
+                                : AIM_840_SECTOR_SIZE;
+
         int in_p = 0;
-        int track_len = 6464;
+        int track_len = AIM_TRACK_CELLS;
         result += "\n";
         bool error = false;
         bool errors = false;
-        for (int track=0; track<160; track++) {
+        for (int track=0; track<AIM_TRACKS; track++) {
             int in_base = track * track_len;
             in_p = in_base;
             result += "{$TRACK}: " + std::to_string(track) + "\n";
@@ -197,10 +249,10 @@ LoaderAIM::LoaderAIM(const std::string &file_name, const std::string &format_id,
                     if (data_found) {
                         // Data
                         result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p*2-2)) + " {$DATA_MARK} ($6A $95)\n";
-                        result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p*2)) + " {$DATA_FIELD} (256)\n";
+                        result += "    $" + dsk_tools::int_to_hex(static_cast<uint32_t>(in_p*2)) + " {$DATA_FIELD} (" + std::to_string(sector_size) + ")\n";
                         uint16_t crc = 0;
                         error = false;
-                        for (int i=0; i<256; i++) {
+                        for (int i=0; i<sector_size; i++) {
                             if (in_p >= in_base+track_len) {error = true; break;};
                             uint8_t  d = in.at(in_p++) & 0xFF;
                             if (crc > 0xFF) crc = (crc + 1) & 0xFF;

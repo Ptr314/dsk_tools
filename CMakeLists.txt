@@ -36,6 +36,7 @@ add_library(${PROJECT_NAME} STATIC
     src/images/disk_image.h             src/images/disk_image.cpp
     src/images/image_agat140.h          src/images/image_agat140.cpp
     src/images/image_agat840.h          src/images/image_agat840.cpp
+    src/images/image_agat880.h          src/images/image_agat880.cpp
     src/images/image_fil.h              src/images/image_fil.cpp
 
     src/writers/writer.h                src/writers/writer.cpp
@@ -47,6 +48,7 @@ add_library(${PROJECT_NAME} STATIC
     src/filesystems/filesystem.h        src/filesystems/filesystem.cpp
     src/filesystems/fs_dos33.h          src/filesystems/fs_dos33.cpp
     src/filesystems/fs_spriteos.h       src/filesystems/fs_spriteos.cpp
+    src/filesystems/fs_prodos.h         src/filesystems/fs_prodos.cpp
     src/filesystems/fs_cpm.h            src/filesystems/fs_cpm.cpp
     src/filesystems/fs_fil.h            src/filesystems/fs_fil.cpp
     src/filesystems/fs_host.h           src/filesystems/fs_host.cpp

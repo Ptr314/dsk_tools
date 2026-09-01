@@ -14,6 +14,8 @@ namespace dsk_tools {
     public:
         LoaderHXC_HFE(const std::string & file_name, const std::string & format_id, const std::string & type_id);
         Result load(BYTES & buffer, const DiskFormatParams &format = DiskFormatParams()) override;
+        // Tells an 840 Kb disk from an 880 Kb one by the data of its first track
+        Result probe_sector_size(int & sector_size);
         std::string file_info() override;
     };
 

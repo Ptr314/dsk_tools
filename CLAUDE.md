@@ -73,7 +73,7 @@ line in the corresponding factory and detection logic in `detect_fdd_type()`.
 Key points that are not obvious from a single file:
 
 - **Format and filesystem are independent dimensions.** `type_id` is two-level,
-  `FAMILY:VARIANT` (`TYPE_CPM:IRISHA-360-INT`, `TYPE_FAT:ST-720`). For CP/M and FAT the geometry
+  `FAMILY:VARIANT` (`TYPE_CPM:IRISHA-360-INT`, `TYPE_FAT:ST-720`, `TYPE_OTHER:PRODOS-800`). For CP/M and FAT the geometry
   comes from `src/diskdefs` (cpmtools syntax, parsed by `parse_diskdefs()`), not from a C++
   class — prefer adding a `diskdefs` entry over a new `diskImage` subclass.
 - **Filesystem capabilities are declared, not assumed.** `fileSystem::get_caps()` returns an
@@ -103,7 +103,7 @@ Key points that are not obvious from a single file:
   translation units** (`charmaps.cpp`, `errors.cpp`, `agat_charconv.cpp`, `register_viewers.cpp`).
   Folding them back into a shared file inflates both tools by hundreds of kilobytes.
 
-## Agat 840K and AIM
+## Agat 840K/880K and AIM
 
 Enough of the recent work touches this that the layout is worth stating. A sector is
 
@@ -112,6 +112,14 @@ GAP ($AA) | DESYNC | 95 6A | volume track sector 5A | GAP | DESYNC | 6A 95 | 256
 ```
 
 with 21 sectors per track, 160 tracks, and the CRC an 8 bit sum with the carry added back.
+
+**The sector size is not a constant.** Nippel OS disks (`TYPE_AGAT_880`, 880 Kb) use the very
+same layout with **11 sectors of 512 bytes** per track and hold a ProDOS volume. Nothing on
+the disk states which of the two it is, so it is deduced from the data: the checksum after a
+data field only adds up for the length the disk was formatted with. `detect_agat_sector_size()`
+(`src/dsk_tools.cpp`) does that for a decoded MFM track and `LoaderAIM::detect_sector_size()`
+for an AIM dump; `decode_agat_840_track()` takes the geometry as parameters. An explicitly
+requested `type_id` always wins over the detection.
 
 An AIM dump is 160 × 6464 cells of (data byte, AIM command). The commands are `$01`/`$80`/`$81`
 DESYNC, `$02` end of track, `$03`/`$13` index pulse; anything else is payload. A dump covers

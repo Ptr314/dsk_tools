@@ -107,8 +107,14 @@ WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, c
         }
     }
 
+    // Writes an Agat MFM track: 21 sectors of 256 bytes for an 840 Kb disk or
+    // 11 of 512 for an 880 Kb one, the layout is the same apart from the data length
     void WriterMFM::write_agat840_track(BYTES &out, uint8_t head, uint8_t track)
     {
+        const uint16_t sector_size = image->get_sector_size();
+        // Everything a sector spends besides its data: marks, address field, gaps
+        const int sector_overhead = 46;
+
         uint8_t last_byte = 0;
         // GAP 0
         encode_agat_mfm_array(out, 0xAA, 144, last_byte);
@@ -139,7 +145,7 @@ WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, c
             encode_agat_mfm_array(out, 0x95, 1, last_byte);
             // Data + crc
             uint8_t * data = image->get_sector_data(0, track*2 + head, sector);
-            uint8_t crc = encode_agat_mfm_data(out, data, 256, last_byte);
+            uint8_t crc = encode_agat_mfm_data(out, data, sector_size, last_byte);
             encode_agat_mfm_array(out, crc, 1, last_byte);
             // Data end
             encode_agat_mfm_array(out, 0x5A, 1, last_byte);
@@ -149,7 +155,7 @@ WriterMFM::WriterMFM(const std::string & format_id, diskImage * image_to_save, c
         // GAP
         encode_agat_mfm_array(out, 0xAA, 20, last_byte);
         // Fill until standard hfe track length
-        encode_agat_mfm_array(out, 0xAA, (HFE_TRACK_LEN/2 - (144 + 302*image->get_sectors() + 20)*2)/2, last_byte);
+        encode_agat_mfm_array(out, 0xAA, (HFE_TRACK_LEN/2 - (144 + (sector_overhead + sector_size)*image->get_sectors() + 20)*2)/2, last_byte);
 
     }
 }

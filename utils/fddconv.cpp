@@ -60,6 +60,8 @@ int main(int argc, char** argv)
             ("f,input_format", "Input file format DDD:FFF or DDD \n"
                                         "DDD: a140 (Apple/Agat 140k)\n"
                                         "     a840 (Agat 840k)\n"
+                                        "     a880 (Agat 880k, Nippel OS)\n"
+                                        "     prodos800 (Apple 3.5\" 800k ProDOS)\n"
                                         "     i360i, i360s (Irisha 360k sides\n"
                                         "                   interleaved / sequential)\n"
                                         "     korvet (Korvet 800k CP/M)\n"
@@ -69,6 +71,7 @@ int main(int argc, char** argv)
                                         "                   (IBM PC 360-1.44 floppies)\n"
                                         "FFF: dos33 (Apple DOS)\n"
                                         "     sos (Sprite OS)\n"
+                                        "     prodos (ProDOS / Nippel OS)\n"
                                         "     cpm, cpm-do, cpm-po (CP/M raw,\n"
                                         "                          DOS sectors,\n"
                                         "                          ProDOS sectors)\n"
@@ -184,6 +187,8 @@ int main(int argc, char** argv)
         if (res) {
             if (type_str == "a140") type_id = "TYPE_AGAT_140";
             if (type_str == "a840") type_id = "TYPE_AGAT_840";
+            if (type_str == "a880") type_id = "TYPE_AGAT_880";
+            if (type_str == "prodos800") type_id = "TYPE_OTHER:PRODOS-800";
             if (type_str == "i360i") type_id = "TYPE_CPM:IRISHA-360-INT";
             if (type_str == "i360s") type_id = "TYPE_CPM:IRISHA-360-SEQ";
             if (type_str == "korvet") type_id = "TYPE_CPM:KORVET";
@@ -196,11 +201,13 @@ int main(int argc, char** argv)
 
             if (type_id.empty()) return bail("Incorrect disk format");
 
+            if (type_id == "TYPE_OTHER:PRODOS-800") fs_str = "prodos";
             if (type_id.rfind("TYPE_CPM:", 0) == 0) fs_str = "cpm";
             if (type_id.rfind("TYPE_FAT:", 0) == 0) fs_str = "fat";
 
             if (fs_str == "dos33") filesystem_id = "FILESYSTEM_DOS33";
             if (fs_str == "sos") filesystem_id = "FILESYSTEM_SPRITE_OS";
+            if (fs_str == "prodos") filesystem_id = "FILESYSTEM_PRODOS";
             if (fs_str == "cpm") filesystem_id = "FILESYSTEM_CPM_RAW";
             if (fs_str == "cpm-do") filesystem_id = "FILESYSTEM_CPM_DOS";
             if (fs_str == "cpm-po") filesystem_id = "FILESYSTEM_CPM_PRODOS";

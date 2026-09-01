@@ -251,8 +251,12 @@ namespace dsk_tools
                         }
                     } else
                     if (state == DecoderState::SectorData) {
-                        if (data_cursor == SECTOR_LEN + 1 && aim_byte != 0x5A)
-                            log += track_msg(track, "ERROR: the last DATA byte must be 0x5A");
+                        // The data epilogue is not verified: SECTOR_LEN only hints where
+                        // a GAP may begin, and a disk may use a different sector size
+                        // (NOS.aim is 11 sectors of 512 bytes). Every cell is copied
+                        // verbatim either way, so a mismatch here is not a conversion
+                        // error. Sector level checks belong to the loaders and to
+                        // tools/aim_scan.py
                         if (data_cursor == SECTOR_LEN + 2) {
                             // A GAP begins here
                             gap_len = 0;

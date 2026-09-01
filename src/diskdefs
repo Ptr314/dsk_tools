@@ -131,3 +131,13 @@ diskdef iskra-226
   tracks 77
   sectrk 26
 end
+
+# Apple 3.5" 800 Kb, 1600 ProDOS blocks. A .po image is a plain sequence of blocks,
+# while the disk itself is zoned (8 to 12 sectors per track), so the geometry below
+# is nominal and only serves to address the blocks in order.
+diskdef prodos-800
+  seclen 512
+  heads 1
+  tracks 160
+  sectrk 10
+end

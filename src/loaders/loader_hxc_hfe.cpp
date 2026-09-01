@@ -15,9 +15,78 @@
 #include "loader_hxc_hfe.h"
 
 namespace dsk_tools {
+
+    namespace {
+
+        // Pulls one side of one track out of the file: with two sides the halves of
+        // every 512 byte block alternate between them
+        bool hfe_track_mfm(const BYTES & in, const HXC_HFE_HEADER * hdr, const HXC_HFE_TRACK * ti, const int side, BYTES & out)
+        {
+            const int in_base = ti->offset * HXC_HFE_BLOCK_SIZE;
+            const int mixed_track_len = (ti->track_len + HXC_HFE_BLOCK_SIZE - 1) / HXC_HFE_BLOCK_SIZE * HXC_HFE_BLOCK_SIZE;
+
+            if (in_base < 0 || static_cast<size_t>(in_base) + mixed_track_len > in.size()) return false;
+
+            out.clear();
+            if (hdr->number_of_side == 1) {
+                out.assign(in.begin() + in_base, in.begin() + in_base + mixed_track_len);
+                return true;
+            }
+
+            for (int i=0; i < mixed_track_len / HXC_HFE_BLOCK_SIZE; i++) {
+                const auto part_base = in.begin() + in_base + i*HXC_HFE_BLOCK_SIZE + side*(HXC_HFE_BLOCK_SIZE/2);
+                out.insert(out.end(), part_base, part_base + HXC_HFE_BLOCK_SIZE / 2);
+            }
+            return true;
+        }
+
+    }
+
 LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &format_id, const std::string &type_id):
         Loader(file_name, format_id, type_id)
     {}
+
+    // Agat 840 and 880 Kb disks are encoded identically apart from the length of a
+    // data field, so the format is told apart by the checksum the disk agrees with
+    Result LoaderHXC_HFE::probe_sector_size(int & sector_size)
+    {
+        sector_size = 256;
+
+        UTF8_ifstream file(file_name, std::ios::binary);
+        if (!file.good()) return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Cannot open file"));
+
+        file.seekg (0, std::ios::end);
+        auto fsize = file.tellg();
+        file.seekg (0, std::ios::beg);
+
+        if (fsize < static_cast<std::streamoff>(sizeof(HXC_HFE_HEADER)))
+            return Result::error(ErrorCode::LoadSizeMismatch, QT_TRANSLATE_NOOP("errors", "File is too small"));
+
+        BYTES in(fsize);
+        file.read (reinterpret_cast<char*>(in.data()), fsize);
+
+        const HXC_HFE_HEADER * hdr = reinterpret_cast<HXC_HFE_HEADER*>(in.data());
+        const std::string signature(reinterpret_cast<const char*>(&hdr->HEADERSIGNATURE), sizeof(hdr->HEADERSIGNATURE));
+        if (signature != "HXCPICFE") return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Invalid HFE signature"));
+        if (hdr->number_of_track == 0) return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Invalid HFE parameters"));
+
+        const int tracklist_offset = hdr->track_list_offset*HXC_HFE_BLOCK_SIZE;
+        if (static_cast<size_t>(tracklist_offset) + sizeof(HXC_HFE_TRACK) > in.size())
+            return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Invalid HFE parameters"));
+
+        const HXC_HFE_TRACK * ti = reinterpret_cast<HXC_HFE_TRACK *>(in.data() + tracklist_offset);
+
+        BYTES track_mfm;
+        if (!hfe_track_mfm(in, hdr, ti, 0, track_mfm))
+            return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Invalid HFE parameters"));
+
+        BYTES track_data;
+        decode_agat_mfm_data(track_data, track_mfm);
+
+        sector_size = detect_agat_sector_size(track_data);
+
+        return Result::ok();
+    }
 
     Result LoaderHXC_HFE::load(BYTES &buffer, const DiskFormatParams &format)
     {
@@ -44,11 +113,16 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
 
         int image_size, sectors_per_track, s_size;
 
-        if (type_id == "TYPE_AGAT_840") {
+        if (type_id == "TYPE_AGAT_840" || type_id == "TYPE_AGAT_880") {
             if (hdr->number_of_side != 2 || hdr->number_of_track != 80)
                 return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Invalid HFE parameters"));
-            sectors_per_track = 21;
-            s_size = 256;
+            if (type_id == "TYPE_AGAT_880") {
+                sectors_per_track = 11;
+                s_size = 512;
+            } else {
+                sectors_per_track = 21;
+                s_size = 256;
+            }
             image_size = 2*80*sectors_per_track*s_size;
         } else
             return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Unsupported disk type"));
@@ -64,28 +138,16 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
             ti[track] = reinterpret_cast<HXC_HFE_TRACK *>(in.data() + tracklist_offset + track * sizeof(HXC_HFE_TRACK));
 
         for (int track=0; track<hdr->number_of_track; track++) {
-            int in_base = ti[track]->offset*HXC_HFE_BLOCK_SIZE;
-            // TODO: remove float operations, use (a + b - 1) / b
-            int mixed_track_len = std::ceil(static_cast<double>(ti[track]->track_len) / HXC_HFE_BLOCK_SIZE) * HXC_HFE_BLOCK_SIZE;
-
-            BYTES track_mixed(in.begin() + in_base, in.begin() + in_base + mixed_track_len);
-            std::vector<BYTES> track_mfm(hdr->number_of_side);
-            if (hdr->number_of_side == 1) {
-                track_mfm[0] = track_mixed;
-            } else {
-                for (int i=0; i < mixed_track_len / HXC_HFE_BLOCK_SIZE; i++)
-                    for (int s=0; s < hdr->number_of_side; s++ ) {
-                        auto part_base = track_mixed.begin() + i*HXC_HFE_BLOCK_SIZE + s*(HXC_HFE_BLOCK_SIZE/2);
-                        track_mfm[s].insert(track_mfm[s].end(), part_base, part_base + HXC_HFE_BLOCK_SIZE / 2);
-                    }
-            }
-
             for (int s=0; s < hdr->number_of_side; s++ ) {
+                BYTES track_mfm;
+                if (!hfe_track_mfm(in, hdr, ti[track], s, track_mfm))
+                    return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Invalid HFE parameters"));
+
                 BYTES track_data;
-                decode_agat_mfm_data(track_data, track_mfm[s]);
+                decode_agat_mfm_data(track_data, track_mfm);
 
                 BYTES raw_data;
-                Result res = decode_agat_840_track(raw_data, track_data);
+                Result res = decode_agat_840_track(raw_data, track_data, sectors_per_track, s_size);
                 if (res){
                     std::copy(
                         raw_data.begin(),

@@ -41,6 +41,8 @@ dsk_tools &mdash; библиотека для работы с образами �
 ```
 DDD:    a140 (Apple/Агат 140k)
         a840 (Агат 840k)
+        a880 (Агат 880k, ОС Nippel)
+        prodos800 (Apple 3,5" 800k ProDOS)
         i360i, i360s (Ириша 360 Кб с чередованием сторон / без чередования
         korvet (Корвет 800k CP/M)
         orion (Орион-128/ПК8000 800 Кб CP/M)
@@ -49,6 +51,7 @@ DDD:    a140 (Apple/Агат 140k)
                 
 FFF:    dos33 (Apple/Агат DOS)
         sos (Sprite OS)
+        prodos (ProDOS / ОС Nippel)
         cpm, cpm-do, cpm-po (CP/M raw, DOS sectors, ProDOS sectors)
         fat (MS-DOS FAT)
 ```
@@ -57,6 +60,7 @@ FFF:    dos33 (Apple/Агат DOS)
 
 - 140к: dsk, nib, nic.
 - 840к: dsk, hfe.
+- 880к: dsk, hfe.
 
 Для форматов nib, nic, hfe можно задать Volume ID.
 

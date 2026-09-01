@@ -69,6 +69,7 @@ namespace dsk_tools {
 
         if (type_id == "TYPE_AGAT_140")   return dsk_tools::make_unique<imageAgat140>(std::move(loader));
         if (type_id == "TYPE_AGAT_840")   return dsk_tools::make_unique<imageAgat840>(std::move(loader));
+        if (type_id == "TYPE_AGAT_880")   return dsk_tools::make_unique<imageAgat880>(std::move(loader));
         if (type_id == "TYPE_FIL")        return dsk_tools::make_unique<imageFIL>(std::move(loader));
         if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0 || type_id.rfind("TYPE_OTHER:", 0)==0) {
             const std::string diskdef_id = to_lower(type_id.substr(type_id.find(':') + 1));
@@ -126,6 +127,9 @@ namespace dsk_tools {
         }
         if (filesystem_id == "FILESYSTEM_SPRITE_OS") {
             return dsk_tools::make_unique<fsSpriteOS>(image);
+        }
+        if (filesystem_id == "FILESYSTEM_PRODOS") {
+            return dsk_tools::make_unique<fsProDOS>(image);
         }
         if (filesystem_id == "FILESYSTEM_CPM_DOS" || filesystem_id == "FILESYSTEM_CPM_PRODOS"|| filesystem_id == "FILESYSTEM_CPM_RAW") {
             return dsk_tools::make_unique<fsCPM>(image, filesystem_id, diskdefs);
@@ -282,6 +286,17 @@ namespace dsk_tools {
     }
 
 
+    // A ProDOS volume keeps its directory in block 2, so an image whose sectors are
+    // stored in ProDOS block order has the volume header at a fixed offset
+    static bool is_prodos_volume(UTF8_ifstream & file, const unsigned disk_blocks)
+    {
+        BYTES block(PRODOS_BLOCK_SIZE);
+        file.seekg(PRODOS_ROOT_BLOCK * PRODOS_BLOCK_SIZE, std::ios::beg);
+        file.read(reinterpret_cast<char*>(block.data()), block.size());
+        if (!file.good()) return false;
+        return fsProDOS::volume_header_is_valid(block, disk_blocks);
+    }
+
     Result detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only)
     {
         std::string ext = get_file_ext(file_name);
@@ -367,6 +382,14 @@ namespace dsk_tools {
             if (fsize == 860160 || fsize == 860164) {
                 type_id = "TYPE_AGAT_840";
             } else
+            if (fsize == 901120 || fsize == 901124) {
+                // 160 tracks of 11 sectors of 512 bytes, the ProDOS format of the Nippel OS
+                type_id = "TYPE_AGAT_880";
+            } else
+            if (fsize == 1600*PRODOS_BLOCK_SIZE && is_prodos_volume(*file, 1600)) {
+                // Apple 3.5" 800 Kb: 1600 ProDOS blocks one after another
+                type_id = "TYPE_OTHER:PRODOS-800";
+            } else
             // if (fsize == 512*9*40*2) {
             //     type_id = "TYPE_CPM:IRISHA-360-INT";
             // } else
@@ -415,7 +438,14 @@ namespace dsk_tools {
                 if (type_id == "TYPE_AGAT_140" && ext == ".cpm") {
                     filesystem_id = "FILESYSTEM_CPM_RAW";
                 } else
+                if (type_id == "TYPE_AGAT_140" && is_prodos_volume(*file, 35*16*256/PRODOS_BLOCK_SIZE)) {
+                    // A 140 Kb image written in ProDOS block order
+                    filesystem_id = "FILESYSTEM_PRODOS";
+                } else
                     filesystem_id = "FILESYSTEM_DOS33";
+            } else
+            if (type_id == "TYPE_AGAT_880" || type_id == "TYPE_OTHER:PRODOS-800") {
+                filesystem_id = "FILESYSTEM_PRODOS";
             } else
             if (type_id == "TYPE_CPM:IRISHA-360-INT" || type_id == "TYPE_CPM:IRISHA-360-SEQ") {
                 filesystem_id = "FILESYSTEM_CPM_RAW";
@@ -437,10 +467,23 @@ namespace dsk_tools {
                 return Result::ok();
             }
 
-            dsk_tools::LoaderAIM loader(file_name, format_id, type_id);
+            // The loader deduces the sector layout from the dump itself
+            dsk_tools::LoaderAIM loader(file_name, format_id, "");
             BYTES buffer;
             Result res = loader.load(buffer);
-            if (res && buffer[0] == 0x01) {
+            if (!res)
+                return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Failed to load AIM file"));
+
+            if (loader.get_sector_size() == static_cast<int>(PRODOS_BLOCK_SIZE)) {
+                // 11 sectors of 512 bytes: an 880 Kb Nippel OS disk, ProDOS inside
+                type_id = "TYPE_AGAT_880";
+                BYTES block(buffer.begin() + PRODOS_ROOT_BLOCK * PRODOS_BLOCK_SIZE,
+                            buffer.begin() + (PRODOS_ROOT_BLOCK + 1) * PRODOS_BLOCK_SIZE);
+                if (!fsProDOS::volume_header_is_valid(block, buffer.size() / PRODOS_BLOCK_SIZE))
+                    return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "ProDOS volume header not found"));
+                filesystem_id = "FILESYSTEM_PRODOS";
+            } else
+            if (buffer[0] == 0x01) {
                 if (buffer[2] == 0x58) {
                     filesystem_id = "FILESYSTEM_SPRITE_OS";
                 } else {
@@ -535,9 +578,28 @@ namespace dsk_tools {
 
             if (hdr->number_of_side == 2 && hdr->number_of_track == 80) {
                 type_id = "TYPE_AGAT_840";
+
+                // Both Agat formats share the HFE header, the track data tells them apart
+                {
+                    LoaderHXC_HFE probe(file_name, format_id, type_id);
+                    int sector_size = 256;
+                    if (probe.probe_sector_size(sector_size) && sector_size == static_cast<int>(PRODOS_BLOCK_SIZE))
+                        type_id = "TYPE_AGAT_880";
+                }
+
                 BYTES buffer(sizeof(HXC_HFE_HEADER));
                 LoaderHXC_HFE loader(file_name, format_id, type_id);
                 Result res = loader.load(buffer);
+
+                if (type_id == "TYPE_AGAT_880") {
+                    if (buffer.size() < (PRODOS_ROOT_BLOCK + 1) * PRODOS_BLOCK_SIZE)
+                        return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid HFE file format"));
+                    BYTES block(buffer.begin() + PRODOS_ROOT_BLOCK * PRODOS_BLOCK_SIZE,
+                                buffer.begin() + (PRODOS_ROOT_BLOCK + 1) * PRODOS_BLOCK_SIZE);
+                    if (!fsProDOS::volume_header_is_valid(block, buffer.size() / PRODOS_BLOCK_SIZE))
+                        return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "ProDOS volume header not found"));
+                    filesystem_id = "FILESYSTEM_PRODOS";
+                } else
                 if (res && buffer[0] == 0x01) {
                     if (buffer[2] == 0x58) {
                         filesystem_id = "FILESYSTEM_SPRITE_OS";
@@ -739,14 +801,54 @@ namespace dsk_tools {
         return result;
     }
 
-    Result decode_agat_840_track(BYTES &out, const BYTES & in)
+    // An Agat MFM track carries either 21 sectors of 256 bytes (840 Kb) or 11 of 512
+    // (880 Kb, Nippel OS). The two are encoded identically apart from the length of a data
+    // field, and nothing on the disk states it, so the checksum written after the field
+    // decides: it only adds up for the length the disk was formatted with.
+    int detect_agat_sector_size(const BYTES & in)
     {
-        // A sector is: 95 6A | Volume Track Sector 5A | ... | 6A 95 | 256 bytes | CRC 5A
+        const int SECTOR_SIZE_840 = 256;
+        const int SECTOR_SIZE_880 = 512;
+
+        const int len = static_cast<int>(in.size());
+        int matches_256 = 0;
+        int matches_512 = 0;
+
+        for (int p=0; p + 2 < len; p++) {
+            // Data mark
+            if (in[p] != 0x6A || in[p+1] != 0x95) continue;
+
+            const int data_p = p + 2;
+            if (data_p + SECTOR_SIZE_840 >= len) break;
+
+            // The Agat checksum is an 8 bit sum with the carry added back
+            uint16_t crc = 0;
+            for (int i=0; i<SECTOR_SIZE_840; i++) {
+                if (crc > 0xFF) crc = (crc + 1) & 0xFF;
+                crc += in[data_p + i];
+            }
+            if ((crc & 0xFF) == in[data_p + SECTOR_SIZE_840]) matches_256++;
+
+            if (data_p + SECTOR_SIZE_880 >= len) continue;
+            for (int i=SECTOR_SIZE_840; i<SECTOR_SIZE_880; i++) {
+                if (crc > 0xFF) crc = (crc + 1) & 0xFF;
+                crc += in[data_p + i];
+            }
+            if ((crc & 0xFF) == in[data_p + SECTOR_SIZE_880]) matches_512++;
+        }
+
+        return (matches_512 > matches_256) ? SECTOR_SIZE_880 : SECTOR_SIZE_840;
+    }
+
+    Result decode_agat_840_track(BYTES &out, const BYTES & in, const int sectors, const int sector_size)
+    {
+        // A sector is: 95 6A | Volume Track Sector 5A | ... | 6A 95 | <sector_size> bytes | CRC 5A
+        // An 840 Kb disk holds 21 sectors of 256 bytes, an 880 Kb one 11 sectors of 512
         const int ADDRESS_FIELD_LEN = 4;
-        const int DATA_FIELD_LEN = 256;
+        const int DATA_FIELD_LEN = sector_size;
         const int DATA_TAIL_LEN = 2;
 
-        out.resize(21*256);
+        out.resize(sectors * sector_size);
         int track_len = in.size();
         int in_p = 0;
         bool errors = false;
@@ -797,8 +899,8 @@ namespace dsk_tools {
                     uint8_t r_crc = in[in_p++];
                     if (r_crc != crc) errors = true;
 
-                    if (r_s < 21) {
-                        int offset = r_s * 256;
+                    if (r_s < sectors) {
+                        int offset = r_s * sector_size;
                         std::copy(
                             in.begin() + data_p,
                             in.begin() + data_p + DATA_FIELD_LEN,
@@ -939,6 +1041,7 @@ namespace dsk_tools {
     unsigned image_size_by_type(const std::string &type_id, const DiskFormatParams &format)
     {
         if (type_id == "TYPE_AGAT_840") return 2*80*21*256;
+        if (type_id == "TYPE_AGAT_880") return 2*80*11*512;
         if (type_id == "TYPE_AGAT_140") return 1*35*16*256;
         if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0 || type_id.rfind("TYPE_OTHER:", 0)==0)
             return format.heads * format.tracks * format.sectors * format.sector_size;
