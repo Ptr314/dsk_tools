@@ -131,6 +131,9 @@ namespace dsk_tools {
         if (filesystem_id == "FILESYSTEM_PRODOS") {
             return dsk_tools::make_unique<fsProDOS>(image);
         }
+        if (filesystem_id == "FILESYSTEM_ONIX") {
+            return dsk_tools::make_unique<fsOnix>(image);
+        }
         if (filesystem_id == "FILESYSTEM_CPM_DOS" || filesystem_id == "FILESYSTEM_CPM_PRODOS"|| filesystem_id == "FILESYSTEM_CPM_RAW") {
             return dsk_tools::make_unique<fsCPM>(image, filesystem_id, diskdefs);
         }
@@ -297,6 +300,26 @@ namespace dsk_tools {
         return fsProDOS::volume_header_is_valid(block, disk_blocks);
     }
 
+    // An Onix volume keeps its allocation table in the blocks right after the boot sector,
+    // so an image stored in plain sector order carries the signature at a fixed offset
+    static bool is_onix_volume(UTF8_ifstream & file, const unsigned disk_blocks)
+    {
+        BYTES fat_area(ONIX_FAT_BLOCKS * ONIX_BLOCK_SIZE);
+        file.seekg(ONIX_FAT_BLOCK * ONIX_BLOCK_SIZE, std::ios::beg);
+        file.read(reinterpret_cast<char*>(fat_area.data()), fat_area.size());
+        if (!file.good()) return false;
+
+        unsigned root = 0;
+        if (!fsOnix::fat_is_valid(fat_area, disk_blocks, root)) return false;
+
+        BYTES root_data(ONIX_BLOCK_SIZE);
+        file.seekg(root * ONIX_BLOCK_SIZE, std::ios::beg);
+        file.read(reinterpret_cast<char*>(root_data.data()), root_data.size());
+        if (!file.good()) return false;
+
+        return fsOnix::dir_block_is_valid(root_data);
+    }
+
     Result detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only)
     {
         std::string ext = get_file_ext(file_name);
@@ -442,6 +465,9 @@ namespace dsk_tools {
                     // A 140 Kb image written in ProDOS block order
                     filesystem_id = "FILESYSTEM_PRODOS";
                 } else
+                if (type_id == "TYPE_AGAT_840" && is_onix_volume(*file, 860160 / ONIX_BLOCK_SIZE)) {
+                    filesystem_id = "FILESYSTEM_ONIX";
+                } else
                     filesystem_id = "FILESYSTEM_DOS33";
             } else
             if (type_id == "TYPE_AGAT_880" || type_id == "TYPE_OTHER:PRODOS-800") {
@@ -486,6 +512,9 @@ namespace dsk_tools {
             if (buffer[0] == 0x01) {
                 if (buffer[2] == 0x58) {
                     filesystem_id = "FILESYSTEM_SPRITE_OS";
+                } else
+                if (fsOnix::volume_is_valid(buffer, buffer.size() / ONIX_BLOCK_SIZE)) {
+                    filesystem_id = "FILESYSTEM_ONIX";
                 } else {
                     filesystem_id = "FILESYSTEM_DOS33";
                 }
@@ -551,6 +580,9 @@ namespace dsk_tools {
                 } else
                 if (type_id == "TYPE_AGAT_140" && _ms == ms) {
                     filesystem_id = "FILESYSTEM_CPM_DOS";
+                } else
+                if (fsOnix::volume_is_valid(buffer, buffer.size() / ONIX_BLOCK_SIZE)) {
+                    filesystem_id = "FILESYSTEM_ONIX";
                 } else {
                     filesystem_id = "FILESYSTEM_DOS33";
                 }
@@ -603,6 +635,9 @@ namespace dsk_tools {
                 if (res && buffer[0] == 0x01) {
                     if (buffer[2] == 0x58) {
                         filesystem_id = "FILESYSTEM_SPRITE_OS";
+                    } else
+                    if (fsOnix::volume_is_valid(buffer, buffer.size() / ONIX_BLOCK_SIZE)) {
+                        filesystem_id = "FILESYSTEM_ONIX";
                     } else {
                         filesystem_id = "FILESYSTEM_DOS33";
                     }

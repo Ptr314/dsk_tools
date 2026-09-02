@@ -25,6 +25,9 @@ namespace dsk_tools {
                     out += "\r";
                     last_size = out.size();
                 } else
+                if (cm.spaces.find(c) != cm.spaces.end()) {
+                    out += " ";
+                } else
                     if (cm.tab > 0 && c == 0x09) {
                         int line_size = out.size() - last_size;
                         for (int i=0; i< cm.tab - line_size % cm.tab; i++) out += " ";

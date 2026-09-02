@@ -14,6 +14,7 @@
 #include "viewers/viewer_basic_apple.h"
 #include "viewers/viewer_basic_vector.h"
 #include "viewers/viewer_basic_mbasic.h"
+#include "viewers/viewer_basic_bbc.h"
 #include "viewers/viewer_basic_iskra226.h"
 #include "viewers/viewer_pics_agat.h"
 #include "viewers/viewer_pics_vector.h"
@@ -33,6 +34,7 @@ namespace dsk_tools {
         register_viewer<ViewerBASIC_Apple>();
         register_viewer<ViewerBASIC_Vector>();
         register_viewer<ViewerBASIC_MBASIC>();
+        register_viewer<ViewerBASIC_BBC>();
         register_viewer<ViewerBASIC_Iskra226>();
 
         register_viewer<ViewerPicAgat_256x256x1>();

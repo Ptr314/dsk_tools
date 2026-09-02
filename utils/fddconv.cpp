@@ -72,6 +72,7 @@ int main(int argc, char** argv)
                                         "FFF: dos33 (Apple DOS)\n"
                                         "     sos (Sprite OS)\n"
                                         "     prodos (ProDOS / Nippel OS)\n"
+                                        "     onix (Onix OS)\n"
                                         "     cpm, cpm-do, cpm-po (CP/M raw,\n"
                                         "                          DOS sectors,\n"
                                         "                          ProDOS sectors)\n"
@@ -208,6 +209,7 @@ int main(int argc, char** argv)
             if (fs_str == "dos33") filesystem_id = "FILESYSTEM_DOS33";
             if (fs_str == "sos") filesystem_id = "FILESYSTEM_SPRITE_OS";
             if (fs_str == "prodos") filesystem_id = "FILESYSTEM_PRODOS";
+            if (fs_str == "onix") filesystem_id = "FILESYSTEM_ONIX";
             if (fs_str == "cpm") filesystem_id = "FILESYSTEM_CPM_RAW";
             if (fs_str == "cpm-do") filesystem_id = "FILESYSTEM_CPM_DOS";
             if (fs_str == "cpm-po") filesystem_id = "FILESYSTEM_CPM_PRODOS";

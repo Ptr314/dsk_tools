@@ -63,6 +63,9 @@ namespace dsk_tools {
         virtual FSCaps get_caps() = 0;
         virtual FS get_fs() const = 0;
         virtual std::string get_delimiter();
+        // The character set the disks of this filesystem are written in, when that is a
+        // property of the platform rather than of the file. Empty means "ask the user".
+        virtual std::string get_charmap() const {return "";}
         virtual std::vector<std::string> get_save_file_formats() = 0;
         virtual std::vector<std::string> get_add_file_formats() {return {};} ;
         virtual void update_stats() {stats_valid = true;};

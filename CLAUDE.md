@@ -103,6 +103,59 @@ Key points that are not obvious from a single file:
   translation units** (`charmaps.cpp`, `errors.cpp`, `agat_charconv.cpp`, `register_viewers.cpp`).
   Folding them back into a shared file inflates both tools by hundreds of kilobytes.
 
+## Onix OS
+
+Onix (ONYX) is a port of Acorn MOS to the Agat. Its disks are ordinary 840 Kb Agat images
+(`TYPE_AGAT_840`) with a filesystem of their own, and a block is one 256 byte sector numbered
+straight through the disk (`block = track * 21 + sector`).
+
+- Block 0 is the boot sector. **Blocks 1..20 are a 16 bit allocation table**, entry `i` at the
+  absolute offset `0x100 + 2*i`, so it describes 2560 blocks. `entry[0]` is not a chain link but
+  the first block of the root directory. `$FFFE` ends a chain, `$FFFF` is the area the OS image
+  occupies (a single run starting at entry 1) and `0` is a free block.
+- A directory is a chain of blocks holding **12 entries of 21 bytes** each (offsets 0..251, the
+  last 4 bytes unused). A name starting with `$00` ends the entries *of that block*, the chain
+  goes on; `$FF` marks a deleted entry.
+- An entry is `name[10]`, month, day, start block, and three words whose meaning depends on
+  `attributes & $C0`: `$40` a file (load, **length**, exec), `$80` a sequential `*SPOOL`/`OPENOUT`
+  file (**length**, 0, 0), `$C0` a subdirectory. The OS branches on exactly those bits
+  (`LDA attr / AND #$C0 / CMP #$80`) to pick where the length comes from.
+
+**Known limitation.** The table covers 2560 blocks but an 840 Kb disk has 3360. `ONIX1_20.AIM`
+has two files (`LOGO.LETTERS`, `LOGO.SECT`) starting past that, whose table entries would fall
+inside the OS image. `fsOnix::block_chain()` stops at the edge of the table rather than reading
+code as if it were a chain, so such a file reads back truncated to its first block. Whether a
+larger volume keeps a second table somewhere is still open; no sample answers it.
+
+Onix disks carry **two character sets at once**, so `fsOnix::get_charmap()` names the one
+the viewer should start on (`onix`):
+
+- **Documents** (the `WORD`/`TEXTS` folders, `!BOOT`, anything the OS wrote as text) are 8 bit
+  **KOI-8**: Cyrillic in `$C0..$FF`, Latin left as plain ASCII. Measured over the 47 documents
+  of the two samples: 61% of the bytes are in the Cyrillic block, 0.13% are `$80..$BF`
+  formatting markers (`$80` prefixes a word processor command line), the rest is ASCII, and
+  the letter frequency read that way comes out о е а и т н р с в п м л к д — Russian.
+
+  On top of the glyphs they carry the layout codes of the word processor, which is why the
+  `onix` charmap exists next to `koi8_r` rather than reusing it: **`$1A` is one space of
+  justification padding** (21 703 of them across the samples — restoring them reproduces the
+  original 65 column lines exactly), `$1C` and `$1D` bracket an emphasised heading, and `$0B`
+  opens a non indented line. Above all `$1A` is *not* the end of text: `koi8_r` inherits the
+  CP/M convention that it is, and reading a 20 Kb document with that charmap stops after the
+  first screen.
+- **BASIC sources** written under `*RUS` keep their Cyrillic as 7 bit **KOI-7**: the author
+  types `"W monohromnoj grafike"` and the terminal shows «В монохромной графике». Those bytes
+  are also perfectly good Latin, so nothing in the file distinguishes the two and the reader
+  has to switch to КОИ-7 Н2 by hand. Onix itself only resolves it at display time.
+
+Programs are tokenized **BBC BASIC** (`viewer_basic_bbc.cpp`): records of
+`<CR><line hi><line lo><record length>` ending with `<CR><FF>`, tokens `$80..$FF` from the
+standard Acorn BASIC II table (`BBC_tokens` in `bas_tokens.h`, verified against the keyword table
+in the Onix system area). `$8D` is not a keyword but the marker of an encoded line number: the
+three bytes after it carry the target with the top two bits of each half folded into the first
+one and the result flipped with `$54`.
+
+
 ## Agat 840K/880K and AIM
 
 Enough of the recent work touches this that the layout is worth stating. A sector is

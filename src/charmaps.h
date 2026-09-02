@@ -16,6 +16,7 @@ namespace dsk_tools {
         const std::string (*charmap)[256] = nullptr;
         std::set<uint8_t> crlf;
         std::set<uint8_t> ignore;
+        std::set<uint8_t> spaces;      // printed as a single space, e.g. justification padding
         std::set<uint8_t> txt_end;
         int tab = 0;
         bool is_koi7 = false;

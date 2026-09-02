@@ -49,6 +49,7 @@ add_library(${PROJECT_NAME} STATIC
     src/filesystems/fs_dos33.h          src/filesystems/fs_dos33.cpp
     src/filesystems/fs_spriteos.h       src/filesystems/fs_spriteos.cpp
     src/filesystems/fs_prodos.h         src/filesystems/fs_prodos.cpp
+    src/filesystems/fs_onix.h           src/filesystems/fs_onix.cpp
     src/filesystems/fs_cpm.h            src/filesystems/fs_cpm.cpp
     src/filesystems/fs_fil.h            src/filesystems/fs_fil.cpp
     src/filesystems/fs_host.h           src/filesystems/fs_host.cpp
@@ -66,6 +67,7 @@ add_library(${PROJECT_NAME} STATIC
     src/viewers/viewer_basic_apple.h    src/viewers/viewer_basic_apple.cpp
     src/viewers/viewer_basic_vector.h    src/viewers/viewer_basic_vector.cpp
     src/viewers/viewer_basic_mbasic.h   src/viewers/viewer_basic_mbasic.cpp
+    src/viewers/viewer_basic_bbc.h      src/viewers/viewer_basic_bbc.cpp
 
     src/viewers/viewer_pics.h           src/viewers/viewer_pics.cpp
     src/viewers/viewer_pics_agat.h

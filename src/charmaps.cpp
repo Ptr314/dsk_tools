@@ -266,6 +266,20 @@ namespace dsk_tools {
             info.txt_end = {0x1A};
             info.tab = 8;
         } else
+        if (cm_name == "onix") {
+            // Onix documents are KOI-8, but they are laid out by a word processor:
+            // $1A is the padding a justified line was stretched with, $1C and $1D switch
+            // the emphasis of a heading on and off, and $1A is emphatically not an end of
+            // text marker the way CP/M uses it.
+            info.charmap = &koi8_r_charmap;
+            info.crlf = {0x0D};
+            info.spaces = {0x1A};
+            info.ignore = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                           0x0A, 0x0B, 0x0C, 0x0E, 0x0F,
+                           0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,
+                           0x1B, 0x1C, 0x1D, 0x1E, 0x1F};
+            info.tab = 8;
+        } else
         if (cm_name == "koi8_r") {
             info.charmap = &koi8_r_charmap;
             info.crlf = {0x0D};
