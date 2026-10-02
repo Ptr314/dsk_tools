@@ -86,6 +86,26 @@ namespace dsk_tools {
         Result read_directory(uint32_t cluster, BYTES & out) const;
         static std::string make_file_name(const FAT_DIR_ENTRY & de);
 
+        // Writing
+        unsigned cluster_bytes() const;
+        unsigned eoc_value() const;
+        bool write_fat_entry(unsigned cluster, unsigned value);
+        unsigned count_free_clusters() const;
+        bool allocate_clusters(unsigned count, std::vector<uint32_t> & out);
+        bool link_chain(const std::vector<uint32_t> & chain);
+        bool free_chain(uint32_t first);
+        bool write_cluster(uint32_t cluster, const uint8_t * data, size_t size);
+        std::vector<FAT_DIR_ENTRY *> dir_slots(uint32_t dir_cluster) const;
+        FAT_DIR_ENTRY * find_live_entry(uint32_t dir_cluster, const uint8_t name[11], unsigned * index = nullptr) const;
+        Result prepare_free_slot(uint32_t dir_cluster, unsigned & index, bool & need_extend) const;
+        Result take_free_slot(uint32_t dir_cluster, FAT_DIR_ENTRY *& slot, unsigned & index);
+        void mark_lfn_deleted(uint32_t dir_cluster, unsigned index);
+        FAT_DIR_ENTRY * locate(const UniversalFile & uf) const;
+        UniversalFile make_universal_file(const FAT_DIR_ENTRY & de, uint32_t dir_cluster, unsigned index, const std::string & name) const;
+        static Result make_short_name(const UniversalFile & uf, uint8_t out[11]);
+        static Result make_short_name(const std::string & name, uint8_t out[11]);
+        static void fat_now(uint16_t & date, uint16_t & time);
+
     public:
         explicit fsFAT(diskImage * image);
         Result open() override;
@@ -101,5 +121,15 @@ namespace dsk_tools {
         std::string information() override;
         bool is_root() override;
         SectorTypeMap get_sector_type_map() override;
+        void update_stats() override;
+
+        Result put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace) override;
+        Result delete_file(const UniversalFile & uf) override;
+        Result restore_file(const UniversalFile & uf) override;
+        Result rename_file(const UniversalFile & fd, const std::string & new_name) override;
+        Result mkdir(const std::string & dir_name, UniversalFile & new_dir) override;
+        Result mkdir(const UniversalFile & uf, UniversalFile & new_dir) override;
+        std::vector<ParameterDescription> file_get_metadata(const UniversalFile & fd) override;
+        Result file_set_metadata(const UniversalFile & fd, const std::map<std::string, std::string> & metadata) override;
     };
 }
