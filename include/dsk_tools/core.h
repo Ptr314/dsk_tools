@@ -9,10 +9,12 @@
 
 #include <string>
 
-#include "definitions.h"
-#include "utils.h"
-#include "bit_enums.h"
-#include "host_helpers.h"
+// Named from this directory: MSVC looks up a quoted include in the directories of every
+// including file too, and a program with a utils.h of its own would get that one
+#include "../../src/definitions.h"
+#include "../../src/utils.h"
+#include "../../src/bit_enums.h"
+#include "../../src/host_helpers.h"
 
 namespace dsk_tools {
 
