@@ -24,6 +24,12 @@ cmake --build build
 Targets: `dsk_tools` (the library), `fddconv` and `aim2hfe` (the tools, in `utils/`).
 `-DENABLE_DSK_TOOLS=OFF` builds the library alone.
 
+`dsk_tools` stands on `dsk_tools_core` (`include/dsk_tools/core.h`): definitions, `utils`,
+`errors`, `host_helpers` and the track encodings of `src/disk_codecs.cpp` (4-and-4, GCR 6-and-2,
+Agat MFM, whole Agat 140/840 track images). eCat3 links the core alone, so nothing in those
+files may reach a loader, an image, a file system or a viewer; `dsk_tools.h` includes `core.h`,
+so the full library's API is unchanged.
+
 Release archives are produced by the scripts in `.build/`: `build-win-mingw.bat` (x86_64),
 `build-win-i386.bat`, `build-win-msvc.bat`, `build-linux.sh`, `build-macos.sh`. Each one
 configures a Release build, builds both tools, copies them to `.build/release/<name>/` and zips
@@ -170,7 +176,7 @@ with 21 sectors per track, 160 tracks, and the CRC an 8 bit sum with the carry a
 same layout with **11 sectors of 512 bytes** per track and hold a ProDOS volume. Nothing on
 the disk states which of the two it is, so it is deduced from the data: the checksum after a
 data field only adds up for the length the disk was formatted with. `detect_agat_sector_size()`
-(`src/dsk_tools.cpp`) does that for a decoded MFM track and `LoaderAIM::detect_sector_size()`
+(`src/disk_codecs.cpp`) does that for a decoded MFM track and `LoaderAIM::detect_sector_size()`
 for an AIM dump; `decode_agat_840_track()` takes the geometry as parameters. An explicitly
 requested `type_id` always wins over the detection.
 

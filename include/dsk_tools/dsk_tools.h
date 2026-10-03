@@ -8,10 +8,7 @@
 #include <string>
 #include <sstream>
 
-#include "definitions.h"
-#include "utils.h"
-#include "bit_enums.h"
-#include "host_helpers.h"
+#include "dsk_tools/core.h"
 
 #include "disk_image.h"
 #include "image_agat140.h"
@@ -64,25 +61,11 @@ namespace dsk_tools {
     Result detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only = false);
     std::unique_ptr<diskImage> prepare_image(const std::string &file_name, const std::string &format_id, const std::string &type_id, const DiskDefs & diskdefs);
     std::unique_ptr<fileSystem> prepare_filesystem(diskImage * image, const std::string &filesystem_id, const DiskDefs & diskdefs);
-    BYTES code44(const BYTES & buffer);
-    BYTES decode44(const BYTES & buffer);
-    void encode_gcr62(const uint8_t data_in[], uint8_t * data_out);
-    bool decode_gcr62(const uint8_t data_in[], uint8_t * data_out);
-    uint16_t encode_agat_MFM_byte(uint8_t data, uint8_t &last_byte);
-    uint8_t decode_agat_MFM_byte(uint8_t data);
-    void encode_agat_mfm_array(BYTES &out, uint8_t data, uint16_t count, uint8_t & last_byte);
-    uint8_t encode_agat_mfm_data(BYTES &out, uint8_t * data, uint16_t count, uint8_t & last_byte);
-    void decode_agat_mfm_data(BYTES &out, const BYTES & in);
-    int detect_agat_sector_size(const BYTES & in);
-    Result decode_agat_840_track(BYTES &out, const BYTES & in, const int sectors = 21, const int sector_size = 256);
-    Result decode_agat_840_image(BYTES &out, const BYTES & in);
     std::string agat_vtoc_info(const Agat_VTOC & VTOC);
     std::string agat_sos_info(const SPRITE_OS_DPB_DISK & DPB);
     std::pair<std::string, std::string> suggest_file_type(const std::string file_name, const BYTES & data);
     std::string agat_vr_info(const BYTES & data, bool comment_only = false);
 
-    Result load_agat140_track(int track, BYTES & buffer, const BYTES & in, int track_len);
-    Result decode_agat_140_image(BYTES &out, const BYTES & in, const int track_len);
 
     void register_all_viewers();
     std::unique_ptr<Loader> create_loader(const std::string& file_name, const std::string& format_id, const std::string& type_id);

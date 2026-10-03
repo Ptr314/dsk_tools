@@ -10,17 +10,22 @@ if(APPLE)
     enable_language(OBJCXX)
 endif()
 
-add_library(${PROJECT_NAME} STATIC
-    include/dsk_tools/dsk_tools.h       src/dsk_tools.cpp
+# The part that needs no loaders, images, file systems or viewers (dsk_tools/core.h):
+# a program that only wants the helpers or the track decoders links this alone
+add_library(dsk_tools_core STATIC
+    include/dsk_tools/core.h            src/disk_codecs.cpp
     src/definitions.h
-    src/charmaps.h                      src/charmaps.cpp
-    src/bas_tokens.h
     src/utils.h                         src/utils.cpp
                                         src/errors.cpp
-                                        src/agat_charconv.cpp
     src/bit_enums.h
-
     src/host_helpers.h                  src/host_helpers.cpp
+)
+
+add_library(${PROJECT_NAME} STATIC
+    include/dsk_tools/dsk_tools.h       src/dsk_tools.cpp
+    src/charmaps.h                      src/charmaps.cpp
+    src/bas_tokens.h
+                                        src/agat_charconv.cpp
 
     src/loaders/loader.h                src/loaders/loader.cpp
     src/loaders/loader_raw.h            src/loaders/loader_raw.cpp
@@ -107,20 +112,28 @@ if(APPLE)
 endif()
 
 if(WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE shell32)
+    # host_helpers removes folders with SHFileOperationW
+    target_link_libraries(dsk_tools_core PRIVATE shell32)
 endif()
+
+target_link_libraries(${PROJECT_NAME} PUBLIC dsk_tools_core)
 
 # Put every function and every variable into its own section, so that a linker
 # with --gc-sections / -dead_strip / /OPT:REF can drop the unused ones
-if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:/Gy /Gw>)
-else()
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:-ffunction-sections -fdata-sections>)
-endif()
+foreach(target dsk_tools_core ${PROJECT_NAME})
+    if(MSVC)
+        target_compile_options(${target} PRIVATE $<$<CONFIG:Release>:/Gy /Gw>)
+    else()
+        target_compile_options(${target} PRIVATE $<$<CONFIG:Release>:-ffunction-sections -fdata-sections>)
+    endif()
+endforeach()
 
-target_include_directories(${PROJECT_NAME} PUBLIC
+target_include_directories(dsk_tools_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src/
+)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/loaders/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/images/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/writers/
