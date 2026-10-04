@@ -42,6 +42,11 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         if (fsize == image_size + 256)
             // Image with a 256-byte header?
             file.seekg (256, std::ios::beg);
+        else
+        if (type_id.rfind("TYPE_RT11:", 0) == 0 && fsize != image_size && fsize % 512 == 256)
+            // An RT-11 volume of any length behind a 256-byte header (.rtd).
+            // A DX image is 256256 bytes, which leaves the same remainder by itself.
+            file.seekg (256, std::ios::beg);
 
         buffer.assign(image_size, 0xE5);
         file.read (reinterpret_cast<char*>(buffer.data()), image_size);

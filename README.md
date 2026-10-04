@@ -48,12 +48,17 @@ DDD:    a140 (Apple/Агат 140k)
         orion (Орион-128/ПК8000 800 Кб CP/M)
         vector (Вектор-06Ц 800+ Кб CP/M)
         pc360, pc720, pc1200, pc1440 (IBM PC 360-1.44)
+        rt11dx (ДВК, DX 8" 250 Кб RT-11)
+        mx220, mx440 (ДВК, MX 220 / 440 Кб RT-11)
+        my800 (ДВК, MY 800 Кб RT-11)
+        mz400, mz800 (УКНЦ/БК, MZ 400 / 800 Кб RT-11)
                 
 FFF:    dos33 (Apple/Агат DOS)
         sos (Sprite OS)
         prodos (ProDOS / ОС Nippel)
         cpm, cpm-do, cpm-po (CP/M raw, DOS sectors, ProDOS sectors)
         fat (MS-DOS FAT)
+        rt11 (DEC RT-11)
 ```
 
 Формат выходного файла выбирается в соответствии с расширением. Доступны следующие варианты:

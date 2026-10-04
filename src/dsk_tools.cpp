@@ -36,7 +36,7 @@ namespace dsk_tools {
         if (type_id == "TYPE_AGAT_840")   return dsk_tools::make_unique<imageAgat840>(std::move(loader));
         if (type_id == "TYPE_AGAT_880")   return dsk_tools::make_unique<imageAgat880>(std::move(loader));
         if (type_id == "TYPE_FIL")        return dsk_tools::make_unique<imageFIL>(std::move(loader));
-        if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0 || type_id.rfind("TYPE_OTHER:", 0)==0) {
+        if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0 || type_id.rfind("TYPE_OTHER:", 0)==0 || type_id.rfind("TYPE_RT11:", 0)==0) {
             const std::string diskdef_id = to_lower(type_id.substr(type_id.find(':') + 1));
             const auto it = diskdefs.find(diskdef_id);
             if (it == diskdefs.end()) return nullptr;
@@ -111,6 +111,9 @@ namespace dsk_tools {
         if (filesystem_id == "FILESYSTEM_ISKRA-226") {
             return dsk_tools::make_unique<fsIskra226>(image);
         }
+        if (filesystem_id == "FILESYSTEM_RT11") {
+            return dsk_tools::make_unique<fsRT11>(image);
+        }
         return nullptr;
     }
 
@@ -144,6 +147,35 @@ namespace dsk_tools {
         if (!file.good()) return false;
 
         return fsOnix::dir_block_is_valid(root_data);
+    }
+
+    // An RT-11 volume has its home block in block 1 and the first directory segment
+    // where the home block says. A DX image keeps its sectors in physical order, so a
+    // block is gathered from four interleaved sectors; any other image is linear.
+    static bool is_rt11_volume(UTF8_ifstream & file, const unsigned disk_blocks, const bool dx)
+    {
+        auto read_block = [&](unsigned block, BYTES & out) -> bool {
+            out.assign(RT11_BLOCK_SIZE, 0);
+            if (dx) {
+                const unsigned per_block = RT11_BLOCK_SIZE / RT11_DX_SECTOR_SIZE;
+                for (unsigned i = 0; i < per_block; i++) {
+                    unsigned track, sector;
+                    fsRT11::dx_sector(block * per_block + i, track, sector);
+                    file.seekg((track * RT11_DX_SECTORS + sector) * RT11_DX_SECTOR_SIZE, std::ios::beg);
+                    file.read(reinterpret_cast<char*>(&out[i * RT11_DX_SECTOR_SIZE]), RT11_DX_SECTOR_SIZE);
+                }
+            } else {
+                file.seekg(block * RT11_BLOCK_SIZE, std::ios::beg);
+                file.read(reinterpret_cast<char*>(out.data()), out.size());
+            }
+            return file.good();
+        };
+
+        BYTES home, segment;
+        if (!read_block(RT11_HOME_BLOCK, home)) return false;
+        const unsigned dir_block = fsRT11::directory_block(home, disk_blocks);
+        if (!read_block(dir_block, segment)) return false;
+        return fsRT11::segment_is_valid(segment, dir_block, disk_blocks);
     }
 
     Result detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only)
@@ -215,7 +247,7 @@ namespace dsk_tools {
             return Result::ok();
         }
 
-        if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd" || ext == ".fdd" || ext == ".img" || ext == ".ima") {
+        if (ext == ".dsk" || ext == ".do" || ext == ".po" || ext == ".cpm" || ext == ".gmd" || ext == ".fdd" || ext == ".img" || ext == ".ima" || ext == ".bkd" || ext == ".rtd") {
             format_id = "FILE_RAW_MSB";
 
             if (format_only) {
@@ -225,6 +257,19 @@ namespace dsk_tools {
             }
 
             // type_id
+            if (ext == ".rtd") {
+                // RT-11 disks of the UKNC and BK emulators: a run of 512 byte blocks, as many
+                // as the volume holds, sometimes behind a 256 byte header
+                const unsigned header = (fsize % RT11_BLOCK_SIZE == 256) ? 256 : 0;
+                const unsigned blocks = (fsize - header) / RT11_BLOCK_SIZE;
+                if (blocks <= 800)
+                    type_id = "TYPE_RT11:MZ-400";
+                else
+                if (blocks <= 1600)
+                    type_id = "TYPE_RT11:MZ-800";
+                else
+                    return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid file size for DSK format"));
+            } else
             if (fsize == 143360 || fsize == 143360+128) {
                 type_id = "TYPE_AGAT_140";
             } else
@@ -242,8 +287,24 @@ namespace dsk_tools {
             // if (fsize == 512*9*40*2) {
             //     type_id = "TYPE_CPM:IRISHA-360-INT";
             // } else
+            if (fsize == 1600*RT11_BLOCK_SIZE && is_rt11_volume(*file, 1600, false)) {
+                // DVK MY, UKNC and BK MZ disks share the geometry, so either name will do;
+                // the MY/MZ choice only matters to the user picking a type by hand.
+                // BK disks of ANDOS or MKDOS are the same size and are left to manual choice.
+                type_id = (ext == ".bkd") ? "TYPE_RT11:MZ-800" : "TYPE_RT11:MY-800";
+            } else
             if (fsize == 128*26*77) {
-                type_id = "TYPE_CPM:GMD-7012";
+                // The 8" GMD-7012 of the Irisha and the DVK DX are the same disk
+                type_id = is_rt11_volume(*file, RT11_DX_BLOCKS, true) ? "TYPE_RT11:DX" : "TYPE_CPM:GMD-7012";
+            } else
+            if (fsize == 256*11*40*2) {
+                type_id = "TYPE_RT11:MX-220";
+            } else
+            if (fsize == 256*11*80*2) {
+                type_id = "TYPE_RT11:MX-440";
+            } else
+            if (fsize == 512*10*80) {
+                type_id = "TYPE_RT11:MZ-400";
             } else
             if (fsize == 512*9*40*2) {
                 type_id = "TYPE_FAT:PC-360";
@@ -307,6 +368,9 @@ namespace dsk_tools {
             } else
             if (type_id.rfind("TYPE_FAT:", 0)==0) {
                 filesystem_id = "FILESYSTEM_FAT";
+            } else
+            if (type_id.rfind("TYPE_RT11:", 0)==0) {
+                filesystem_id = "FILESYSTEM_RT11";
             }
         } else
         if (ext == ".aim") {
@@ -679,7 +743,7 @@ namespace dsk_tools {
         if (type_id == "TYPE_AGAT_840") return 2*80*21*256;
         if (type_id == "TYPE_AGAT_880") return 2*80*11*512;
         if (type_id == "TYPE_AGAT_140") return 1*35*16*256;
-        if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0 || type_id.rfind("TYPE_OTHER:", 0)==0)
+        if (type_id.rfind("TYPE_CPM:", 0)==0 || type_id.rfind("TYPE_FAT:", 0)==0 || type_id.rfind("TYPE_OTHER:", 0)==0 || type_id.rfind("TYPE_RT11:", 0)==0)
             return format.heads * format.tracks * format.sectors * format.sector_size;
         return 0;
     }

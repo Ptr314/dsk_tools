@@ -79,7 +79,7 @@ namespace dsk_tools {
     {
         return    FSCaps::Protect | FSCaps::Dirs   | FSCaps::Export | FSCaps::Types
                 | FSCaps::Delete  | FSCaps::Add    | FSCaps::Rename | FSCaps::MkDir
-                | FSCaps::Metadata | FSCaps::Restore;
+                | FSCaps::Metadata | FSCaps::Restore | FSCaps::Date;
     }
 
     uint8_t * fsFAT::read_lba(unsigned lba) const
@@ -716,6 +716,17 @@ namespace dsk_tools {
         f.type_label = label;
 
         f.original_name.assign(de.name, de.name + 11);
+
+        // Last write: date yyyyyyym mmmddddd from 1980, time hhhhhmmm mmmsssss
+        if (de.writeDate != 0) {
+            f.date.year   = static_cast<uint16_t>(1980 + (de.writeDate >> 9));
+            f.date.month  = static_cast<uint8_t>((de.writeDate >> 5) & 0x0F);
+            f.date.day    = static_cast<uint8_t>(de.writeDate & 0x1F);
+            f.date.hour   = static_cast<int8_t>(de.writeTime >> 11);
+            f.date.minute = static_cast<int8_t>((de.writeTime >> 5) & 0x3F);
+            if (f.date.hour > 23 || f.date.minute > 59) f.date.hour = f.date.minute = -1;
+            if (!f.date.valid()) f.date = FileDate();
+        }
 
         f.metadata.resize(sizeof(FAT_DIR_ENTRY));
         std::memcpy(f.metadata.data(), &de, sizeof(FAT_DIR_ENTRY));

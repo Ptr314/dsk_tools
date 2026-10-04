@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `dsk_tools` is a static C++11 library for reading, writing and converting floppy disk images of
 retro computers (Agat, Apple II, a range of CP/M machines, PK8000, MS-DOS and Atari ST FAT
-diskettes), plus two command line tools built on it. It has no Qt dependency but is written to be
+diskettes, RT-11 disks of the DVK, BK and UKNC), plus two command line tools built on it. It has no Qt dependency but is written to be
 consumed by one: **DISK Commander** (https://github.com/Ptr314/dsk_commander) uses this repo as a
 submodule under `src/libs/dsk_tools`, so a public API change here ripples into the GUI.
 
@@ -192,3 +192,28 @@ going through sectors. Its algorithm follows Oleksandr Kapitanenko's `agath-aim-
 byte-identical to it on every image that script can convert. Two deliberate extensions are
 documented in `README.md` and `tools/aim-anomalies.md`: gap cells left unread as $00 are counted
 as gap and restored to $AA, and the `$81` DESYNC variant is recognised.
+
+## RT-11
+
+DEC RT-11 disks of the DVK, BK-0010/0011 and UKNC (`fs_rt11.cpp`, types `TYPE_RT11:*`). The
+volume is a flat run of 512 byte blocks: block 1 is the home block (directory start at `0724`,
+volume ID, owner, `DECRT11A`), the directory is a chain of two block segments from block 6, and
+every file is one contiguous run whose start is the segment's first data block plus the lengths
+of the entries before it. Entries are 7 words (status, 3 RAD50 words of name, length, job/channel,
+date) plus the volume's extra bytes; the date keeps two "age" bits on top for years past 2003.
+
+- **DX images are in physical sector order** (SIMH, 77 x 26 x 128). RT-11 skips track 0 and
+  interleaves the rest itself: 2:1 within a track and a skew of 6 from track to track, so a
+  `skewtab` cannot express it and `fsRT11::dx_sector()` maps a logical sector instead. 256256
+  bytes is also the Irisha GMD-7012, so detection reads the directory through that mapping
+  before picking `TYPE_RT11:DX` over CP/M.
+- MX, MY and MZ images are linear. MY (DVK) and MZ (UKNC, BK) 800 Kb disks are byte for byte the
+  same geometry; detection says MY, `.bkd` says MZ.
+- `.rtd` images may carry a 256 byte header and be any length; `LoaderRAW` skips the header
+  for RT-11 types and pads short files. A directory may describe a larger volume than the
+  image holds (a hard disk partition cut down to a floppy), so free space and allocation are
+  clamped to the blocks the image has.
+- Writing works on a copy of the directory chain and writes it back only once the file has its
+  place. Delete only flips the status to E.MPTY and keeps the name, which is what makes restore
+  possible; empty areas are joined just before an allocation. A full segment is split into the
+  next unused one (`highest + 1`).

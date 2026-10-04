@@ -141,3 +141,52 @@ diskdef prodos-800
   tracks 160
   sectrk 10
 end
+
+# RT-11 disks of the DVK, BK and UKNC. RT-11 sees a volume as a run of 512 byte blocks;
+# the images keep the sectors in order, both sides of a cylinder in turn.
+# DX (RX01, 8"): 77 tracks of 26 sectors of 128 bytes in physical order. The RT-11
+# interleave and the unused track 0 are applied by the filesystem itself.
+diskdef dx
+  seclen 128
+  heads 1
+  tracks 77
+  sectrk 26
+end
+
+# MX (DVK, 5.25"), 40 or 80 tracks of 11 sectors of 256 bytes
+diskdef mx-220
+  seclen 256
+  heads 2
+  tracks 40
+  sectrk 11
+end
+
+diskdef mx-440
+  seclen 256
+  heads 2
+  tracks 80
+  sectrk 11
+end
+
+# MY (DVK KMD controller), 80 tracks of 10 sectors of 512 bytes on both sides
+diskdef my-800
+  seclen 512
+  heads 2
+  tracks 80
+  sectrk 10
+end
+
+# MZ (UKNC and BK floppy controller), the MFM disk of the MY with one or two sides
+diskdef mz-400
+  seclen 512
+  heads 1
+  tracks 80
+  sectrk 10
+end
+
+diskdef mz-800
+  seclen 512
+  heads 2
+  tracks 80
+  sectrk 10
+end

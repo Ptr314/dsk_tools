@@ -15,13 +15,27 @@
 
 namespace dsk_tools {
 
+    namespace {
+        // yyyyy mmmmm dddddd, every field in BCD, the year counted from 1980
+        FileDate sprite_date(uint16_t date)
+        {
+            FileDate result;
+            if (date == 0) return result;
+            result.year  = static_cast<uint16_t>(1980 + fromBCD(static_cast<uint8_t>(date >> 11)));
+            result.month = static_cast<uint8_t>(fromBCD(static_cast<uint8_t>((date >> 6) & 0x1F)));
+            result.day   = static_cast<uint8_t>(fromBCD(static_cast<uint8_t>(date & 0x3F)));
+            if (!result.valid()) result = FileDate();
+            return result;
+        }
+    }
+
     fsSpriteOS::fsSpriteOS(diskImage * image):
         fileSystem(image)
     {}
 
     FSCaps fsSpriteOS::get_caps()
     {
-        return FSCaps::Protect | FSCaps::Dirs | FSCaps::Export;
+        return FSCaps::Protect | FSCaps::Dirs | FSCaps::Export | FSCaps::Date;
     }
 
     Result fsSpriteOS::open()
@@ -207,6 +221,7 @@ namespace dsk_tools {
                 file.size = dir_entry->FILELEN[0] + (dir_entry->FILELEN[1] << 8) + (dir_entry->FILELEN[2] << 16);
                 file.is_dir = (dir_entry->STATUS & 0x01) != 0;
                 file.is_deleted = is_deleted;
+                file.date = sprite_date(dir_entry->DATE);
 
                 file.type_preferred = PreferredType::Binary;
                 std::set<std::string> txts = {".txt", ".doc", ".pas", ".cmd", ".def", ".hlp", ".gid", ".asm"};

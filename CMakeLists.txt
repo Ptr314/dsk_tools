@@ -59,6 +59,7 @@ add_library(${PROJECT_NAME} STATIC
     src/filesystems/fs_fil.h            src/filesystems/fs_fil.cpp
     src/filesystems/fs_host.h           src/filesystems/fs_host.cpp
     src/filesystems/fs_fat.h            src/filesystems/fs_fat.cpp
+    src/filesystems/fs_rt11.h           src/filesystems/fs_rt11.cpp
 
     src/viewers/viewer.h
     src/viewers/viewer_selectors.h

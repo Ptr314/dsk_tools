@@ -45,13 +45,25 @@ namespace dsk_tools {
         Metadata    = 1 << 8,       // Editing file metadata
         Restore     = 1 << 9,       // Restore deleted files
         Export      = 1 << 10,      // Export is enabled
-        All         = Dirs | Protect | Types | ExAttr | Delete | Add | Rename | MkDir | Metadata | Restore | Export
+        Date        = 1 << 11,      // Files have dates
+        All         = Dirs | Protect | Types | ExAttr | Delete | Add | Rename | MkDir | Metadata | Restore | Export | Date
     };
 
     ENABLE_ENUM_FLAG_OPERATORS(FSCaps);
 
-    enum class FS {None, Host, DOS33, Sprite, CPM, FAT, Iskra226, ProDOS, Onix};
+    enum class FS {None, Host, DOS33, Sprite, CPM, FAT, Iskra226, ProDOS, Onix, RT11};
     enum class PreferredType {Binary, Text, AgatBASIC, AppleBASIC, MBASIC, VectorBASIC, AgatBFT, AgatBMP, BBCBasic};
+
+    // A file date as the filesystem keeps it; year 0 means no date, hour -1 means no time
+    struct FileDate {
+        uint16_t                year = 0;
+        uint8_t                 month = 0;
+        uint8_t                 day = 0;
+        int8_t                  hour = -1;
+        int8_t                  minute = -1;
+
+        bool valid() const {return year != 0 && month >= 1 && month <= 12 && day >= 1 && day <= 31;}
+    };
 
     struct UniversalFile {
         FS                      fs;             // Original filesystem type
@@ -63,6 +75,7 @@ namespace dsk_tools {
         bool                    is_protected;
         bool                    is_deleted;
         PreferredType           type_preferred;
+        FileDate                date;           // Filled when the filesystem reports FSCaps::Date
 
         // FS-specific data
         std::vector<uint8_t>    original_name;

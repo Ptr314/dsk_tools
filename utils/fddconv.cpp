@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <cstdio>
 
 #include "cxxopts/cxxopts.hpp"
 #include "bail.hpp"
@@ -69,6 +70,11 @@ int main(int argc, char** argv)
                                         "     vector (Vector-06C 800+k CP/M)\n"
                                         "     pc360, pc720, pc1200, pc1440\n"
                                         "                   (IBM PC 360-1.44 floppies)\n"
+                                        "     rt11dx (DVK DX, RX01 8\" 250k RT-11)\n"
+                                        "     mx220, mx440 (DVK MX 220k / 440k RT-11)\n"
+                                        "     my800 (DVK MY 800k RT-11)\n"
+                                        "     mz400, mz800 (UKNC/BK MZ 400k / 800k\n"
+                                        "                   RT-11)\n"
                                         "FFF: dos33 (Apple DOS)\n"
                                         "     sos (Sprite OS)\n"
                                         "     prodos (ProDOS / Nippel OS)\n"
@@ -76,7 +82,8 @@ int main(int argc, char** argv)
                                         "     cpm, cpm-do, cpm-po (CP/M raw,\n"
                                         "                          DOS sectors,\n"
                                         "                          ProDOS sectors)\n"
-                                        "     fat (MS-DOS FAT)",
+                                        "     fat (MS-DOS FAT)\n"
+                                        "     rt11 (DEC RT-11)",
                                         cxxopts::value<std::string>())
             ("h,help", "Help");
 
@@ -199,12 +206,19 @@ int main(int argc, char** argv)
             if (type_str == "pc720") type_id = "TYPE_FAT:PC-720";
             if (type_str == "pc1200") type_id = "TYPE_FAT:PC-1200";
             if (type_str == "pc1440") type_id = "TYPE_FAT:PC-1440";
+            if (type_str == "rt11dx") type_id = "TYPE_RT11:DX";
+            if (type_str == "mx220") type_id = "TYPE_RT11:MX-220";
+            if (type_str == "mx440") type_id = "TYPE_RT11:MX-440";
+            if (type_str == "my800") type_id = "TYPE_RT11:MY-800";
+            if (type_str == "mz400") type_id = "TYPE_RT11:MZ-400";
+            if (type_str == "mz800") type_id = "TYPE_RT11:MZ-800";
 
             if (type_id.empty()) return bail("Incorrect disk format");
 
             if (type_id == "TYPE_OTHER:PRODOS-800") fs_str = "prodos";
             if (type_id.rfind("TYPE_CPM:", 0) == 0) fs_str = "cpm";
             if (type_id.rfind("TYPE_FAT:", 0) == 0) fs_str = "fat";
+            if (type_id.rfind("TYPE_RT11:", 0) == 0) fs_str = "rt11";
 
             if (fs_str == "dos33") filesystem_id = "FILESYSTEM_DOS33";
             if (fs_str == "sos") filesystem_id = "FILESYSTEM_SPRITE_OS";
@@ -214,6 +228,7 @@ int main(int argc, char** argv)
             if (fs_str == "cpm-do") filesystem_id = "FILESYSTEM_CPM_DOS";
             if (fs_str == "cpm-po") filesystem_id = "FILESYSTEM_CPM_PRODOS";
             if (fs_str == "fat") filesystem_id = "FILESYSTEM_FAT";
+            if (fs_str == "rt11") filesystem_id = "FILESYSTEM_RT11";
 
             if (filesystem_id.empty()) return bail("Incorrect type of filesystem");
             if (verbose) {
@@ -255,7 +270,13 @@ int main(int argc, char** argv)
             return bail("Can't list directory : %s : %s", decode_error(dir_res).c_str(), dir_res.message.c_str());
         }
         for (const auto& f : files) {
-            std::cout << f.type_label << "\t" << f.size << "\t" << f.name << std::endl;
+            std::cout << f.type_label << "\t" << f.size << "\t" << f.name;
+            if (f.date.valid()) {
+                char date[16];
+                std::snprintf(date, sizeof(date), "%02u.%02u.%04u", f.date.day, f.date.month, f.date.year);
+                std::cout << "\t" << date;
+            }
+            std::cout << std::endl;
         }
         if (verbose) {
             std::cout << "<<<<<<<<--------------------------" << std::endl;

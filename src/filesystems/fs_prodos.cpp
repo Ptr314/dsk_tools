@@ -15,6 +15,25 @@ namespace dsk_tools {
 
     namespace {
 
+        // Date yyyyyyym mmmddddd, time 000hhhhh 00mmmmmm; see fsProDOS::date_time()
+        FileDate prodos_date(uint16_t date, uint16_t time)
+        {
+            FileDate result;
+            if (date == 0) return result;
+            const unsigned year = (date >> 9) & 0x7F;
+            result.year  = static_cast<uint16_t>((year < 40) ? (2000 + year) : (1900 + year));
+            result.month = static_cast<uint8_t>((date >> 5) & 0x0F);
+            result.day   = static_cast<uint8_t>(date & 0x1F);
+            const unsigned hour   = (time >> 8) & 0x1F;
+            const unsigned minute = time & 0x3F;
+            if (hour < 24 && minute < 60) {
+                result.hour   = static_cast<int8_t>(hour);
+                result.minute = static_cast<int8_t>(minute);
+            }
+            if (!result.valid()) result = FileDate();
+            return result;
+        }
+
         uint16_t read_word(const uint8_t * p)
         {
             return static_cast<uint16_t>(p[0]) | (static_cast<uint16_t>(p[1]) << 8);
@@ -39,7 +58,7 @@ namespace dsk_tools {
 
     FSCaps fsProDOS::get_caps()
     {
-        return FSCaps::Dirs | FSCaps::Types | FSCaps::Protect | FSCaps::Export;
+        return FSCaps::Dirs | FSCaps::Types | FSCaps::Protect | FSCaps::Export | FSCaps::Date;
     }
 
     std::string fsProDOS::get_delimiter()
@@ -326,6 +345,11 @@ namespace dsk_tools {
                       | (static_cast<uint32_t>(entry->eof[2]) << 16));
 
             f.type_label = f.is_dir ? "DIR" : type_label(entry->file_type);
+
+            // The modification date, or the creation date when the file was never modified
+            f.date = entry->last_mod_date != 0
+                   ? prodos_date(entry->last_mod_date, entry->last_mod_time)
+                   : prodos_date(entry->creation_date, entry->creation_time);
 
             if (entry->file_type == PRODOS_TYPE_TEXT)
                 f.type_preferred = PreferredType::Text;
