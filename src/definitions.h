@@ -273,6 +273,28 @@ namespace dsk_tools {
     #define S950_HD_FLOPPYMODE              0x0D
     #define DISABLE_FLOPPYMODE              0xFE
 
+    // How the sectors of a disk are laid down on a whole track, for the formats that
+    // keep the bit cells (HFE). Set by the "layout" of a diskdef; the Agat disks keep
+    // their own encoders and stay None
+    enum class TrackLayout {
+        None,
+        IbmMfm,         // IBM System/34 MFM: WD1793/К1818ВГ93, PC, Atari ST, К1801ВП1-128
+        IbmFm,          // IBM 3740 FM: 8" single density (RX01, DVK DX)
+        DvkMx           // DVK MX: 11 sectors of 256 bytes without sector IDs
+    };
+
+    // The gaps of an IBM track as a disk type formats it (diskdefs "gap4a",
+    // "gap1", "gap2", "gap3", "indexmark"); -1 takes the IBM value for the
+    // encoding and the sector size. Without the index mark there is no gap 4a
+    // either, the track starts with gap 1
+    struct TrackGaps {
+        int  gap4a      = -1;
+        int  gap1       = -1;
+        int  gap2       = -1;
+        int  gap3       = -1;
+        bool index_mark = true;
+    };
+
     struct DiskFormatParams {
         unsigned heads;
         unsigned tracks;
@@ -286,11 +308,13 @@ namespace dsk_tools {
         bool sides_interleaved;
         std::vector<unsigned> sector_translation;
         unsigned sector_base;
+        TrackLayout layout;
+        TrackGaps gaps;
 
         DiskFormatParams()
             : heads(0), tracks(0), sectors(0), sector_size(0), expected_size(0)
             , bitrate(0), rpm(0), track_encoding(0), floppyinterfacemode(0)
-            , sides_interleaved(true), sector_base(1)
+            , sides_interleaved(true), sector_base(1), layout(TrackLayout::None)
         {}
 
         DiskFormatParams(unsigned heads, unsigned tracks, unsigned sectors, unsigned sector_size,
@@ -301,6 +325,7 @@ namespace dsk_tools {
             , expected_size(heads * tracks * sectors * sector_size)
             , bitrate(bitrate), rpm(rpm), track_encoding(track_encoding), floppyinterfacemode(floppyinterfacemode)
             , sides_interleaved(sides_interleaved), sector_translation(sector_translation), sector_base(sector_base)
+            , layout(TrackLayout::None)
         {}
     };
 

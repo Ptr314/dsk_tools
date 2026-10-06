@@ -150,3 +150,10 @@ option(ENABLE_DSK_TOOLS "Enable command line tools" ON)
 if(ENABLE_DSK_TOOLS)
     add_subdirectory(utils)
 endif()
+
+option(ENABLE_DSK_TESTS "Build the tests in tools/" OFF)
+
+if(ENABLE_DSK_TESTS)
+    enable_testing()
+    add_subdirectory(tools)
+endif()

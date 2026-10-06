@@ -37,11 +37,34 @@ namespace {
         return d;
     }
 
-    inline uint8_t clock_bits(uint16_t w)
+    // The 16 cells of an FM byte with this clock pattern
+    uint16_t fm_cells(uint8_t clock, uint8_t data)
     {
-        uint8_t c = 0;
-        for (int i = 0; i < 8; i++) c = (uint8_t)((c << 1) | ((w >> (15 - 2 * i)) & 1));
-        return c;
+        uint16_t w = 0;
+        for (int b = 7; b >= 0; b--)
+            w = (uint16_t)((w << 2) | (((clock >> b) & 1) << 1) | ((data >> b) & 1));
+        return w;
+    }
+
+    // Every 16 cell window of the track in turn; when match takes one for a
+    // mark the scan goes on right after it
+    template <typename F>
+    void scan_windows(const BYTES & cells, size_t bits, F match)
+    {
+        if (bits < 16) return;
+        size_t bit = 0;
+        uint16_t w = window(cells, 0);
+        for (;;) {
+            if (match(bit, w)) {
+                bit += 16;
+                if (bit + 16 > bits) break;
+                w = window(cells, bit);
+                continue;
+            }
+            if (bit + 17 > bits) break;
+            w = (uint16_t)((w << 1) | (cell(cells, bit + 16) ? 1 : 0));
+            bit++;
+        }
     }
 
     // Bytes out of the cells, the byte grid taken anew at every mark: a
@@ -90,6 +113,7 @@ Result hfe_read(const BYTES & file, HfeImage & img)
     img.rpm = hdr.floppyRPM;
     img.encoding = hdr.track_encoding;
     img.interface_mode = hdr.floppyinterfacemode;
+    img.write_allowed = hdr.write_allowed != 0x00;
     img.cells.assign((size_t)img.tracks * img.sides, BYTES());
 
     const size_t lut = (size_t)hdr.track_list_offset * 512;
@@ -134,7 +158,7 @@ void hfe_write(const HfeImage & img, BYTES & file)
     hdr.floppyinterfacemode = img.interface_mode;
     hdr.write_protected = 0xFF;
     hdr.track_list_offset = 1;
-    hdr.write_allowed = 0xFF;
+    hdr.write_allowed = img.write_allowed ? 0xFF : 0x00;
     const uint8_t * h = reinterpret_cast<const uint8_t*>(&hdr);
     file.insert(file.end(), h, h + sizeof(hdr));
     file.resize(512, 0xFF);
@@ -202,13 +226,11 @@ void mfm_decode(const BYTES & cells, size_t len, BYTES & data, BYTES & special)
 {
     const size_t bits = cells.size() * 8;
     std::vector<size_t> marks;
-    for (size_t bit = 0; bit + 16 <= bits; bit++) {
-        const uint16_t w = window(cells, bit);
-        if (w == 0x4489) {
-            marks.push_back(bit);
-            bit += 15;
-        }
-    }
+    scan_windows(cells, bits, [&](size_t bit, uint16_t w) {
+        if (w != 0x4489) return false;
+        marks.push_back(bit);
+        return true;
+    });
     decode_segments(cells, bits, marks, len, data, special);
 }
 
@@ -232,16 +254,16 @@ void fm_encode(const uint8_t * data, const uint8_t * special, size_t len, BYTES 
 
 void fm_decode(const BYTES & cells, size_t len, BYTES & data, BYTES & special)
 {
+    static const uint16_t mark_cells[4] = {
+        fm_cells(0xC7, 0xFE), fm_cells(0xC7, 0xFB), fm_cells(0xC7, 0xF8), fm_cells(0xD7, 0xFC)
+    };
     const size_t bits = cells.size() * 8;
     std::vector<size_t> marks;
-    for (size_t bit = 0; bit + 16 <= bits; bit++) {
-        const uint16_t w = window(cells, bit);
-        const uint8_t c = clock_bits(w), d = data_bits(w);
-        if ((c == 0xC7 && (d == 0xFE || d == 0xFB || d == 0xF8)) || (c == 0xD7 && d == 0xFC)) {
-            marks.push_back(bit);
-            bit += 15;
-        }
-    }
+    scan_windows(cells, bits, [&](size_t bit, uint16_t w) {
+        if (w != mark_cells[0] && w != mark_cells[1] && w != mark_cells[2] && w != mark_cells[3]) return false;
+        marks.push_back(bit);
+        return true;
+    });
     decode_segments(cells, bits, marks, len, data, special);
 }
 

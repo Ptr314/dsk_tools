@@ -109,7 +109,8 @@ namespace dsk_tools {
             head = track_index & 1;
             track = track_index >> 1;
         }
-        sector = physical_sector(sector+m_format.sector_base);
+        // The slot of the sector in the track, numbered from the sector base as the IDs are
+        sector = physical_sector(sector) + m_format.sector_base;
     }
 
 

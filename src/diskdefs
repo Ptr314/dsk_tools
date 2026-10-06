@@ -1,3 +1,15 @@
+# Disk geometries in the cpmtools syntax. Besides its own keys:
+#   sides int|seq   - how the image orders the sides (int: both sides of a cylinder in turn)
+#   charmap         - the character set the viewer starts on
+#   layout          - how a controller lays the sectors down on a whole track, for the
+#                     formats that keep the bit cells (HFE): ibm-mfm (System/34 MFM),
+#                     ibm-fm (IBM 3740 FM, 8") or dvk-mx (the DVK MX track)
+#   bitrate, rpm    - data rate in kbit/s and the speed of the drive; 250 kbit/s (125 for
+#                     dvk-mx) and 300 rpm (360 for ibm-fm) when not given
+#   gap4a, gap1, gap2, gap3, indexmark
+#                   - the gaps of an IBM track and whether it starts with the index mark
+#                     (C2 C2 C2 FC / FC); the IBM values fitted to the turn when not given
+
 diskdef korvet
   seclen 1024
   heads 2
@@ -6,6 +18,7 @@ diskdef korvet
   blocksize 2048
   maxdir 128
   boottrk 1
+  layout ibm-mfm
 end
 
 diskdef orion
@@ -16,6 +29,7 @@ diskdef orion
   blocksize 2048
   maxdir 128
   boottrk 2
+  layout ibm-mfm
 end
 
 diskdef vector
@@ -27,6 +41,7 @@ diskdef vector
   maxdir 128
   boottrk 4
   charmap koi8_m
+  layout ibm-mfm
 end
 
 diskdef gmd-7012
@@ -38,6 +53,7 @@ diskdef gmd-7012
   maxdir 64
   skewtab 0,6,12,18,24,4,10,16,22,2,8,14,20,1,7,13,19,25,5,11,17,23,3,9,15,21
   boottrk 2
+  layout ibm-fm
 end
 
 diskdef irisha-360-int
@@ -49,6 +65,7 @@ diskdef irisha-360-int
   blocksize 2048
   maxdir 64
   boottrk 0
+  layout ibm-mfm
 end
 
 diskdef irisha-360-seq
@@ -60,6 +77,7 @@ diskdef irisha-360-seq
   blocksize 2048
   maxdir 64
   boottrk 0
+  layout ibm-mfm
 end
 
 diskdef pc-360
@@ -67,6 +85,7 @@ diskdef pc-360
   heads 2
   tracks 40
   sectrk 9
+  layout ibm-mfm
 end
 
 diskdef pc-720
@@ -74,6 +93,7 @@ diskdef pc-720
   heads 2
   tracks 80
   sectrk 9
+  layout ibm-mfm
 end
 
 diskdef pc-1200
@@ -81,6 +101,9 @@ diskdef pc-1200
   heads 2
   tracks 80
   sectrk 15
+  layout ibm-mfm
+  bitrate 500
+  rpm 360
 end
 
 diskdef pc-1440
@@ -88,6 +111,8 @@ diskdef pc-1440
   heads 2
   tracks 80
   sectrk 18
+  layout ibm-mfm
+  bitrate 500
 end
 
 diskdef st-360
@@ -95,6 +120,7 @@ diskdef st-360
   heads 2
   tracks 40
   sectrk 9
+  layout ibm-mfm
 end
 
 diskdef st-720
@@ -102,6 +128,7 @@ diskdef st-720
   heads 2
   tracks 80
   sectrk 9
+  layout ibm-mfm
 end
 
 diskdef st-800
@@ -109,6 +136,7 @@ diskdef st-800
   heads 2
   tracks 80
   sectrk 10
+  layout ibm-mfm
 end
 
 diskdef st-820
@@ -116,6 +144,7 @@ diskdef st-820
   heads 2
   tracks 82
   sectrk 10
+  layout ibm-mfm
 end
 
 diskdef st-1440
@@ -123,6 +152,8 @@ diskdef st-1440
   heads 2
   tracks 80
   sectrk 18
+  layout ibm-mfm
+  bitrate 500
 end
 
 diskdef iskra-226
@@ -151,6 +182,7 @@ diskdef dx
   heads 1
   tracks 77
   sectrk 26
+  layout ibm-fm
 end
 
 # MX (DVK, 5.25"), 40 or 80 tracks of 11 sectors of 256 bytes
@@ -159,6 +191,7 @@ diskdef mx-220
   heads 2
   tracks 40
   sectrk 11
+  layout dvk-mx
 end
 
 diskdef mx-440
@@ -166,6 +199,7 @@ diskdef mx-440
   heads 2
   tracks 80
   sectrk 11
+  layout dvk-mx
 end
 
 # MY (DVK KMD controller), 80 tracks of 10 sectors of 512 bytes on both sides
@@ -174,6 +208,10 @@ diskdef my-800
   heads 2
   tracks 80
   sectrk 10
+  layout ibm-mfm
+  indexmark 0
+  gap1 42
+  gap3 36
 end
 
 # MZ (UKNC and BK floppy controller), the MFM disk of the MY with one or two sides
@@ -182,6 +220,10 @@ diskdef mz-400
   heads 1
   tracks 80
   sectrk 10
+  layout ibm-mfm
+  indexmark 0
+  gap1 42
+  gap3 36
 end
 
 diskdef mz-800
@@ -189,4 +231,8 @@ diskdef mz-800
   heads 2
   tracks 80
   sectrk 10
+  layout ibm-mfm
+  indexmark 0
+  gap1 42
+  gap3 36
 end

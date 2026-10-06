@@ -50,8 +50,11 @@ namespace dsk_tools {
             if (!get_map_value(diskdef.int_params, std::string("sectrk"), sectrk, 0, true)) return nullptr;
             unsigned seclen = 0;
             if (!get_map_value(diskdef.int_params, std::string("seclen"), seclen, 0, true)) return nullptr;
-            const unsigned bitrate = 250;
-            const unsigned rpm = 300;
+            // Data rate and rpm matter only to the formats that keep whole tracks
+            unsigned bitrate = 0;
+            get_map_value(diskdef.int_params, std::string("bitrate"), bitrate, 0, false);
+            unsigned rpm = 0;
+            get_map_value(diskdef.int_params, std::string("rpm"), rpm, 0, false);
             const unsigned track_enc = UNKNOWN_ENCODING;
             const unsigned iface = GENERIC_SHUGGART_DD_FLOPPYMODE;
             const unsigned sector_base = 1;
@@ -65,22 +68,40 @@ namespace dsk_tools {
 
             std::vector<unsigned> skewtab = diskdef.skewtab;
 
-            return dsk_tools::make_unique<diskImage>(
-                                              std::move(loader),
-                                              DiskFormatParams(
-                                                  heads,                    // heads
-                                                  tracks,                   // tracks
-                                                  sectrk,                   // sectors
-                                                  seclen,                   // sector size
-                                                  bitrate,                  // bitrate
-                                                  rpm,                      // rpm
-                                                  track_enc,                // track encoding
-                                                  iface,                    // floppy interface mode
-                                                  sector_base,              // sector base
-                                                  side_ilvd,                // sides interleaved
-                                                  skewtab                   // sector translation
-                                              )
-                                          );
+            DiskFormatParams params(
+                heads,                    // heads
+                tracks,                   // tracks
+                sectrk,                   // sectors
+                seclen,                   // sector size
+                bitrate,                  // bitrate
+                rpm,                      // rpm
+                track_enc,                // track encoding
+                iface,                    // floppy interface mode
+                sector_base,              // sector base
+                side_ilvd,                // sides interleaved
+                skewtab                   // sector translation
+            );
+
+            // How the tracks are laid out when the image keeps them whole (HFE)
+            std::string layout;
+            get_map_value(diskdef.str_params, std::string("layout"), layout, std::string(), false);
+            params.layout = track_layout_by_name(layout);
+            if (params.layout != TrackLayout::None) {
+                track_layout_defaults(params);
+                const auto gap = [&](const char * key, int & value) {
+                    unsigned v = 0;
+                    if (get_map_value(diskdef.int_params, std::string(key), v, 0, true)) value = static_cast<int>(v);
+                };
+                gap("gap4a", params.gaps.gap4a);
+                gap("gap1", params.gaps.gap1);
+                gap("gap2", params.gaps.gap2);
+                gap("gap3", params.gaps.gap3);
+                unsigned index_mark = 1;
+                get_map_value(diskdef.int_params, std::string("indexmark"), index_mark, 1, false);
+                params.gaps.index_mark = index_mark != 0;
+            }
+
+            return dsk_tools::make_unique<diskImage>(std::move(loader), params);
         }
         return nullptr;
     }
@@ -152,7 +173,9 @@ namespace dsk_tools {
     // An RT-11 volume has its home block in block 1 and the first directory segment
     // where the home block says. A DX image keeps its sectors in physical order, so a
     // block is gathered from four interleaved sectors; any other image is linear.
-    static bool is_rt11_volume(UTF8_ifstream & file, const unsigned disk_blocks, const bool dx)
+    // read(offset, out, size) fetches bytes of the image
+    template <typename R>
+    static bool is_rt11_volume(R read, const unsigned disk_blocks, const bool dx)
     {
         auto read_block = [&](unsigned block, BYTES & out) -> bool {
             out.assign(RT11_BLOCK_SIZE, 0);
@@ -161,14 +184,12 @@ namespace dsk_tools {
                 for (unsigned i = 0; i < per_block; i++) {
                     unsigned track, sector;
                     fsRT11::dx_sector(block * per_block + i, track, sector);
-                    file.seekg((track * RT11_DX_SECTORS + sector) * RT11_DX_SECTOR_SIZE, std::ios::beg);
-                    file.read(reinterpret_cast<char*>(&out[i * RT11_DX_SECTOR_SIZE]), RT11_DX_SECTOR_SIZE);
+                    if (!read((track * RT11_DX_SECTORS + sector) * RT11_DX_SECTOR_SIZE, &out[i * RT11_DX_SECTOR_SIZE], RT11_DX_SECTOR_SIZE))
+                        return false;
                 }
-            } else {
-                file.seekg(block * RT11_BLOCK_SIZE, std::ios::beg);
-                file.read(reinterpret_cast<char*>(out.data()), out.size());
+                return true;
             }
-            return file.good();
+            return read(block * RT11_BLOCK_SIZE, out.data(), out.size());
         };
 
         BYTES home, segment;
@@ -176,6 +197,169 @@ namespace dsk_tools {
         const unsigned dir_block = fsRT11::directory_block(home, disk_blocks);
         if (!read_block(dir_block, segment)) return false;
         return fsRT11::segment_is_valid(segment, dir_block, disk_blocks);
+    }
+
+    static bool is_rt11_volume(UTF8_ifstream & file, const unsigned disk_blocks, const bool dx)
+    {
+        return is_rt11_volume([&](size_t offset, uint8_t * out, size_t size) {
+            file.seekg(offset, std::ios::beg);
+            file.read(reinterpret_cast<char*>(out), size);
+            return file.good();
+        }, disk_blocks, dx);
+    }
+
+    static bool is_rt11_volume(const BYTES & image, const unsigned disk_blocks, const bool dx)
+    {
+        return is_rt11_volume([&](size_t offset, uint8_t * out, size_t size) {
+            if (offset + size > image.size()) return false;
+            memcpy(out, image.data() + offset, size);
+            return true;
+        }, disk_blocks, dx);
+    }
+
+    // A FAT boot sector: a BIOS parameter block that makes sense. DOS ends it
+    // with 55 AA or names itself in the OEM field, the Atari ST keeps a serial
+    // number there. Neither is certain - ST disks were often formatted on a
+    // PC - but the filesystem is the same, only the name of the type differs
+    static bool is_fat_boot(const BYTES & image, bool & pc)
+    {
+        if (image.size() < 512) return false;
+        const uint8_t * b = image.data();
+        const unsigned bytes_per_sector = b[11] | (b[12] << 8);
+        const unsigned per_cluster = b[13];
+        bool oem_text = true;
+        for (int i = 3; i < 11; i++)
+            if (b[i] < 0x20 || b[i] > 0x7E) oem_text = false;
+        pc = (b[510] == 0x55 && b[511] == 0xAA) || oem_text;
+        return bytes_per_sector == 512 && per_cluster != 0 && (per_cluster & (per_cluster - 1)) == 0
+               && b[16] >= 1 && b[16] <= 2 && b[21] >= 0xF0;
+    }
+
+    // How much an area looks like a CP/M directory: the number of entries with
+    // a user number and a name of printable characters, -1 when an entry is
+    // neither that nor empty (E5). A blank area scores 0
+    static int cpm_directory_score(const BYTES & image, size_t offset, size_t size)
+    {
+        if (offset + size > image.size()) return -1;
+        int entries = 0;
+        for (size_t e = offset; e + 32 <= offset + size; e += 32) {
+            const uint8_t user = image[e];
+            if (user == 0xE5) continue;
+            if (user > 31) return -1;
+            for (int i = 1; i <= 11; i++)
+                if ((image[e + i] & 0x7F) < 0x20) return -1;
+            entries++;
+        }
+        return entries;
+    }
+
+    // Whether the last track of a disk with this many tracks holds sectors
+    static bool hfe_track_present(const HfeImage & img, const DiskFormatParams & format, unsigned tracks)
+    {
+        if (tracks == 0 || static_cast<int>(tracks) > img.tracks) return false;
+        BYTES out(static_cast<size_t>(format.sectors) * format.sector_size);
+        TrackStatus status;
+        return track_from_cells(format, img.cells[static_cast<size_t>(tracks - 1) * img.sides], out.data(), status);
+    }
+
+    // The type and the filesystem of a disk in an HFE by the geometry its
+    // tracks show and by what the volume itself says
+    static bool detect_hfe_tracks(const HfeImage & img, std::string & type_id, std::string & filesystem_id)
+    {
+        DiskFormatParams format;
+        if (!hfe_probe_format(img, format)) return false;
+
+        const unsigned heads = format.heads;
+        const unsigned sectors = format.sectors;
+        const unsigned size = format.sector_size;
+        const bool mfm = format.layout == TrackLayout::IbmMfm;
+        const bool fm = format.layout == TrackLayout::IbmFm;
+        auto has_tracks = [&](unsigned tracks) { return hfe_track_present(img, format, tracks); };
+        // The volume itself, decoded with the geometry of the given track count
+        auto image_of = [&](unsigned tracks, BYTES & image) {
+            DiskFormatParams f = format;
+            f.tracks = tracks;
+            hfe_to_flat(img, f, image);
+        };
+
+        BYTES image;
+        bool pc = false;
+        if (format.layout == TrackLayout::DvkMx) {
+            type_id = has_tracks(80) ? "TYPE_RT11:MX-440" : "TYPE_RT11:MX-220";
+            filesystem_id = "FILESYSTEM_RT11";
+        } else
+        if (fm && heads == 1 && sectors == 26 && size == 128) {
+            image_of(77, image);
+            if (is_rt11_volume(image, RT11_DX_BLOCKS, true)) {
+                type_id = "TYPE_RT11:DX";
+                filesystem_id = "FILESYSTEM_RT11";
+            } else {
+                // The 8" GMD-7012 of the Irisha and the DVK DX are the same disk
+                type_id = "TYPE_CPM:GMD-7012";
+                filesystem_id = "FILESYSTEM_CPM_RAW";
+            }
+        } else
+        if (mfm && size == 512 && sectors == 10) {
+            const unsigned tracks = has_tracks(82) ? 82 : 80;
+            image_of(tracks, image);
+            if (heads == 1) {
+                type_id = "TYPE_RT11:MZ-400";
+                filesystem_id = "FILESYSTEM_RT11";
+            } else
+            if (!is_rt11_volume(image, 1600, false) && is_fat_boot(image, pc)) {
+                type_id = (tracks == 82) ? "TYPE_FAT:ST-820" : "TYPE_FAT:ST-800";
+                filesystem_id = "FILESYSTEM_FAT";
+            } else {
+                // DVK MY, UKNC and BK MZ disks share the geometry, as with the raw images
+                type_id = "TYPE_RT11:MY-800";
+                filesystem_id = "FILESYSTEM_RT11";
+            }
+        } else
+        if (mfm && heads == 2 && size == 512 && (sectors == 9 || sectors == 15 || sectors == 18)) {
+            const unsigned tracks = (sectors == 9 && !has_tracks(80)) ? 40 : 80;
+            image_of(tracks, image);
+            const bool fat = is_fat_boot(image, pc);
+            filesystem_id = "FILESYSTEM_FAT";
+            if (sectors == 15) {
+                type_id = "TYPE_FAT:PC-1200";
+            } else
+            if (sectors == 18) {
+                type_id = (fat && !pc) ? "TYPE_FAT:ST-1440" : "TYPE_FAT:PC-1440";
+            } else
+            if (tracks == 80) {
+                type_id = (fat && !pc) ? "TYPE_FAT:ST-720" : "TYPE_FAT:PC-720";
+            } else
+            if (fat) {
+                type_id = pc ? "TYPE_FAT:PC-360" : "TYPE_FAT:ST-360";
+            } else {
+                type_id = "TYPE_CPM:IRISHA-360-INT";
+                filesystem_id = "FILESYSTEM_CPM_RAW";
+            }
+        } else
+        if (mfm && heads == 2 && size == 1024 && sectors == 5) {
+            // Korvet, Orion and Vector differ in the system tracks before the
+            // directory: 1, 2 and 4, a track being both sides of a cylinder
+            const size_t track = 2 * 5 * 1024;
+            const size_t dir = 4096;
+            const unsigned tracks = has_tracks(82) ? 82 : 80;
+            image_of(tracks, image);
+            const int korvet = cpm_directory_score(image, track, dir);
+            const int orion = cpm_directory_score(image, 2 * track, dir);
+            const int vector = cpm_directory_score(image, 4 * track, dir);
+            if (vector > 0 && vector >= korvet && vector >= orion)
+                type_id = "TYPE_CPM:VECTOR";
+            else
+            if (orion > 0 && orion >= korvet)
+                type_id = "TYPE_CPM:ORION";
+            else
+            if (korvet > 0)
+                type_id = "TYPE_CPM:KORVET";
+            else
+                type_id = (tracks == 82) ? "TYPE_CPM:VECTOR" : "TYPE_CPM:KORVET";
+            filesystem_id = "FILESYSTEM_CPM_RAW";
+        } else
+            return false;
+        return true;
     }
 
     Result detect_fdd_type(const std::string &file_name, std::string &format_id, std::string &type_id, std::string &filesystem_id, bool format_only)
@@ -488,35 +672,17 @@ namespace dsk_tools {
                 return Result::ok();
             }
 
-            UTF8_ifstream file(file_name, std::ios::binary);
-
-            if (!file.good()) {
+            BYTES whole(fsize);
+            file->read(reinterpret_cast<char*>(whole.data()), whole.size());
+            if (!file->good() || whole.size() < sizeof(HXC_HFE_HEADER))
                 return Result::error(ErrorCode::LoadError, QT_TRANSLATE_NOOP("errors", "Cannot open HFE file"));
-            }
+            const HXC_HFE_HEADER * hdr = reinterpret_cast<const HXC_HFE_HEADER*>(whole.data());
 
-            BYTES hdr_buffer(sizeof(HXC_HFE_HEADER));
-            file.read (reinterpret_cast<char*>(hdr_buffer.data()), hdr_buffer.size());
-            HXC_HFE_HEADER * hdr = reinterpret_cast<HXC_HFE_HEADER*>(hdr_buffer.data());
-
-            // The RT-11 disks of the DVK, the БК and the УК-НЦ are told by
-            // the first track: IBM MFM, IBM 3740 FM or the MX layout. Anything
-            // else is left to the Agat
-            {
-                BYTES whole(fsize);
-                file.seekg(0, std::ios::beg);
-                file.read(reinterpret_cast<char*>(whole.data()), whole.size());
-                HfeImage img;
-                if (hfe_read(whole, img)) {
-                    const int kind = rt11_hfe_kind(img);
-                    if (kind == 1) type_id = (img.sides == 1) ? "TYPE_RT11:MZ-400" : "TYPE_RT11:MY-800";
-                    if (kind == 2) type_id = "TYPE_RT11:DX";
-                    if (kind == 3) type_id = (img.tracks <= 40) ? "TYPE_RT11:MX-220" : "TYPE_RT11:MX-440";
-                    if (kind != 0) {
-                        filesystem_id = "FILESYSTEM_RT11";
-                        return Result::ok();
-                    }
-                }
-            }
+            // A disk of IBM MFM, IBM 3740 FM or DVK MX tracks is told by its
+            // fields; anything else is left to the Agat
+            HfeImage img;
+            if (hfe_read(whole, img) && detect_hfe_tracks(img, type_id, filesystem_id))
+                return Result::ok();
 
             if (hdr->number_of_side == 2 && hdr->number_of_track == 80) {
                 type_id = "TYPE_AGAT_840";
@@ -824,7 +990,7 @@ namespace dsk_tools {
                             // Skip malformed entries
                         }
                     }
-                } else if (key == "os" || key == "sides" || key == "charmap") {
+                } else if (key == "os" || key == "sides" || key == "charmap" || key == "layout") {
                     current.str_params[key] = value;
                 } else {
                     try {

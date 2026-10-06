@@ -29,17 +29,10 @@ Targets: `dsk_tools` (the library), `fddconv` and `aim2hfe` (the tools, in `util
 Agat MFM, whole Agat 140/840 track images) and `src/hfe.cpp`: the HFE container
 (`hfe_read`/`hfe_write`, both sides interleaved in 512 byte blocks, cells LSB first) and the IBM
 FM/MFM bit cell codecs (`fm_encode`/`fm_decode`, `mfm_encode`/`mfm_decode`, a flag per byte for
-a sync byte or address mark without its clock; decoding re-takes the byte grid at every mark).
-`src/track_formats.cpp` lays out the tracks of the RT-11 disks (TYPE_RT11:*) as their controllers
-format them - IBM MFM for MY/MZ (БК, УК-НЦ, ДВК), IBM 3740 FM for DX, the DVK MX track (sync word
-000363, 1562 words, high byte first in the cells, 125 kbit/s) - and reads sectors back by their ID
-(`rt11_track_cells`, `rt11_track_sectors`, `rt11_hfe_kind` for detection). eCat3 uses the same
-functions for its whole-track drives, so an `.hfe` of either reads identically in the other.
-`LoaderHXC_HFE` and `WriterHxCHFE` take the RT-11 types through them (a sector not found goes to
-`m_bad_sectors`) and keep their own Agat code; `detect_fdd_type()` tries the RT-11 layouts on the
-first track of an `.hfe` before the Agat probe. eCat3 links the core alone, so nothing in those
-files may reach a loader, an image, a file system or a viewer; `dsk_tools.h` includes `core.h`,
-so the full library's API is unchanged.
+a sync byte or address mark without its clock; decoding re-takes the byte grid at every mark),
+and `src/track_formats.cpp`: whole IBM MFM, IBM 3740 FM and DVK MX tracks (see "Whole tracks"
+below). eCat3 links the core alone, so nothing in those files may reach a loader, an image, a
+file system or a viewer; `dsk_tools.h` includes `core.h`, so the full library's API is unchanged.
 
 Release archives are produced by the scripts in `.build/`: `build-win-mingw.bat` (x86_64),
 `build-win-i386.bat`, `build-win-msvc.bat`, `build-linux.sh`, `build-macos.sh`. Each one
@@ -57,7 +50,20 @@ Two things that bite:
 
 ## Testing
 
-There is no automated test suite. `test/` is git-ignored and holds sample images plus an older
+The whole track code has tests in `tools/`, built with `-DENABLE_DSK_TESTS=ON` and run by
+`ctest`:
+
+- `test_tracks` (core only) - IBM/MX tracks: digests of the tracks eCat3 writes (fail them and
+  the emulator's `.hfe` files change), round trips, the index mark, damaged CRCs and IDs, write
+  splices, bit phase, every geometry through `hfe_write`/`hfe_read`/`hfe_probe_format`. HFE files
+  on its command line must read without bad sectors (eCat3's `tests/results/*.hfe`).
+- `test_hfe_io <image> <type>` - a raw image through the public API: written to HFE, two sectors
+  damaged, then detection, loading, bad sectors, filesystem, `load_structured()`, `file_info()`.
+  `-DDSK_TEST_SAMPLES=<docs/samples>` registers it for a few sample images.
+- `tools/hfe_roundtrip.sh <fddconv> <dirs...>` - raw -> HFE -> raw for every image found: same
+  type, same file list, same sectors.
+
+Everything else has no automated suite. `test/` is git-ignored and holds sample images plus an older
 `fddconv.exe` kept for before/after comparison. Verification is done by running the tools over
 sample images (the parent repo's `docs/samples`) and diffing the results, for example:
 
@@ -203,6 +209,35 @@ going through sectors. Its algorithm follows Oleksandr Kapitanenko's `agath-aim-
 byte-identical to it on every image that script can convert. Two deliberate extensions are
 documented in `README.md` and `tools/aim-anomalies.md`: gap cells left unread as $00 are counted
 as gap and restored to $AA, and the `$81` DESYNC variant is recognised.
+
+## Whole tracks (HFE)
+
+An HFE keeps the bit cells of every track, so a sector image has to be laid out on a track the
+way a controller formats it, and read back by finding the fields again. Apart from the Agat
+(own encoder in `writer_mfm.cpp`, own decoder in `disk_codecs.cpp`), this is driven by the
+**`layout` of a diskdef** (`ibm-mfm`, `ibm-fm`, `dvk-mx`), which `prepare_image()` puts into
+`DiskFormatParams::layout` together with `bitrate`/`rpm` and the gaps (`gap4a`, `gap1`, `gap2`,
+`gap3`, `indexmark`; IBM values fitted to the turn when not given). Adding HFE support for a
+CP/M or FAT machine is therefore a diskdefs line plus `config.json`, not code.
+
+- `ibm_track_fields()` is the one parser of IBM tracks: it finds marks by the sync bytes
+  (`A1 A1 A1` + FE/FB/F8, `C2 C2 C2 FC` for the index mark in MFM; a zero before the mark in FM,
+  or the `special` flags of the cell decoder), checks **both CRCs**, and skips whatever lies
+  between fields — the index mark, write splices (`DA 6E` after a sector in eCat3 output), the
+  unformatted end of a track. A data field is taken only after an ID whose CRC passed.
+- `track_from_cells()` places sectors by the number in their ID (from `sector_base`) and
+  reports a `TrackStatus` (missing, bad CRC, deleted); `hfe_to_flat()` turns those into
+  `m_bad_sectors`. `LoaderHXC_HFE::load_structured()` gives the explorer the physical order of
+  the sectors with their C/H/R, and `file_info()` lists the fields of every track.
+- `detect_fdd_type()` runs `hfe_probe_format()` (layout and geometry from the first tracks:
+  two readable IDs are required) and then looks at the volume: RT-11 home block, FAT boot sector
+  (PC when it has `55 AA` or a text OEM name, else ST), the CP/M directory behind 1/2/4 system
+  cylinders for Korvet/Orion/Vector. Only when no IBM/MX layout is found does the Agat probe run.
+- The RT-11 disks keep the exact tracks of the original eCat3 code (MY/MZ: no index mark, gaps
+  42/22/36 via diskdefs; DX: 40/26/11/27), and eCat3 calls `ibm_mfm_format_track`,
+  `ibm_*_read_track`, `ibm_*_find_marks`, `ibm_fm_find_sector`, `ibm_fm_put_sector` and the
+  `dvk_mx_*` functions directly — **keep their signatures**; they are thin wrappers over the
+  generic code now.
 
 ## RT-11
 
