@@ -498,6 +498,26 @@ namespace dsk_tools {
             file.read (reinterpret_cast<char*>(hdr_buffer.data()), hdr_buffer.size());
             HXC_HFE_HEADER * hdr = reinterpret_cast<HXC_HFE_HEADER*>(hdr_buffer.data());
 
+            // The RT-11 disks of the DVK, the БК and the УК-НЦ are told by
+            // the first track: IBM MFM, IBM 3740 FM or the MX layout. Anything
+            // else is left to the Agat
+            {
+                BYTES whole(fsize);
+                file.seekg(0, std::ios::beg);
+                file.read(reinterpret_cast<char*>(whole.data()), whole.size());
+                HfeImage img;
+                if (hfe_read(whole, img)) {
+                    const int kind = rt11_hfe_kind(img);
+                    if (kind == 1) type_id = (img.sides == 1) ? "TYPE_RT11:MZ-400" : "TYPE_RT11:MY-800";
+                    if (kind == 2) type_id = "TYPE_RT11:DX";
+                    if (kind == 3) type_id = (img.tracks <= 40) ? "TYPE_RT11:MX-220" : "TYPE_RT11:MX-440";
+                    if (kind != 0) {
+                        filesystem_id = "FILESYSTEM_RT11";
+                        return Result::ok();
+                    }
+                }
+            }
+
             if (hdr->number_of_side == 2 && hdr->number_of_track == 80) {
                 type_id = "TYPE_AGAT_840";
 

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "dsk_tools/core.h"
 #include "writer_hxc_hfe.h"
 
 
@@ -66,9 +67,36 @@ WriterHxCHFE::WriterHxCHFE(const std::string & format_id, diskImage * image_to_s
         out.insert(out.end(), HFE_BLOCK_SIZE - sizeof(track) * image->get_tracks(), 0xFF);
     }
 
+    // The RT-11 disks of the DVK, the БК and the УК-НЦ: every track is laid
+    // out as its controller formats it and turned into cells by the core
+    Result WriterHxCHFE::write_rt11(BYTES &buffer, int kind)
+    {
+        HfeImage img;
+        rt11_hfe_params(kind, img);
+        img.tracks = image->get_tracks();
+        img.sides = image->get_heads();
+        img.cells.resize((size_t)img.tracks * img.sides);
+        const int sectors = image->get_sectors();
+        const int sector_size = image->get_sector_size();
+        BYTES flat((size_t)sectors * sector_size);
+        for (int t = 0; t < img.tracks; t++)
+            for (int h = 0; h < img.sides; h++) {
+                for (int sec = 0; sec < sectors; sec++) {
+                    const uint8_t * data = image->get_sector_data(h, t, sec);
+                    if (data != nullptr) memcpy(flat.data() + (size_t)sec * sector_size, data, sector_size);
+                    else memset(flat.data() + (size_t)sec * sector_size, 0, sector_size);
+                }
+                rt11_track_cells(kind, t, h, sectors, sector_size, flat.data(), img.cells[(size_t)t * img.sides + h]);
+            }
+        hfe_write(img, buffer);
+        return Result::ok();
+    }
+
     Result WriterHxCHFE::write(BYTES &buffer)
     {
         std::string type_id = image->get_type_id();
+        const int kind = rt11_track_kind(type_id);
+        if (kind != 0) return write_rt11(buffer, kind);
         if (type_id != "TYPE_AGAT_840" && type_id != "TYPE_AGAT_880")
             return Result::error(ErrorCode::WriteUnsupported, QT_TRANSLATE_NOOP("errors", "Format not supported for HFE format"));
 

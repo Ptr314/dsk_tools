@@ -113,6 +113,31 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
 
         int image_size, sectors_per_track, s_size;
 
+        // The RT-11 disks of the DVK, the БК and the УК-НЦ: the geometry comes
+        // from the disk type, the tracks are decoded by the core
+        const int kind = rt11_track_kind(type_id);
+        if (kind != 0) {
+            if (format.heads == 0 || format.tracks == 0 || format.sectors == 0 || format.sector_size == 0)
+                return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Unsupported disk type"));
+            HfeImage img;
+            const Result res = hfe_read(in, img);
+            if (!res) return res;
+            const size_t track_size = (size_t)format.sectors * format.sector_size;
+            buffer.assign(track_size * format.heads * format.tracks, 0);
+            m_bad_sectors.clear();
+            for (unsigned t = 0; t < format.tracks; t++)
+                for (unsigned h = 0; h < format.heads; h++) {
+                    uint8_t * out = buffer.data() + (t * format.heads + h) * track_size;
+                    uint32_t missing = 0xFFFFFFFFu;
+                    if ((int)t < img.tracks && (int)h < img.sides)
+                        rt11_track_sectors(kind, img.cells[(size_t)t * img.sides + h], format.sectors, format.sector_size, out, missing);
+                    for (unsigned sec = 0; sec < format.sectors && sec < 32; sec++)
+                        if (missing & (1u << sec)) m_bad_sectors.insert(bad_sector_key(h, t, sec + 1));
+                }
+            loaded = true;
+            return Result::ok();
+        }
+
         if (type_id == "TYPE_AGAT_840" || type_id == "TYPE_AGAT_880") {
             if (hdr->number_of_side != 2 || hdr->number_of_track != 80)
                 return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Invalid HFE parameters"));
@@ -223,6 +248,9 @@ LoaderHXC_HFE::LoaderHXC_HFE(const std::string &file_name, const std::string &fo
                       + "\n";
         }
         result += "\n";
+
+        // The fields of the tracks are listed for the Agat only
+        if (rt11_track_kind(type_id) != 0) return result;
 
         for (int track=0; track<hdr->number_of_track; track++) {
             int in_base = ti[track]->offset*HXC_HFE_BLOCK_SIZE;

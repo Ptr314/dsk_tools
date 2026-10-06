@@ -14,6 +14,8 @@ endif()
 # a program that only wants the helpers or the track decoders links this alone
 add_library(dsk_tools_core STATIC
     include/dsk_tools/core.h            src/disk_codecs.cpp
+                                        src/hfe.cpp
+                                        src/track_formats.cpp
     src/definitions.h
     src/utils.h                         src/utils.cpp
                                         src/errors.cpp

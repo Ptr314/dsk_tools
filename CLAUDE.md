@@ -25,8 +25,19 @@ Targets: `dsk_tools` (the library), `fddconv` and `aim2hfe` (the tools, in `util
 `-DENABLE_DSK_TOOLS=OFF` builds the library alone.
 
 `dsk_tools` stands on `dsk_tools_core` (`include/dsk_tools/core.h`): definitions, `utils`,
-`errors`, `host_helpers` and the track encodings of `src/disk_codecs.cpp` (4-and-4, GCR 6-and-2,
-Agat MFM, whole Agat 140/840 track images). eCat3 links the core alone, so nothing in those
+`errors`, `host_helpers`, the track encodings of `src/disk_codecs.cpp` (4-and-4, GCR 6-and-2,
+Agat MFM, whole Agat 140/840 track images) and `src/hfe.cpp`: the HFE container
+(`hfe_read`/`hfe_write`, both sides interleaved in 512 byte blocks, cells LSB first) and the IBM
+FM/MFM bit cell codecs (`fm_encode`/`fm_decode`, `mfm_encode`/`mfm_decode`, a flag per byte for
+a sync byte or address mark without its clock; decoding re-takes the byte grid at every mark).
+`src/track_formats.cpp` lays out the tracks of the RT-11 disks (TYPE_RT11:*) as their controllers
+format them - IBM MFM for MY/MZ (БК, УК-НЦ, ДВК), IBM 3740 FM for DX, the DVK MX track (sync word
+000363, 1562 words, high byte first in the cells, 125 kbit/s) - and reads sectors back by their ID
+(`rt11_track_cells`, `rt11_track_sectors`, `rt11_hfe_kind` for detection). eCat3 uses the same
+functions for its whole-track drives, so an `.hfe` of either reads identically in the other.
+`LoaderHXC_HFE` and `WriterHxCHFE` take the RT-11 types through them (a sector not found goes to
+`m_bad_sectors`) and keep their own Agat code; `detect_fdd_type()` tries the RT-11 layouts on the
+first track of an `.hfe` before the Agat probe. eCat3 links the core alone, so nothing in those
 files may reach a loader, an image, a file system or a viewer; `dsk_tools.h` includes `core.h`,
 so the full library's API is unchanged.
 

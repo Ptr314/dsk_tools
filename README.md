@@ -66,6 +66,7 @@ FFF:    dos33 (Apple/Агат DOS)
 - 140к: dsk, nib, nic.
 - 840к: dsk, hfe.
 - 880к: dsk, hfe.
+- RT-11 (ДВК MX/MY/DX, БК и УК-НЦ MZ): img/dsk, hfe. В .hfe дорожки записываются так, как их форматирует контроллер (IBM MFM для MY/MZ, IBM FM для DX, дорожка MX), образ пригоден для Gotek; при чтении .hfe тип определяется по первой дорожке.
 
 Для форматов nib, nic, hfe можно задать Volume ID.
 
