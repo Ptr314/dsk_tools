@@ -801,7 +801,9 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         std::memset(name_E, ' ', sizeof(name_E));
         std::memcpy(name_E, ext.data(), ext.size());
 
-        constexpr uint8_t user_no = 0; // default user area
+        // A file that comes from a CP/M disk keeps its user area (dir() stores ST in attributes);
+        // anything else goes to user 0. uf.fs is checked first: attributes of other filesystems mean something else.
+        const uint8_t user_no = (uf.fs == FS::CPM) ? static_cast<uint8_t>((uf.attributes >> 8) & 0x1F) : 0;
 
         // ---- Disk geometry from DPB
         const int sector_size  = static_cast<int>(image->get_sector_size());
