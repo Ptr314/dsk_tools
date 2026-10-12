@@ -475,6 +475,10 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             // Skip CP/M 3 password entries (and other non-file slots).
             if (ST == 0x1F) continue;
 
+            // Skip the CP/M 3 directory label (0x20) and date stamp entries (0x21, SFCB):
+            // they are not files, and a date stamp entry has binary data in its name field.
+            if (ST == 0x20 || ST == 0x21) continue;
+
             std::string file_name = make_file_name(*catalog[i]);
             const int extent = catalog[i]->XH*32 + catalog[i]->XL;
             if (extent == 0 || prev_name != file_name || prev_st != ST ) {
