@@ -682,6 +682,8 @@ namespace dsk_tools {
                 if (fsize == 947520)
                     type_id = "TYPE_AGAT_840";
                 else
+                // An output file is asked for its format only, before it exists
+                if (!format_only)
                     return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid file size for NIB format"));
             } else
                 type_id = "TYPE_AGAT_140";
