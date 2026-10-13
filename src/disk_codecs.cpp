@@ -398,8 +398,11 @@ namespace dsk_tools {
 
     Result decode_agat_140_image(BYTES &out, const BYTES & in, const int track_len)
     {
-        out.resize(35*16*256);
-        for (int i=0; i<35; i++) {
+        const int tracks = track_len > 0 ? static_cast<int>(in.size() / track_len) : 0;
+        if (tracks < 35 || tracks > 40)
+            return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Failed to decode Agat 140 track"));
+        out.resize(tracks*16*256);
+        for (int i=0; i<tracks; i++) {
             BYTES track_in(in.begin() + i*track_len, in.begin() + (i+1)*track_len);
             Result res = load_agat140_track(i, out, track_in, track_len);
             if (!res) return Result::error(ErrorCode::LoadDataCorrupt, QT_TRANSLATE_NOOP("errors", "Failed to decode Agat 140 track"));

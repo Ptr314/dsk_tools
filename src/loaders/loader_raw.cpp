@@ -36,6 +36,12 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         if (image_size == 0)
             return Result::error(ErrorCode::LoadParamsMismatch, QT_TRANSLATE_NOOP("errors", "Unknown disk type"));
 
+        // A 140 Kb disk has 35 to 40 tracks, as many as the file holds
+        if (type_id == "TYPE_AGAT_140") {
+            const long long tracks = static_cast<long long>(fsize) / (16 * 256);
+            image_size = static_cast<unsigned>(std::min(40LL, std::max(35LL, tracks))) * 16 * 256;
+        }
+
         // if (fsize<image_size)
         //     return Result::error(ErrorCode::LoadSizeMismatch, "File too small");
 

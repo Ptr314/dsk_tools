@@ -14,5 +14,8 @@ namespace dsk_tools {
 
         public:
             explicit imageAgat140(std::unique_ptr<Loader> loader);
+            // 35 to 40 tracks, as many as the loader gives: some disks use the five a
+            // drive's head reaches past the 35 that DOS 3.3 formats
+            Result load() override;
     };
 }

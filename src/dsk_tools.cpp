@@ -152,6 +152,14 @@ namespace dsk_tools {
         return block;
     }
 
+    // Whether a file of `size` bytes holds 35 to 40 tracks of a 140 Kb disk, `track` bytes
+    // each, and `extra` bytes after them if any (the 128-byte label of some Agat images)
+    static bool agat140_size(const unsigned size, const unsigned track, const unsigned extra)
+    {
+        const unsigned rest = size % track;
+        return (rest == 0 || rest == extra) && size / track >= 35 && size / track <= 40;
+    }
+
     // A ProDOS volume on a 140 Kb disk as the library holds it, in DOS 3.3 order
     static bool agat140_held_prodos_volume(const BYTES & image)
     {
@@ -513,7 +521,8 @@ namespace dsk_tools {
                 else
                     return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid file size for DSK format"));
             } else
-            if (fsize == 143360 || fsize == 143360+128) {
+            if (fsize == 143360 || fsize == 143360+128
+                || ((ext == ".dsk" || ext == ".do" || ext == ".po") && agat140_size(fsize, 16*256, 128))) {
                 type_id = "TYPE_AGAT_140";
             } else
             if (fsize == 860160 || fsize == 860164) {
@@ -667,7 +676,7 @@ namespace dsk_tools {
         } else
         if (ext == ".nic" || ext == ".nib" || ext == ".mfm") {
             if (ext == ".nib") {
-                if (fsize == 232960)
+                if (agat140_size(fsize, 6656, 0))
                     type_id = "TYPE_AGAT_140";
                 else
                 if (fsize == 947520)

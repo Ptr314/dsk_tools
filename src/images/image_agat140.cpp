@@ -24,4 +24,19 @@ imageAgat140::imageAgat140(std::unique_ptr<Loader> loader):
           )
     {}
 
+    Result imageAgat140::load()
+    {
+        const unsigned track_size = m_format.sectors * m_format.sector_size;
+        m_format.expected_size = 0;
+        Result res = diskImage::load();
+        const unsigned tracks = static_cast<unsigned>(m_buffer.size() / track_size);
+        if (res && (m_buffer.size() % track_size != 0 || tracks < 35 || tracks > 40)) {
+            m_is_loaded = false;
+            res = Result::error(ErrorCode::LoadSizeMismatch, QT_TRANSLATE_NOOP("errors", "Buffer size mismatch"));
+        }
+        if (res) m_format.tracks = tracks;
+        m_format.expected_size = m_format.heads * m_format.tracks * track_size;
+        return res;
+    }
+
 }

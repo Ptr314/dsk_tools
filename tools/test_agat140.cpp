@@ -31,26 +31,31 @@ static void write_all(const std::string & name, const BYTES & data)
 
 // A DOS 3.3 disk with one file, an Applesoft program HELLO: 10 PRINT "HELLO",
 // 20 END. The VTOC and the catalog on track 17, the file on track 18, no DOS
-// on the disk but the first byte 01 a boot sector starts with
-static BYTES dos33_disk()
+// on the disk but the first byte 01 a boot sector starts with. The last track
+// holds a pattern, for disks of more than 35 tracks to show it kept
+static BYTES dos33_disk(int tracks = 35)
 {
-    BYTES disk(35 * 16 * 256, 0);
+    BYTES disk(tracks * 16 * 256, 0);
     auto sector = [&](int t, int s) { return disk.data() + (t * 16 + s) * 256; };
     disk[0] = 0x01;
+    // The VTOC: the catalog's first track and sector, the DOS release, the volume,
+    // track/sector pairs in a list, the track allocated last and the way onward,
+    // tracks, sectors a track and 256 bytes a sector
     uint8_t * vtoc = sector(17, 0);
-    vtoc[0x01] = 17;            // the catalog's first track and sector
+    vtoc[0x01] = 17;
     vtoc[0x02] = 15;
-    vtoc[0x03] = 3;             // DOS release
-    vtoc[0x06] = 0xFE;          // volume
-    vtoc[0x27] = 122;           // track/sector pairs in a list
-    vtoc[0x30] = 18;            // the track allocated last, and the way onward
+    vtoc[0x03] = 3;
+    vtoc[0x06] = 0xFE;
+    vtoc[0x27] = 122;
+    vtoc[0x30] = 18;
     vtoc[0x31] = 1;
-    vtoc[0x34] = 35;            // tracks, sectors a track, 256 bytes a sector
+    vtoc[0x34] = (uint8_t)tracks;
     vtoc[0x35] = 16;
     vtoc[0x37] = 1;
-    for (int t = 0; t < 35; t++) {
-        // A bit for each free sector, 15 to 0: the catalog takes track 17, the file two sectors
-        const uint16_t free = (t == 17) ? 0x0000 : (t == 18) ? 0x3FFF : 0xFFFF;
+    for (int t = 0; t < tracks; t++) {
+        // A bit for each free sector, 15 to 0: the catalog takes track 17, the file two
+        // sectors, the pattern the last track
+        const uint16_t free = (t == 17 || t == tracks - 1) ? 0x0000 : (t == 18) ? 0x3FFF : 0xFFFF;
         vtoc[0x38 + 4 * t] = (uint8_t)(free >> 8);
         vtoc[0x39 + 4 * t] = (uint8_t)free;
     }
@@ -58,13 +63,15 @@ static BYTES dos33_disk()
         sector(17, s)[1] = 17;
         sector(17, s)[2] = (uint8_t)(s - 1);
     }
+    // The file's entry: its track/sector list, Applesoft, its name, two sectors
     uint8_t * entry = sector(17, 15) + 0x0B;
-    entry[0] = 18;              // the track/sector list
+    entry[0] = 18;
     entry[1] = 15;
-    entry[2] = 0x02;            // Applesoft
+    entry[2] = 0x02;
     const char name[] = "HELLO";
     for (int i = 0; i < 30; i++) entry[3 + i] = (uint8_t)((i < 5 ? name[i] : ' ') | 0x80);
-    entry[0x21] = 2;            // sectors
+    entry[0x21] = 2;
+    for (int i = 0; i < 16 * 256; i++) sector(tracks - 1, 0)[i] = (uint8_t)(i * 37 + tracks);
     sector(18, 15)[0x0C] = 18;
     sector(18, 15)[0x0D] = 14;
     // The program as Applesoft keeps it from $801 on, after its length: each line
@@ -233,6 +240,45 @@ static void test_orders(const std::string & dir, const BYTES & dos33)
     }
 }
 
+// A disk of 40 tracks through every image format, with the 128-byte label of some
+// Agat images, and a file of more tracks than such disks have
+static void test_forty_tracks(const std::string & dir)
+{
+    printf("40 tracks\n");
+    const BYTES disk = dos33_disk(40);
+    const std::string dsk = dir + "/test_forty.dsk";
+    write_all(dsk, disk);
+    auto image = open_image(dsk, "FILESYSTEM_DOS33", "HELLO", disk, "40 tracks as .dsk");
+    if (!image) return;
+    CHECK(image->get_tracks() == 40, ".dsk: %u tracks", image->get_tracks());
+    const char * formats[][2] = {
+        {"FILE_RAW_MSB", "/test_forty.po"},
+        {"FILE_MFM_NIC", "/test_forty.nic"},
+        {"FILE_MFM_NIB", "/test_forty.nib"},
+        {"FILE_HXC_HFE", "/test_forty.hfe"},
+    };
+    for (const auto & f : formats) {
+        const std::string name = dir + f[1];
+        auto writer = create_writer(f[0], 0xFE, image.get(), name);
+        BYTES data;
+        CHECK(writer && writer->write(data), "40 tracks to %s", f[1]);
+        write_all(name, data);
+        auto again = open_image(name, "FILESYSTEM_DOS33", "HELLO", disk, f[1]);
+        CHECK(again && again->get_tracks() == 40, "%s: not 40 tracks", f[1]);
+    }
+
+    BYTES labelled(disk);
+    labelled.resize(disk.size() + 128, 0);
+    std::memcpy(labelled.data() + disk.size(), "AGAT-DISK", 9);
+    write_all(dir + "/test_forty_label.dsk", labelled);
+    open_image(dir + "/test_forty_label.dsk", "FILESYSTEM_DOS33", "HELLO", disk, "40 tracks and a label");
+
+    write_all(dir + "/test_41.dsk", dos33_disk(41));
+    std::string format_id, type_id, fs_id;
+    CHECK(!detect_fdd_type(dir + "/test_41.dsk", format_id, type_id, fs_id) || type_id != "TYPE_AGAT_140",
+        "41 tracks taken for a 140 Kb disk");
+}
+
 // The HFE goes through what the GUI does with a file it opens
 static void check_hfe(const std::string & name, const BYTES & disk, const char * what)
 {
@@ -300,6 +346,7 @@ int main(int argc, char ** argv)
     check_hfe(hfe, disk, "as HxC writes");
 
     test_orders(dir, disk);
+    test_forty_tracks(dir);
 
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;
