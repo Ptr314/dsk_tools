@@ -11,8 +11,14 @@ namespace dsk_tools {
 
     class WriterRAW:public Writer
     {
+    protected:
+        std::string file_name;
+
     public:
-        WriterRAW(const std::string & format_id, diskImage *image_to_save);
+        // file_name is where the image goes: a 140 Kb image goes into a .po in ProDOS
+        // order, into any other file in DOS 3.3 order, and with none, back into the order
+        // of the file it came from
+        WriterRAW(const std::string & format_id, diskImage *image_to_save, const std::string & file_name = "");
         std::string get_default_ext() override;
         Result write(BYTES & buffer) override;
         Result substitute_tracks(BYTES & buffer, BYTES & tmplt, const int numtracks) override;

@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Mike Shevchenko <mike.shevchenko@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
-// Description: Apple II and Agat 140 Kb disks in HFE through the public API
+// Description: Apple II and Agat 140 Kb disks through the public API
 //
 //   test_agat140 [scratch directory]
 //
 // A DOS 3.3 disk made up here is written to an HFE, which goes through
 // detect_fdd_type(), prepare_image(), the filesystem and file_info() as the GUI
 // uses them; then again with the transitions in the first cell of each pair and
-// the encoding named, as the HxC software writes such files
+// the encoding named, as the HxC software writes such files. That disk and a
+// made-up ProDOS volume then go through sector images in both orders
 
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 #include <string>
 
@@ -75,6 +77,160 @@ static BYTES dos33_disk()
     };
     for (size_t i = 0; i < sizeof(program); i++) sector(18, 14)[i] = program[i];
     return disk;
+}
+
+// The file's sector for each physical sector of a track, in DOS 3.3 order (.dsk,
+// .do) and in ProDOS order (.po), as the formats have them
+static const int dos_order[16] = {0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15};
+static const int prodos_order[16] = {0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15};
+
+// An image with its sectors moved from one order to the other
+static BYTES reordered(const BYTES & in, const int * from, const int * to)
+{
+    BYTES out(in.size());
+    for (size_t t = 0; t + 16 * 256 <= in.size(); t += 16 * 256)
+        for (int p = 0; p < 16; p++)
+            std::memcpy(out.data() + t + to[p] * 256, in.data() + t + from[p] * 256, 256);
+    return out;
+}
+
+// A ProDOS volume of 280 blocks in ProDOS order, as a .po holds it: block b is
+// sectors 2(b % 8) and 2(b % 8) + 1 of track b / 8. The volume directory in
+// blocks 2 to 5, the bitmap in block 6 and one file, a seedling, in block 7
+static BYTES prodos_volume()
+{
+    BYTES po(280 * 512, 0);
+    auto block = [&](int b) { return po.data() + b * 512; };
+    // Each block of the directory names the blocks before and after it
+    for (int b = 2; b <= 5; b++) {
+        block(b)[0] = (uint8_t)(b == 2 ? 0 : b - 1);
+        block(b)[2] = (uint8_t)(b == 5 ? 0 : b + 1);
+    }
+    // The volume directory header: name, 39 bytes an entry, 13 entries a block, one
+    // file, the bitmap's block, the blocks of the volume
+    uint8_t * header = block(2) + 4;
+    header[0x00] = 0xF0 | 4;
+    std::memcpy(header + 0x01, "TEST", 4);
+    header[0x1F] = 0x27;
+    header[0x20] = 0x0D;
+    header[0x21] = 1;
+    header[0x23] = 6;
+    header[0x25] = 280 & 0xFF;
+    header[0x26] = 280 >> 8;
+    // The file: a seedling, its name, type TXT, its block, one block used, 6 bytes, and
+    // the directory it is in
+    uint8_t * entry = header + 0x27;
+    entry[0x00] = 0x10 | 9;
+    std::memcpy(entry + 0x01, "HELLO.TXT", 9);
+    entry[0x10] = 0x04;
+    entry[0x11] = 7;
+    entry[0x13] = 1;
+    entry[0x15] = 6;
+    entry[0x25] = 2;
+    for (int b = 8; b < 280; b++) block(6)[b / 8] |= (uint8_t)(0x80 >> (b % 8));
+    std::memcpy(block(7), "HELLO", 5);
+    block(7)[5] = 0x0D;
+    return po;
+}
+
+// Opens an image as the GUI does: its type and file system, the disk held in DOS 3.3
+// order, and one file listed
+static std::unique_ptr<diskImage> open_image(const std::string & name, const char * fs_expected,
+    const char * file, const BYTES & held, const char * what)
+{
+    const DiskDefs defs;
+    std::string format_id, type_id, fs_id;
+    CHECK(detect_fdd_type(name, format_id, type_id, fs_id) && type_id == "TYPE_AGAT_140" && fs_id == fs_expected,
+          "%s: detected as %s, %s", what, type_id.c_str(), fs_id.c_str());
+    auto image = prepare_image(name, format_id, type_id, defs);
+    if (!image || !image->load()) {
+        CHECK(false, "%s: does not load", what);
+        return nullptr;
+    }
+    CHECK(*image->get_buffer() == held, "%s: not held in DOS 3.3 order", what);
+    auto fs = prepare_filesystem(image.get(), fs_expected, defs);
+    std::vector<UniversalFile> files;
+    CHECK(fs && fs->open() && fs->dir(files, false), "%s: the catalog does not open", what);
+    CHECK(files.size() == 1 && files[0].name == file, "%s: %zu files, not %s", what, files.size(), file);
+    return image;
+}
+
+// A RAW writer's output for the image, into a file of the name given
+static BYTES written(diskImage * image, const std::string & name)
+{
+    auto writer = create_writer("FILE_RAW_MSB", 0xFE, image, name);
+    BYTES out;
+    CHECK(writer && writer->write(out), "writing %s", name.c_str());
+    return out;
+}
+
+static void test_orders(const std::string & dir, const BYTES & dos33)
+{
+    printf("sector orders\n");
+    // The DOS 3.3 disk as a .po
+    const BYTES dos33_po = reordered(dos33, dos_order, prodos_order);
+    const std::string po = dir + "/test_order.po";
+    write_all(po, dos33_po);
+    auto image = open_image(po, "FILESYSTEM_DOS33", "HELLO", dos33, "DOS 3.3 as .po");
+    if (image) {
+        CHECK(written(image.get(), "") == dos33_po, ".po saved back in ProDOS order");
+        CHECK(written(image.get(), "x.po") == dos33_po, ".po to .po");
+        CHECK(written(image.get(), "x.dsk") == dos33, ".po to .dsk");
+        CHECK(written(image.get(), "x.do") == dos33, ".po to .do");
+        auto nic = create_writer("FILE_MFM_NIC", 0xFE, image.get());
+        BYTES from_po, from_dsk;
+        CHECK(nic && nic->write(from_po), ".po to .nic");
+        write_all(dir + "/test_order.dsk", dos33);
+        const DiskDefs defs;
+        auto dsk = prepare_image(dir + "/test_order.dsk", "FILE_RAW_MSB", "TYPE_AGAT_140", defs);
+        auto nic2 = dsk && dsk->load() ? create_writer("FILE_MFM_NIC", 0xFE, dsk.get()) : nullptr;
+        CHECK(nic2 && nic2->write(from_dsk) && from_po == from_dsk, ".po and .dsk give other .nic");
+    }
+
+    // The ProDOS volume in both orders under each name
+    const BYTES pv_po = prodos_volume();
+    const BYTES pv_dos = reordered(pv_po, prodos_order, dos_order);
+    struct Case { const char * name; const BYTES * data; bool prodos; };
+    const Case cases[] = {
+        {"/test_prodos.po", &pv_po, true},
+        {"/test_prodos_po.dsk", &pv_po, true},
+        {"/test_prodos.do", &pv_dos, false},
+        {"/test_prodos_do.dsk", &pv_dos, false},
+    };
+    for (const Case & c : cases) {
+        const std::string name = dir + c.name;
+        write_all(name, *c.data);
+        auto pv = open_image(name, "FILESYSTEM_PRODOS", "HELLO.TXT", pv_dos, c.name);
+        if (!pv) continue;
+        CHECK(pv->file_prodos_order() == c.prodos, "%s: file order", c.name);
+        CHECK(written(pv.get(), "") == *c.data, "%s: not saved back in its order", c.name);
+        const DiskDefs defs;
+        auto fs = prepare_filesystem(pv.get(), "FILESYSTEM_PRODOS", defs);
+        std::vector<UniversalFile> files;
+        BYTES text;
+        CHECK(fs && fs->open() && fs->dir(files, false) && files.size() == 1
+              && fs->get_file(files[0], "", text) && text == BYTES({'H', 'E', 'L', 'L', 'O', 0x0D}),
+              "%s: HELLO.TXT does not read back", c.name);
+    }
+
+    // The ProDOS volume in track images, which hold the sectors where the disk has them
+    const DiskDefs defs;
+    auto pv = prepare_image(dir + "/test_prodos.po", "FILE_RAW_MSB", "TYPE_AGAT_140", defs);
+    const bool pv_loaded = pv && pv->load();
+    CHECK(pv_loaded, "ProDOS .po does not load");
+    const char * track_images[][2] = {
+        {"FILE_MFM_NIC", "/test_prodos.nic"},
+        {"FILE_MFM_NIB", "/test_prodos.nib"},
+        {"FILE_HXC_HFE", "/test_prodos.hfe"},
+    };
+    for (const auto & t : track_images) {
+        if (!pv_loaded) break;
+        auto writer = create_writer(t[0], 0xFE, pv.get());
+        BYTES data;
+        CHECK(writer && writer->write(data), "ProDOS to %s", t[1]);
+        write_all(dir + t[1], data);
+        open_image(dir + t[1], "FILESYSTEM_PRODOS", "HELLO.TXT", pv_dos, t[1]);
+    }
 }
 
 // The HFE goes through what the GUI does with a file it opens
@@ -142,6 +298,8 @@ int main(int argc, char ** argv)
     hfe_write(img, file);
     write_all(hfe, file);
     check_hfe(hfe, disk, "as HxC writes");
+
+    test_orders(dir, disk);
 
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

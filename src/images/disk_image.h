@@ -36,6 +36,7 @@ namespace dsk_tools {
 
             std::string file_name() {return m_loader->get_file_name();};
             std::string file_info() {return m_loader->file_info();};      // loader's image-level info text (with placeholders)
+            bool file_prodos_order() const {return m_loader->file_prodos_order();};  // a 140 Kb file in ProDOS order
             bool get_loaded() const {return m_is_loaded;};
             const DiskFormatParams& get_format() const {return m_format;};
             unsigned get_heads() const {return m_format.heads;};

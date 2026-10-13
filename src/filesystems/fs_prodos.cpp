@@ -66,8 +66,15 @@ namespace dsk_tools {
         return "/";
     }
 
+    // The image's sector for a sector of a track as ProDOS numbers them: ProDOS has an order
+    // of its own on a 140 Kb disk, which the library holds in DOS 3.3 order
+    unsigned fsProDOS::image_sector(unsigned sector) const
+    {
+        return (image->get_type_id() == "TYPE_AGAT_140" && sector < 16) ? agat_140_prodos2dos[sector] : sector;
+    }
+
     // A ProDOS block is 512 bytes, which is either one sector of an 880 Kb Agat disk
-    // or two consecutive sectors of a 256 byte per sector image stored in ProDOS order
+    // or two consecutive sectors of a 256 byte per sector image, as ProDOS numbers them
     Result fsProDOS::read_block(unsigned block, BYTES & out) const
     {
         const unsigned sector_size = image->get_sector_size();
@@ -80,7 +87,7 @@ namespace dsk_tools {
         out.resize(PRODOS_BLOCK_SIZE);
         for (unsigned i = 0; i < spb; i++) {
             const unsigned ls = block * spb + i;             // linear sector number
-            uint8_t * p = image->get_sector_data(0, ls / spt, ls % spt);
+            uint8_t * p = image->get_sector_data(0, ls / spt, image_sector(ls % spt));
             if (!p) return Result::error(ErrorCode::ReadError);
             std::memcpy(out.data() + i * sector_size, p, sector_size);
         }
@@ -99,7 +106,7 @@ namespace dsk_tools {
 
         const unsigned ls = block * (PRODOS_BLOCK_SIZE / sector_size) + index;
         unsigned track_index = ls / spt;
-        sector = ls % spt;
+        sector = image_sector(ls % spt);
 
         // Agat disks number their tracks through both sides, as imageAgat880 does
         if (heads == 2) {

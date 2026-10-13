@@ -51,6 +51,10 @@ LoaderRAW::LoaderRAW(const std::string &file_name, const std::string &format_id,
         buffer.assign(image_size, 0xE5);
         file.read (reinterpret_cast<char*>(buffer.data()), image_size);
 
+        // A 140 Kb disk is held in DOS 3.3 order, as the track loaders give it
+        m_file_prodos_order = type_id == "TYPE_AGAT_140" && agat140_prodos_order(file_name, buffer);
+        if (m_file_prodos_order) agat140_reorder(buffer);
+
         loaded = true;
 
         return Result::ok();

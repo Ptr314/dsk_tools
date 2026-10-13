@@ -122,6 +122,7 @@ namespace dsk_tools {
         unsigned sectors_per_block = 1;
         std::vector<uint16_t> current_path;         // key blocks of directories, [0] is the volume one
 
+        unsigned image_sector(unsigned sector) const;
         Result read_block(unsigned block, BYTES & out) const;
         // Reads a whole directory chain into a plain sequence of entries
         Result read_directory(unsigned key_block, std::vector<BYTES> & entries, std::vector<unsigned> & entry_blocks) const;
