@@ -109,6 +109,11 @@ Key points that are not obvious from a single file:
   into a `.po`, and with no file name back into the order the file had (`file_prodos_order()`),
   which an in-place save relies on. `FILESYSTEM_CPM_PRODOS` reads ProDOS order only from a file
   that was not reordered, a `.dsk` given `-f cpm-po`.
+- **A 140 Kb disk has 35 to 40 tracks**: `imageAgat140::load()` takes as many as its loader
+  gives, and the loaders count them from the file (`LoaderRAW`, `LoaderMFM` for `.nib`/`.nic`,
+  `LoaderHXC_HFE`), as `decode_agat_140_image()` does from its input; detection takes 35 to 40
+  tracks for `.dsk`/`.do`/`.po`, with or without the 128-byte label of some Agat images, and
+  `.nib`. HxC `.mfm` stays at 35.
 - **Filesystem capabilities are declared, not assumed.** `fileSystem::get_caps()` returns an
   `FSCaps` bitmask (read/write/mkdir/rename/…); the base class returns `NotImplementedYet` for
   every operation, so a filesystem implements only what it supports.

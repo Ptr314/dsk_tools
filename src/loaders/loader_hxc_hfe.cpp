@@ -113,18 +113,17 @@ namespace dsk_tools {
         return Result::ok();
     }
 
-    // The 35 tracks of a 140 Kb disk, taken as the .nib and .nic loaders take
-    // them: whatever each track holds, a field the decoder finds fault with
+    // The 35 to 40 tracks of a 140 Kb disk, taken as the .nib and .nic loaders
+    // take them: whatever each track holds, a field the decoder finds fault with
     // included (an address epilogue DE AA FF, which DOS 3.3 does not check, is
-    // common). Tracks beyond the 35th, which some disks have, are not part of
-    // the image
+    // common)
     Result LoaderHXC_HFE::load_agat140(const HfeImage & img, BYTES & buffer)
     {
-        if (img.sides != 1 || img.tracks < 35)
+        if (img.sides != 1 || img.tracks < 35 || img.tracks > 40)
             return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Invalid HFE parameters"));
 
-        buffer.assign(35 * 16 * 256, 0);
-        for (int track = 0; track < 35; track++) {
+        buffer.assign(static_cast<size_t>(img.tracks) * 16 * 256, 0);
+        for (int track = 0; track < img.tracks; track++) {
             const BYTES nibbles = agat140_track(img.cells[track]);
             load_agat140_track(track, buffer, nibbles, static_cast<int>(nibbles.size()));
         }

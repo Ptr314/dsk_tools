@@ -32,6 +32,7 @@ namespace dsk_tools {
     Result decode_agat_840_image(BYTES &out, const BYTES & in);
 
     Result load_agat140_track(int track, BYTES & buffer, const BYTES & in, int track_len);
+    // The sectors of every track in `in`, tracks of track_len bytes, 35 to 40 of them
     Result decode_agat_140_image(BYTES &out, const BYTES & in, const int track_len);
 
     // Whole tracks as the controllers lay them down: the decoded byte stream of

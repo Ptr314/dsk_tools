@@ -3,6 +3,7 @@
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: A top level abstract class for different physical format loaders
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 
@@ -29,6 +30,9 @@ namespace dsk_tools {
 
     void LoaderMFM::prepare_tracks_list(BYTES & in)
     {
+        // A 140 Kb disk has 35 to 40 tracks, as many as the file holds
+        if (type_id == "TYPE_AGAT_140" && m_track_len > 0)
+            m_tracks_count = std::min(40, std::max(35, static_cast<int>(in.size() / m_track_len)));
         for (int track=0; track < get_tracks_count(); track ++) {
             m_track_offsets[track] = track * m_track_len;
             m_track_lengths[track] = m_track_len;
@@ -240,15 +244,15 @@ namespace dsk_tools {
         auto fsize = file.tellg();
         file.seekg (0, std::ios::beg);
 
-        int image_size = get_tracks_count()*get_sectors_count()*256;
-        buffer.resize(image_size);
-
         BYTES in_all(fsize);
         bool errors = false;
 
         file.read (reinterpret_cast<char*>(in_all.data()), fsize);
 
         prepare_tracks_list(in_all);
+
+        int image_size = get_tracks_count()*get_sectors_count()*256;
+        buffer.resize(image_size);
 
         for (int track=0; track<get_tracks_count(); track++) {
             int in_base = get_track_offset(track);
