@@ -4,11 +4,14 @@
 // Description: A writer class for .DSK files
 
 #include "writer_raw.h"
+#include "dsk_tools/dsk_tools.h"
+#include "utils.h"
 
 namespace dsk_tools {
 
-    WriterRAW::WriterRAW(const std::string & format_id, diskImage * image_to_save):
+    WriterRAW::WriterRAW(const std::string & format_id, diskImage * image_to_save, const std::string & file_name):
         Writer(format_id, image_to_save)
+        , file_name(file_name)
     {}
 
     std::string WriterRAW::get_default_ext()
@@ -20,6 +23,8 @@ namespace dsk_tools {
     Result WriterRAW::write(BYTES &buffer)
     {
         buffer = *image->get_buffer();
+        const bool prodos_order = file_name.empty() ? image->file_prodos_order() : get_file_ext(file_name) == ".po";
+        if (image->get_type_id() == "TYPE_AGAT_140" && prodos_order) agat140_reorder(buffer);
         return Result::ok();
     }
 

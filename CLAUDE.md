@@ -59,6 +59,9 @@ The whole track code has tests in `tools/`, built with `-DENABLE_DSK_TESTS=ON` a
   on its command line must read without bad sectors (eCat3's `tests/results/*.hfe`).
 - `test_hfe_io <image> <type>` - a raw image through the public API: written to HFE, two sectors
   damaged, then detection, loading, bad sectors, filesystem, `load_structured()`, `file_info()`.
+- `test_agat140` - Apple II / Agat 140 Kb disks through the public API, on disks it makes up: a
+  DOS 3.3 disk to HFE and back, with the transitions in either cell of a pair, and as a `.po`; a
+  ProDOS volume in both orders as `.po`, `.dsk` and `.do`, and read back from a `.nic`.
   `-DDSK_TEST_SAMPLES=<docs/samples>` registers it for a few sample images.
 - `tools/hfe_roundtrip.sh <fddconv> <dirs...>` - raw -> HFE -> raw for every image found: same
   type, same file list, same sectors.
@@ -99,6 +102,13 @@ Key points that are not obvious from a single file:
   `FAMILY:VARIANT` (`TYPE_CPM:IRISHA-360-INT`, `TYPE_FAT:ST-720`, `TYPE_OTHER:PRODOS-800`). For CP/M and FAT the geometry
   comes from `src/diskdefs` (cpmtools syntax, parsed by `parse_diskdefs()`), not from a C++
   class — prefer adding a `diskdefs` entry over a new `diskImage` subclass.
+- **A 140 Kb disk is held in DOS 3.3 order**, whatever the order of its file: `LoaderRAW`
+  reorders a `.po`, and a `.dsk` with a ProDOS volume directory where ProDOS order keeps block 2
+  (`agat140_prodos_order()`, `agat140_reorder()`), as the track loaders hold what they decode.
+  `fsProDOS` maps its sectors through `agat_140_prodos2dos`; `WriterRAW` writes ProDOS order
+  into a `.po`, and with no file name back into the order the file had (`file_prodos_order()`),
+  which an in-place save relies on. `FILESYSTEM_CPM_PRODOS` reads ProDOS order only from a file
+  that was not reordered, a `.dsk` given `-f cpm-po`.
 - **Filesystem capabilities are declared, not assumed.** `fileSystem::get_caps()` returns an
   `FSCaps` bitmask (read/write/mkdir/rename/…); the base class returns `NotImplementedYet` for
   every operation, so a filesystem implements only what it supports.

@@ -139,6 +139,49 @@ namespace dsk_tools {
     }
 
 
+    // Block 2 of a 140 Kb image, where ProDOS keeps the volume directory: sectors 4 and 5 of
+    // track 0 in ProDOS order, in DOS 3.3 order the sectors that are 4 and 5 to ProDOS
+    static BYTES agat140_block2(const BYTES & image, const bool prodos_order)
+    {
+        BYTES block;
+        for (int half = 0; half < 2; half++) {
+            const int sector = prodos_order ? 4 + half : agat_140_prodos2dos[4 + half];
+            if (image.size() < static_cast<size_t>(sector + 1) * 256) return BYTES();
+            block.insert(block.end(), image.begin() + sector * 256, image.begin() + (sector + 1) * 256);
+        }
+        return block;
+    }
+
+    // A ProDOS volume on a 140 Kb disk as the library holds it, in DOS 3.3 order
+    static bool agat140_held_prodos_volume(const BYTES & image)
+    {
+        return fsProDOS::volume_header_is_valid(agat140_block2(image, false),
+            static_cast<unsigned>(image.size() / PRODOS_BLOCK_SIZE));
+    }
+
+    bool agat140_prodos_order(const std::string & file_name, const BYTES & image)
+    {
+        const std::string ext = get_file_ext(file_name);
+        if (ext == ".po") return true;
+        if (ext != ".dsk") return false;
+        const unsigned blocks = static_cast<unsigned>(image.size() / PRODOS_BLOCK_SIZE);
+        return fsProDOS::volume_header_is_valid(agat140_block2(image, true), blocks)
+            && !fsProDOS::volume_header_is_valid(agat140_block2(image, false), blocks);
+    }
+
+    void agat140_reorder(BYTES & image)
+    {
+        const size_t track_size = 16 * 256;
+        BYTES track(track_size);
+        for (size_t t = 0; t + track_size <= image.size(); t += track_size) {
+            std::copy(image.begin() + t, image.begin() + t + track_size, track.begin());
+            for (int s = 0; s < 16; s++) {
+                const auto from = track.begin() + agat_140_prodos2dos[s] * 256;
+                std::copy(from, from + 256, image.begin() + t + s * 256);
+            }
+        }
+    }
+
     // A ProDOS volume keeps its directory in block 2, so an image whose sectors are
     // stored in ProDOS block order has the volume header at a fixed offset
     static bool is_prodos_volume(UTF8_ifstream & file, const unsigned disk_blocks)
@@ -536,6 +579,18 @@ namespace dsk_tools {
                 file->seekg (vtoc_pos, std::ios::beg);
                 file->read (reinterpret_cast<char*>(&VTOC), sizeof(Agat_VTOC));
 
+                // A ProDOS volume on a 140 Kb disk, in the order the file keeps its sectors
+                bool prodos_volume = false;
+                if (type_id == "TYPE_AGAT_140") {
+                    BYTES image(static_cast<size_t>(fsize) / (16 * 256) * (16 * 256));
+                    file->clear();
+                    file->seekg(0, std::ios::beg);
+                    file->read(reinterpret_cast<char*>(image.data()), image.size());
+                    const bool prodos_order = agat140_prodos_order(file_name, image);
+                    prodos_volume = file->good() && fsProDOS::volume_header_is_valid(
+                        agat140_block2(image, prodos_order), static_cast<unsigned>(image.size() / PRODOS_BLOCK_SIZE));
+                }
+
                 if (buffer[0] == 0x01 && buffer[2] == 0x58) {
                     filesystem_id = "FILESYSTEM_SPRITE_OS";
                 } else
@@ -548,8 +603,7 @@ namespace dsk_tools {
                 if (type_id == "TYPE_AGAT_140" && ext == ".cpm") {
                     filesystem_id = "FILESYSTEM_CPM_RAW";
                 } else
-                if (type_id == "TYPE_AGAT_140" && is_prodos_volume(*file, 35*16*256/PRODOS_BLOCK_SIZE)) {
-                    // A 140 Kb image written in ProDOS block order
+                if (prodos_volume) {
                     filesystem_id = "FILESYSTEM_PRODOS";
                 } else
                 if (type_id == "TYPE_AGAT_840" && is_onix_volume(*file, 860160 / ONIX_BLOCK_SIZE)) {
@@ -661,6 +715,9 @@ namespace dsk_tools {
                 return Result::ok();
             }
 
+            if (type_id == "TYPE_AGAT_140" && agat140_held_prodos_volume(buffer)) {
+                filesystem_id = "FILESYSTEM_PRODOS";
+            } else
             if (buffer[0] == 0x01) {
                 std::string ms = "MICROSOFT";
                 std::string _ms(buffer.begin() + 0x74, buffer.begin() + 0x74 + ms.size());
@@ -744,6 +801,9 @@ namespace dsk_tools {
                 LoaderHXC_HFE loader(file_name, format_id, type_id);
                 const Result res = loader.load(buffer);
 
+                if (res && agat140_held_prodos_volume(buffer)) {
+                    filesystem_id = "FILESYSTEM_PRODOS";
+                } else
                 if (res && buffer[0] == 0x01) {
                     std::string ms = "MICROSOFT";
                     std::string _ms(buffer.begin() + 0x74, buffer.begin() + 0x74 + ms.size());
@@ -954,13 +1014,13 @@ namespace dsk_tools {
         return result;
     }
 
-    std::unique_ptr<Writer> create_writer(const std::string & format_id, const uint8_t volume_id, diskImage * image) {
+    std::unique_ptr<Writer> create_writer(const std::string & format_id, const uint8_t volume_id, diskImage * image, const std::string & file_name) {
         std::set<std::string> mfm_formats = {"FILE_HXC_MFM", "FILE_MFM_NIB", "FILE_MFM_NIC"};
 
         if (mfm_formats.find(format_id) != mfm_formats.end())
            return make_unique<WriterHxCMFM>(format_id, image, volume_id);
         if (format_id == "FILE_HXC_HFE") return make_unique<dsk_tools::WriterHxCHFE>(format_id, image, volume_id);
-        if (format_id == "FILE_RAW_MSB") return dsk_tools::make_unique<dsk_tools::WriterRAW>(format_id, image);
+        if (format_id == "FILE_RAW_MSB") return dsk_tools::make_unique<dsk_tools::WriterRAW>(format_id, image, file_name);
 
         return nullptr;
     }

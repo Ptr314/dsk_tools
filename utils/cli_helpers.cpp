@@ -25,7 +25,7 @@ namespace dsk_tools {
         Result res = detect_fdd_type(output_file, out_format_id, type_id, filesystem_id, true);
         if (!res) return res;
 
-        const auto writer = create_writer(out_format_id, volume_id, image);
+        const auto writer = create_writer(out_format_id, volume_id, image, output_file);
         if (!writer) { return Result::error(ErrorCode::WriteError); }
 
         BYTES buffer;

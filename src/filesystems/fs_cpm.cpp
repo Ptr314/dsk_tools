@@ -153,7 +153,8 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             return agat_140_cpm2dos[sector];
         else
         if (m_filesystem_id == "FILESYSTEM_CPM_PRODOS")
-            return agat_140_cpm2prodos[sector];
+            // A .po is held in DOS 3.3 order; a file of another name in ProDOS order as it is
+            return image->file_prodos_order() ? agat_140_cpm2dos[sector] : agat_140_cpm2prodos[sector];
         else
             throw std::runtime_error("Incorrect filesystem id");
     }

@@ -169,6 +169,12 @@ namespace dsk_tools {
         0,9,3,12,6,15,1,10,4,13,7,8,2,11,5,14
     };
 
+    // The DOS 3.3 sector of a 140 Kb track that ProDOS numbers as each sector, and the
+    // other way round: the table is its own inverse
+    static const int agat_140_prodos2dos[16] = {
+        0, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 15
+    };
+
     static const uint16_t agat_MFM_tab[]=
         {
             0x5555, 0x5595, 0x5525, 0x55A5, 0x5549, 0x5589, 0x5529, 0x55A9,
