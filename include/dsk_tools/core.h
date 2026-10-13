@@ -142,10 +142,21 @@ namespace dsk_tools {
         uint8_t encoding = ISOIBM_MFM_ENCODING;
         uint8_t interface_mode = 0x07;      // GENERIC_SHUGART_DD_FLOPPYMODE
         bool write_allowed = true;
+        bool double_step = false;           // a track of the file every two steps of the head
         std::vector<BYTES> cells;           // track * sides + side
     };
     Result hfe_read(const BYTES & file, HfeImage & img);
     void hfe_write(const HfeImage & img, BYTES & file);
+
+    // Apple II GCR, the 140 Kb disks of the Apple II and the Agat, as bit cells:
+    // a disk bit of 4 us is two cells, a 1 a flux transition in one of them - the
+    // second as Greaseweazle and FlashFloppy write it, the first as the HxC
+    // software does. gcr_encode() takes the bits of a track as the controller
+    // shifts them in, the top bit of a byte first, sync bytes of 10 bits
+    // included. gcr_decode() gives the nibbles of one turn as the controller
+    // reads them: eight bits from a 1 on, the 0 bits between nibbles falling away
+    void gcr_encode(const uint8_t * bits, size_t bit_count, BYTES & cells);
+    void gcr_decode(const BYTES & cells, BYTES & nibbles);
 
     // Disks as bit cells by their TrackLayout (DiskFormatParams::layout): the
     // geometry, the data rate and the rpm come from the format, sectors are

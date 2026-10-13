@@ -114,6 +114,7 @@ Result hfe_read(const BYTES & file, HfeImage & img)
     img.encoding = hdr.track_encoding;
     img.interface_mode = hdr.floppyinterfacemode;
     img.write_allowed = hdr.write_allowed != 0x00;
+    img.double_step = hdr.single_step == 0x00;
     img.cells.assign((size_t)img.tracks * img.sides, BYTES());
 
     const size_t lut = (size_t)hdr.track_list_offset * 512;
@@ -159,6 +160,7 @@ void hfe_write(const HfeImage & img, BYTES & file)
     hdr.write_protected = 0xFF;
     hdr.track_list_offset = 1;
     hdr.write_allowed = img.write_allowed ? 0xFF : 0x00;
+    hdr.single_step = img.double_step ? 0x00 : 0xFF;
     const uint8_t * h = reinterpret_cast<const uint8_t*>(&hdr);
     file.insert(file.end(), h, h + sizeof(hdr));
     file.resize(512, 0xFF);
@@ -265,6 +267,104 @@ void fm_decode(const BYTES & cells, size_t len, BYTES & data, BYTES & special)
         return true;
     });
     decode_segments(cells, bits, marks, len, data, special);
+}
+
+//----------------------------- Apple II GCR -------------------------------//
+
+namespace {
+
+    // The cells a bit takes, measured over the long runs of 1 bits that the gaps
+    // of every formatted track have; 2 for a track without them
+    double gcr_cells_per_bit(const std::vector<size_t> & ones)
+    {
+        size_t cells = 0, bits = 0, run_cells = 0, run_bits = 0;
+        for (size_t i = 1; i <= ones.size(); i++) {
+            const size_t gap = (i < ones.size()) ? ones[i] - ones[i - 1] : 0;
+            if (gap >= 1 && gap <= 3) {
+                run_cells += gap;
+                run_bits++;
+                continue;
+            }
+            if (run_bits >= 32) {
+                cells += run_cells;
+                bits += run_bits;
+            }
+            run_cells = run_bits = 0;
+        }
+        return bits ? (double)cells / bits : 2.0;
+    }
+
+}
+
+void gcr_encode(const uint8_t * bits, size_t bit_count, BYTES & cells)
+{
+    cells.assign((bit_count * 2 + 7) / 8, 0);
+    for (size_t i = 0; i < bit_count; i++)
+        if ((bits[i >> 3] >> (7 - (i & 7))) & 1) put_cell(cells, 2 * i + 1, true);
+}
+
+void gcr_decode(const BYTES & cells, BYTES & nibbles)
+{
+    nibbles.clear();
+    const size_t n = cells.size() * 8;
+    std::vector<size_t> ones;
+    bool odd = false, even = false;
+    for (size_t c = 0; c < n; c++)
+        if (cell(cells, c)) {
+            ones.push_back(c);
+            if (c & 1) odd = true; else even = true;
+        }
+    if (ones.empty()) return;
+
+    // The disk bits: the cells of the transitions when they all keep to one cell
+    // of their pairs. Otherwise a clock counts them, as the controller's logic
+    // does: a write splice shifts the pairs by a cell, and the cells of a disk
+    // read by a flux reader drift. Each transition ends as many bits as clock
+    // periods since the last one; the clock moves an eighth of the way to it, the
+    // period a 256th, after it is measured first, as a disk turning a little slower
+    // than its cells were counted puts a transition a cell late now and then: a
+    // gap of 1.5 periods by a period of 2
+    std::vector<uint8_t> bits;
+    if (!(odd && even)) {
+        bits.assign(n / 2, 0);
+        for (size_t i = 0; i < ones.size(); i++) bits[ones[i] / 2] = 1;
+    } else {
+        double period = gcr_cells_per_bit(ones);
+        double clock = (double)ones[0];
+        const long lead = (long)((double)ones[0] / period);
+        bits.assign((size_t)lead, 0);
+        bits.push_back(1);
+        for (size_t i = 1; i < ones.size(); i++) {
+            const double at = (double)ones[i];
+            long count = (long)((at - clock) / period + 0.5);
+            if (count < 1) count = 1;
+            bits.insert(bits.end(), (size_t)(count - 1), 0);
+            bits.push_back(1);
+            const double expected = clock + count * period;
+            clock = expected + (at - expected) / 8;
+            period += (at - expected) / count / 256;
+            if (period < 1.5) period = 1.5;
+            if (period > 2.5) period = 2.5;
+        }
+        long count = (long)(((double)n - ones.back() + ones[0]) / period + 0.5);
+        if (count - 1 - lead > 0) bits.insert(bits.end(), (size_t)(count - 1 - lead), 0);
+    }
+
+    // The latch: a 0 shifted into the empty latch leaves it empty, and a nibble
+    // is the eight bits from a 1 on. The track is a ring: a turn brings the latch
+    // into step, the nibbles that start in the next one are the track's
+    const size_t len = bits.size();
+    size_t at = 0;
+    while (at < 2 * len) {
+        while (at < 2 * len && !bits[at % len]) at++;
+        if (at >= 2 * len) break;
+        if (at >= len) {
+            uint8_t v = 0;
+            for (size_t k = 0; k < 8; k++) v = (uint8_t)((v << 1) | bits[(at + k) % len]);
+            nibbles.push_back(v);
+        }
+        at += 8;
+    }
 }
 
 } // namespace

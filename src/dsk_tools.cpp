@@ -262,6 +262,22 @@ namespace dsk_tools {
         return track_from_cells(format, img.cells[static_cast<size_t>(tracks - 1) * img.sides], out.data(), status);
     }
 
+    // Whether an HFE holds Apple II GCR: so its header says, or, saying nothing,
+    // its first track goes four cells without a flux transition, as two 0 bits of
+    // GCR do, two cells a bit, and MFM and FM never do
+    static bool hfe_tracks_are_gcr(const HfeImage & img, uint8_t encoding)
+    {
+        if (encoding == APPLEII_GCR1_ENCODING || encoding == APPLEII_GCR2_ENCODING) return true;
+        if (encoding != UNKNOWN_ENCODING || img.cells.empty()) return false;
+        int zeros = 0;
+        for (uint8_t b : img.cells[0])
+            for (int i = 0; i < 8; i++, b >>= 1) {
+                zeros = (b & 1) ? 0 : zeros + 1;
+                if (zeros >= 4) return true;
+            }
+        return false;
+    }
+
     // The type and the filesystem of a disk in an HFE by the geometry its
     // tracks show and by what the volume itself says
     static bool detect_hfe_tracks(const HfeImage & img, std::string & type_id, std::string & filesystem_id)
@@ -711,6 +727,32 @@ namespace dsk_tools {
                 if (res && buffer[0] == 0x01) {
                     if (buffer[2] == 0x58) {
                         filesystem_id = "FILESYSTEM_SPRITE_OS";
+                    } else
+                    if (fsOnix::volume_is_valid(buffer, buffer.size() / ONIX_BLOCK_SIZE)) {
+                        filesystem_id = "FILESYSTEM_ONIX";
+                    } else {
+                        filesystem_id = "FILESYSTEM_DOS33";
+                    }
+                } else
+                    return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid HFE file format"));
+            } else
+            if (hdr->number_of_side == 1 && hdr->number_of_track >= 35 && hdr->number_of_track <= 40
+                && hfe_tracks_are_gcr(img, hdr->track_encoding)) {
+                type_id = "TYPE_AGAT_140";
+
+                BYTES buffer;
+                LoaderHXC_HFE loader(file_name, format_id, type_id);
+                const Result res = loader.load(buffer);
+
+                if (res && buffer[0] == 0x01) {
+                    std::string ms = "MICROSOFT";
+                    std::string _ms(buffer.begin() + 0x74, buffer.begin() + 0x74 + ms.size());
+
+                    if (buffer[2] == 0x58) {
+                        filesystem_id = "FILESYSTEM_SPRITE_OS";
+                    } else
+                    if (_ms == ms) {
+                        filesystem_id = "FILESYSTEM_CPM_DOS";
                     } else
                     if (fsOnix::volume_is_valid(buffer, buffer.size() / ONIX_BLOCK_SIZE)) {
                         filesystem_id = "FILESYSTEM_ONIX";

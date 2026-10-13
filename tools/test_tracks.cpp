@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Mikhail Revzin <p3.141592653589793238462643@gmail.com>
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
-// Description: Tests of the whole track code (IBM MFM, IBM 3740 FM, DVK MX, HFE)
+// Description: Tests of the whole track code (IBM MFM, IBM 3740 FM, DVK MX, Apple II GCR, HFE)
 //
 //   test_tracks [file.hfe ...]
 //
@@ -213,6 +213,99 @@ static void test_geometries()
     }
 }
 
+// An Apple II GCR track as the .nic records of SDISK// lay it out: for every
+// sector 22 bytes FF, six 0 bits, nine sync bytes FF of two 0 bits more, the
+// address field, 5 FF, the data field and 14 FF. bits gets the bit stream,
+// nibbles what the controller reads from it, the 0 bits of the syncs gone
+static void gcr_track(int track, const BYTES & flat, BYTES & bits, size_t & bit_count, BYTES & nibbles)
+{
+    bits.clear();
+    nibbles.clear();
+    bit_count = 0;
+    auto put_bit = [&](int b) {
+        if ((bit_count & 7) == 0) bits.push_back(0);
+        if (b) bits.back() |= (uint8_t)(0x80 >> (bit_count & 7));
+        bit_count++;
+    };
+    auto put_byte = [&](uint8_t v) {
+        for (int i = 7; i >= 0; i--) put_bit((v >> i) & 1);
+        nibbles.push_back(v);
+    };
+    for (int s = 0; s < 16; s++) {
+        for (int i = 0; i < 22; i++) put_byte(0xFF);
+        for (int i = 0; i < 6; i++) put_bit(0);
+        for (int i = 0; i < 9; i++) { put_byte(0xFF); put_bit(0); put_bit(0); }
+        const uint8_t v = 0xFE, t = (uint8_t)track, r = (uint8_t)s;
+        put_byte(0xD5); put_byte(0xAA); put_byte(0x96);
+        for (uint8_t b : code44(BYTES{v, t, r, (uint8_t)(v ^ t ^ r)})) put_byte(b);
+        put_byte(0xDE); put_byte(0xAA); put_byte(0xEB);
+        for (int i = 0; i < 5; i++) put_byte(0xFF);
+        // The image keeps the sectors in DOS order: physical sector s is its sector raw2logic[s]
+        uint8_t field[344];
+        encode_gcr62(flat.data() + agat_140_raw2logic[s] * 256, field);
+        put_byte(0xD5); put_byte(0xAA); put_byte(0xAD);
+        for (int i = 0; i < 343; i++) put_byte(field[i]);
+        put_byte(0xDE); put_byte(0xAA); put_byte(0xEB);
+        for (int i = 0; i < 14; i++) put_byte(0xFF);
+    }
+}
+
+// Apple II GCR: the nibbles read back from the cells of a track, whichever cell
+// of a pair the transitions keep to, across a write splice, and with the cells
+// of a disk turning a little slower or faster than they were counted
+static void test_gcr()
+{
+    const BYTES flat = pattern(16 * 256, 140);
+    BYTES bits, nibbles, cells, back;
+    size_t bit_count = 0;
+    gcr_track(17, flat, bits, bit_count, nibbles);
+    gcr_encode(bits.data(), bit_count, cells);
+    CHECK(cells.size() == bit_count / 4, "%zu bytes of cells for %zu bits", cells.size(), bit_count);
+    gcr_decode(cells, back);
+    CHECK(back == nibbles, "nibbles differ: %zu read, %zu written", back.size(), nibbles.size());
+
+    const size_t total = cells.size() * 8;
+    auto get = [&](size_t c) { return (cells[c >> 3] >> (c & 7)) & 1; };
+    // The sectors of track 17 out of cells, as the HFE loader takes them
+    auto sectors_of = [&](const BYTES & c) {
+        BYTES ring;
+        gcr_decode(c, ring);
+        ring.resize(ring.size() + 512, 0xFF);
+        BYTES out(35 * 16 * 256, 0);
+        load_agat140_track(17, out, ring, (int)ring.size());
+        return BYTES(out.begin() + 17 * 16 * 256, out.begin() + 18 * 16 * 256);
+    };
+    CHECK(sectors_of(cells) == flat, "sectors differ");
+
+    // The transitions in the first cell of each pair, as the HxC software writes
+    BYTES first(cells.size(), 0);
+    for (size_t c = 0; c + 1 < total; c++)
+        if (get(c + 1)) first[c >> 3] |= (uint8_t)(1u << (c & 7));
+    gcr_decode(first, back);
+    CHECK(back == nibbles, "transitions in the first cells: nibbles differ");
+
+    // A write splice before sector 8: from there on the cells a cell late
+    const size_t splice = 8 * 416 * 8 * 2;
+    BYTES spliced(cells.size(), 0);
+    for (size_t c = 0; c < total; c++)
+        if (get(c < splice ? c : c - 1)) spliced[c >> 3] |= (uint8_t)(1u << (c & 7));
+    CHECK(sectors_of(spliced) == flat, "write splice: sectors differ");
+
+    // A disk 2% slower or faster, every transition up to a tenth of a cell off
+    for (double per_bit : {1.96, 2.04}) {
+        BYTES drift((size_t)(bit_count * per_bit / 8) + 2, 0);
+        uint32_t x = 1;
+        for (size_t i = 0; i < bit_count; i++) {
+            if (!((bits[i >> 3] >> (7 - (i & 7))) & 1)) continue;
+            x = x * 1103515245u + 12345u;
+            const double jitter = ((int)((x >> 16) % 21) - 10) / 100.0;
+            const size_t c = (size_t)(i * per_bit + 1 + jitter + 0.5);
+            if (c < drift.size() * 8) drift[c >> 3] |= (uint8_t)(1u << (c & 7));
+        }
+        CHECK(sectors_of(drift) == flat, "%.2f cells a bit: sectors differ", per_bit);
+    }
+}
+
 static void test_files(int argc, char ** argv)
 {
     for (int i = 1; i < argc; i++) {
@@ -244,6 +337,7 @@ int main(int argc, char ** argv)
     printf("damage\n");         test_damage();
     printf("phase\n");          test_phase();
     printf("geometries\n");     test_geometries();
+    printf("apple ii gcr\n");   test_gcr();
     if (argc > 1) { printf("files\n"); test_files(argc, argv); }
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;
