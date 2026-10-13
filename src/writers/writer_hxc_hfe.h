@@ -14,13 +14,14 @@ namespace dsk_tools {
     #define HFE_BLOCK_SIZE  512
     #define HFE_TRACK_LEN   26112
 
-    // Agat 840/880 Kb disks by their own track encoder, every other type by the
-    // TrackLayout of its diskdef
+    // Agat 840/880 Kb disks by their own track encoder, Apple II and Agat 140 Kb
+    // disks in GCR, every other type by the TrackLayout of its diskdef
     class WriterHxCHFE:public WriterMFM
     {
 
     protected:
         Result write_agat(HfeImage & img);
+        Result write_agat140(HfeImage & img);
         Result write_tracks(HfeImage & img);
     public:
         WriterHxCHFE(const std::string & format_id, diskImage *image_to_save, const uint8_t volume_id);

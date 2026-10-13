@@ -3,6 +3,7 @@
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: A loader class for .HFE files
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 
@@ -32,6 +33,23 @@ namespace dsk_tools {
             in.resize(static_cast<size_t>(fsize));
             file.read (reinterpret_cast<char*>(in.data()), fsize);
             return Result::ok();
+        }
+
+        // The nibbles of a 140 Kb track as a turn from its first address field
+        // on, so that a sector running over the end of the turn comes whole,
+        // with a gap after it for a field cut short
+        BYTES agat140_track(const BYTES & cells)
+        {
+            BYTES nibbles;
+            gcr_decode(cells, nibbles);
+            const size_t n = nibbles.size();
+            for (size_t i = 0; i < n; i++)
+                if (nibbles[i] == 0xD5 && nibbles[(i + 1) % n] == 0xAA && nibbles[(i + 2) % n] == 0x96) {
+                    std::rotate(nibbles.begin(), nibbles.begin() + i, nibbles.end());
+                    break;
+                }
+            nibbles.resize(n + 512, 0xFF);
+            return nibbles;
         }
 
     }
@@ -95,6 +113,25 @@ namespace dsk_tools {
         return Result::ok();
     }
 
+    // The 35 tracks of a 140 Kb disk, taken as the .nib and .nic loaders take
+    // them: whatever each track holds, a field the decoder finds fault with
+    // included (an address epilogue DE AA FF, which DOS 3.3 does not check, is
+    // common). Tracks beyond the 35th, which some disks have, are not part of
+    // the image
+    Result LoaderHXC_HFE::load_agat140(const HfeImage & img, BYTES & buffer)
+    {
+        if (img.sides != 1 || img.tracks < 35)
+            return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "Invalid HFE parameters"));
+
+        buffer.assign(35 * 16 * 256, 0);
+        for (int track = 0; track < 35; track++) {
+            const BYTES nibbles = agat140_track(img.cells[track]);
+            load_agat140_track(track, buffer, nibbles, static_cast<int>(nibbles.size()));
+        }
+        loaded = true;
+        return Result::ok();
+    }
+
     Result LoaderHXC_HFE::load(BYTES &buffer, const DiskFormatParams &format)
     {
         HfeImage img;
@@ -102,6 +139,7 @@ namespace dsk_tools {
         if (!res) return res;
 
         if (is_agat_type(type_id)) return load_agat(img, buffer);
+        if (type_id == "TYPE_AGAT_140") return load_agat140(img, buffer);
 
         if (format.layout == TrackLayout::None || format.heads == 0 || format.tracks == 0
             || format.sectors == 0 || format.sector_size == 0)
@@ -259,6 +297,56 @@ namespace dsk_tools {
         return result;
     }
 
+    // The fields of an Apple II GCR track, as the .nib and .nic info gives them:
+    // for every sector its address field (volume, track, sector, checksum) and
+    // the data field after it, each with its epilogue DE AA EB
+    std::string LoaderHXC_HFE::agat140_track_info(const BYTES & nibbles, bool & errors)
+    {
+        std::string result;
+        const size_t n = nibbles.size();
+        size_t sectors = 0;
+        for (size_t p = 0; p + 14 <= n; p++) {
+            if (nibbles[p] != 0xD5 || nibbles[p + 1] != 0xAA || nibbles[p + 2] != 0x96) continue;
+            const BYTES field = decode44(BYTES(nibbles.begin() + p + 3, nibbles.begin() + p + 11));
+            const bool crc_ok = static_cast<uint8_t>(field[0] ^ field[1] ^ field[2]) == field[3];
+            const bool end_ok = nibbles[p + 11] == 0xDE && nibbles[p + 12] == 0xAA && nibbles[p + 13] == 0xEB;
+            result += "    $" + int_to_hex(static_cast<uint16_t>(p)) + " {$INDEX_MARK} ($D5 $AA $96)\n";
+            result += "    $" + int_to_hex(static_cast<uint16_t>(p + 3)) + " {$SECTOR_INDEX}:"
+                      + " {$VOLUME_ID}=" + std::to_string(field[0]) + " ($" + int_to_hex(field[0]) + ")"
+                      + ", {$TRACK_SHORT}=" + std::to_string(field[1])
+                      + ", {$LOGICAL_SECTOR}=" + std::to_string(field[2])
+                      + ", " + (crc_ok ? "{$INDEX_CRC_OK}" : "{$INDEX_CRC_ERROR}")
+                      + ", " + (end_ok ? "{$INDEX_EPILOGUE_OK}" : "{$INDEX_EPILOGUE_ERROR}") + "\n";
+            sectors++;
+            if (!crc_ok || !end_ok) errors = true;
+            p += 13;
+
+            // The data field follows its address field within a few dozen nibbles
+            size_t d = p + 1;
+            const size_t reach = std::min(n, d + 64);
+            while (d + 3 <= reach && !(nibbles[d] == 0xD5 && nibbles[d + 1] == 0xAA && nibbles[d + 2] == 0xAD)) d++;
+            if (d + 3 > reach || d + 349 > n) {
+                result += "    {$NO_DATA_FIELD}\n";
+                errors = true;
+                continue;
+            }
+            BYTES data(256);
+            const bool data_ok = decode_gcr62(nibbles.data() + d + 3, data.data());
+            const bool data_end_ok = nibbles[d + 346] == 0xDE && nibbles[d + 347] == 0xAA && nibbles[d + 348] == 0xEB;
+            result += "    $" + int_to_hex(static_cast<uint16_t>(d)) + " {$DATA_MARK} ($D5 $AA $AD)"
+                      + ", " + (data_ok ? "{$SECTOR_CRC_OK}" : "{$SECTOR_CRC_ERROR}")
+                      + ", " + (data_end_ok ? "{$DATA_EPILOGUE_OK}" : "{$DATA_EPILOGUE_ERROR}") + "\n";
+            result += "               " + toHexList(data.data(), 16) + " ...\n";
+            if (!data_ok || !data_end_ok) errors = true;
+            p = d + 348;
+        }
+        if (sectors == 0) {
+            result += "    {$SECTOR_UNAVAILABLE}\n";
+            errors = true;
+        }
+        return result;
+    }
+
     // The fields of an IBM track: the index mark, and for every sector its ID
     // (C/H/R/N), the data mark and both CRCs
     std::string LoaderHXC_HFE::ibm_track_info(const DiskFormatParams & format, const BYTES & cells, bool & errors)
@@ -354,9 +442,11 @@ namespace dsk_tools {
 
         // The Agat by its type; any other disk by the layout its tracks show
         DiskFormatParams format;
-        const bool agat = is_agat_type(type_id) || !hfe_probe_format(img, format);
-        if (!agat) result += "{$TRACK_LAYOUT}: " + track_layout_name(format.layout) + "\n\n";
-        if (!agat && format.layout == TrackLayout::DvkMx) return result;
+        const bool agat140 = type_id == "TYPE_AGAT_140";
+        const bool agat = !agat140 && (is_agat_type(type_id) || !hfe_probe_format(img, format));
+        const bool layout = !agat140 && !agat;
+        if (layout) result += "{$TRACK_LAYOUT}: " + track_layout_name(format.layout) + "\n\n";
+        if (layout && format.layout == TrackLayout::DvkMx) return result;
 
         bool errors = false;
         for (int track=0; track < img.tracks; track++)
@@ -364,6 +454,9 @@ namespace dsk_tools {
                 const BYTES & cells = img.cells[static_cast<size_t>(track) * img.sides + s];
                 result += "$" + dsk_tools::int_to_hex(static_cast<uint32_t>(ti[track].offset*HXC_HFE_BLOCK_SIZE))
                           + ": {$TRACK} " + std::to_string(track) + " {$SIDE} " + std::to_string(s) + "\n";
+                if (agat140) {
+                    result += agat140_track_info(agat140_track(cells), errors);
+                } else
                 if (agat) {
                     BYTES track_data;
                     decode_agat_mfm_data(track_data, cells);

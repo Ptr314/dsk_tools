@@ -8,11 +8,16 @@ add_executable(test_hfe_io test_hfe_io.cpp)
 target_link_libraries(test_hfe_io PRIVATE dsk_tools)
 target_compile_definitions(test_hfe_io PRIVATE DSK_TOOLS_DISKDEFS="${CMAKE_CURRENT_SOURCE_DIR}/../src/diskdefs")
 
+add_executable(test_agat140 test_agat140.cpp)
+target_link_libraries(test_agat140 PRIVATE dsk_tools)
+
 if(APPLE)
     target_link_libraries(test_hfe_io PRIVATE "-framework Foundation")
+    target_link_libraries(test_agat140 PRIVATE "-framework Foundation")
 endif()
 
 add_test(NAME tracks COMMAND test_tracks)
+add_test(NAME agat140 COMMAND test_agat140 ${CMAKE_CURRENT_BINARY_DIR})
 
 # Sample images for the HFE round trips: DSK_TEST_SAMPLES names the directory
 # (DISK Commander keeps them in docs/samples)

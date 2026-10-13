@@ -254,6 +254,8 @@ namespace dsk_tools {
     #define AMIGA_MFM_ENCODING              0x01
     #define ISOIBM_FM_ENCODING              0x02
     #define EMU_FM_ENCODING                 0x03
+    #define APPLEII_GCR1_ENCODING           0x06
+    #define APPLEII_GCR2_ENCODING           0x07
     #define UNKNOWN_ENCODING                0xFF
 
     // Floppy interface mode constants (from HxC HFE format)

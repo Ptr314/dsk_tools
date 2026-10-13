@@ -11,14 +11,17 @@ namespace dsk_tools {
 
     struct HfeImage;
 
-    // Agat 840/880 Kb disks are decoded by their own track format; every other
-    // type by the TrackLayout of its diskdef (IBM MFM, IBM FM, DVK MX)
+    // Agat 840/880 Kb disks are decoded by their own track format, Apple II and
+    // Agat 140 Kb disks by their GCR; every other type by the TrackLayout of its
+    // diskdef (IBM MFM, IBM FM, DVK MX)
     class LoaderHXC_HFE:public Loader
     {
     protected:
         Result read_image(HfeImage & img);
         Result load_agat(const HfeImage & img, BYTES & buffer);
+        Result load_agat140(const HfeImage & img, BYTES & buffer);
         std::string agat_track_info(const BYTES & track_data, bool & errors);
+        std::string agat140_track_info(const BYTES & nibbles, bool & errors);
         std::string ibm_track_info(const DiskFormatParams & format, const BYTES & cells, bool & errors);
     public:
         LoaderHXC_HFE(const std::string & file_name, const std::string & format_id, const std::string & type_id);

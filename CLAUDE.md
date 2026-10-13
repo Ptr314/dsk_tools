@@ -238,6 +238,19 @@ CP/M or FAT machine is therefore a diskdefs line plus `config.json`, not code.
   `ibm_*_read_track`, `ibm_*_find_marks`, `ibm_fm_find_sector`, `ibm_fm_put_sector` and the
   `dvk_mx_*` functions directly — **keep their signatures**; they are thin wrappers over the
   generic code now.
+- **Apple II and Agat 140 Kb disks** are GCR, not a layout: a disk bit of 4 us is two cells,
+  a 1 a transition in one of them (the second from Greaseweazle and FlashFloppy, the first from
+  the HxC software). `gcr_encode()` takes the bits of a track, `gcr_decode()` gives the nibbles
+  of one turn as the controller's latch reads them, counting bits by a clock where transitions
+  leave their cells (a write splice shifts them by one, a flux capture drifts).
+  `WriterHxCHFE::write_agat140()` writes the bits of the `.nic` records, one side, **double
+  step**, as Greaseweazle and HxC write Apple II disks (FlashFloppy's Apple II support plays a
+  single-step file one track a half track). `LoaderHXC_HFE::load_agat140()` hands
+  `load_agat140_track()` the nibbles from the first address field on and ignores its errors,
+  as the `.nib`/`.nic` loaders do: address epilogues `DE AA FF`, which DOS 3.3 does not check,
+  are common. Detection takes one side of 35-40 tracks whose header says Apple II GCR (6, 7),
+  or says nothing and whose first track goes four cells without a transition, which MFM and FM
+  never do.
 
 ## RT-11
 
