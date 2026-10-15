@@ -278,34 +278,26 @@ namespace dsk_tools {
     {
         // std::cout << "find_empty_sector: start_track=" << (int)start_track << std::endl;
 
-        int track = start_track;
-        int sector;
+        // Logical tracks, the same range free_sectors() counts: on a two-sided disk
+        // (Agat 840K) they run over both sides
+        const int tracks = image->get_tracks() * image->get_heads();
+        const int sectors = image->get_sectors();
 
-        do {
-            int inc;
-            if (go_forward) {
-                sector = 0;
-                inc = 1;
-            } else {
-                sector = image->get_sectors()-1;
-                inc = -1;
+        // From start_track to the end of the disk, then from below start_track down to 0
+        for (int pass = 0; pass < 2; pass++) {
+            const int step = (pass == 0) ? 1 : -1;
+            for (int track = (pass == 0) ? start_track : start_track - 1; track >= 0 && track < tracks; track += step) {
+                for (int i = 0; i < sectors; i++) {
+                    const int sector = go_forward ? i : sectors - 1 - i;
+                    if (sector_is_free(0, track, sector)) {
+                        ts.track = track;
+                        ts.sector = sector;
+                        return true;
+                    }
+                }
             }
-
-            while (sector>=0 && sector<image->get_sectors() && !sector_is_free(0, track, sector)) sector += inc;
-
-            if (sector >=0 && sector < image->get_sectors()) {
-                ts.track = track;
-                ts.sector = sector;
-
-                // std::cout << "==> found T:S = " << track << ":" << sector << std::endl;
-
-                return true;
-            } else {
-                track += (track >= start_track)?1:-1;
-                if (track < 0 || track >= image->get_tracks())
-                    return false;
-            }
-        } while (true);
+        }
+        return false;
     }
 
     bool fsDOS33::find_epmty_dir_entry(Apple_DOS_File *& dir_entry, int & dir_pos, bool just_check, bool &extra_sector)
