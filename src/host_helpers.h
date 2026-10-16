@@ -44,6 +44,7 @@ namespace dsk_tools {
             std::streampos tellg();
             void close();
             bool good() const;
+            void clear() { m_state = std::ios_base::goodbit; }
             operator bool() const;
         };
 
