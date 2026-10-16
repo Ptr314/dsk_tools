@@ -15,6 +15,8 @@ namespace dsk_tools {
     public:
         imageAgat840(std::unique_ptr<Loader> loader);
         uint8_t *get_sector_data(unsigned head, unsigned track, unsigned sector) override;
+        // The fixed 2 x 80 tracks, not the 35 to 40 a 140 Kb disk may have
+        Result load() override {return diskImage::load();};
     };
 
 }
