@@ -33,7 +33,8 @@ namespace dsk_tools {
         virtual int get_track_offset(int track) {return m_track_offsets[track];};
         virtual int get_track_len(int track) {return m_track_lengths[track];};
         virtual std::string get_header_info(BYTES & in) {return "";};
-        virtual void prepare_tracks_list(BYTES & in);
+        virtual Result prepare_tracks_list(BYTES & in);
+        Result tracks_fit(const BYTES & in);
         std::string agat140_track_info(BYTES & in, int track_len);
         std::string agat840_track_info(BYTES & in, int track_len);
         void load_agat140_track(int track, BYTES & buffer, const BYTES & in, int track_len);

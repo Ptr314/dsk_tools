@@ -103,8 +103,10 @@ Key points that are not obvious from a single file:
   comes from `src/diskdefs` (cpmtools syntax, parsed by `parse_diskdefs()`), not from a C++
   class — prefer adding a `diskdefs` entry over a new `diskImage` subclass.
 - **A 140 Kb disk is held in DOS 3.3 order**, whatever the order of its file: `LoaderRAW`
-  reorders a `.po`, and a `.dsk` with a ProDOS volume directory where ProDOS order keeps block 2
-  (`agat140_prodos_order()`, `agat140_reorder()`), as the track loaders hold what they decode.
+  reorders a `.po`, `.do` or `.dsk` in ProDOS order (`agat140_prodos_order()`, `agat140_reorder()`),
+  as the track loaders hold what they decode. The volume decides the order before the name does: a
+  ProDOS volume directory, or a DOS 3.3 catalog chain (track 17, sectors linked 15, 14, 13...), that
+  reads right in one order only; a disk showing neither (CP/M) goes by the extension.
   `fsProDOS` maps its sectors through `agat_140_prodos2dos`; `WriterRAW` writes ProDOS order
   into a `.po`, and with no file name back into the order the file had (`file_prodos_order()`),
   which an in-place save relies on. `FILESYSTEM_CPM_PRODOS` reads ProDOS order only from a file

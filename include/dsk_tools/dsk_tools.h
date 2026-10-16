@@ -75,9 +75,10 @@ namespace dsk_tools {
     std::unique_ptr<Writer> create_writer(const std::string & format_id, const uint8_t volume_id, diskImage * image, const std::string & file_name = "");
 
     // A 140 Kb Apple II or Agat sector image keeps the 16 sectors of a track in the order
-    // DOS 3.3 numbers them (.dsk, .do) or in the order ProDOS does (.po); a .dsk is in
-    // ProDOS order when it holds a ProDOS volume directory where that order keeps block 2,
-    // and none where DOS 3.3 order does. The library holds such an image in DOS 3.3 order
+    // DOS 3.3 numbers them (.dsk, .do) or in the order ProDOS does (.po); the volume overrules
+    // the name: a .dsk, .do or .po is in ProDOS order when it holds a ProDOS volume directory
+    // or a DOS 3.3 catalog that reads right in that order only, and in the order its name says
+    // when neither tells. The library holds such an image in DOS 3.3 order
     // whatever its file's, as it holds the disks it decodes from tracks.
     // agat140_prodos_order() tells the order of a file's contents by its name and them;
     // agat140_reorder() turns either order into the other, track by track
