@@ -194,6 +194,22 @@ static void test_orders(const std::string & dir, const BYTES & dos33)
         CHECK(nic2 && nic2->write(from_dsk) && from_po == from_dsk, ".po and .dsk give other .nic");
     }
 
+    // The DOS 3.3 disk in the order its name does not say: the catalog tells
+    struct DosCase { const char * name; const BYTES * data; bool prodos; };
+    const DosCase dos_cases[] = {
+        {"/test_order_do.po", &dos33, false},
+        {"/test_order_po.dsk", &dos33_po, true},
+        {"/test_order_po.do", &dos33_po, true},
+    };
+    for (const DosCase & c : dos_cases) {
+        const std::string name = dir + c.name;
+        write_all(name, *c.data);
+        auto dos = open_image(name, "FILESYSTEM_DOS33", "HELLO", dos33, c.name);
+        if (!dos) continue;
+        CHECK(dos->file_prodos_order() == c.prodos, "%s: file order", c.name);
+        CHECK(written(dos.get(), "") == *c.data, "%s: not saved back in its order", c.name);
+    }
+
     // The ProDOS volume in both orders under each name
     const BYTES pv_po = prodos_volume();
     const BYTES pv_dos = reordered(pv_po, prodos_order, dos_order);
@@ -201,8 +217,10 @@ static void test_orders(const std::string & dir, const BYTES & dos33)
     const Case cases[] = {
         {"/test_prodos.po", &pv_po, true},
         {"/test_prodos_po.dsk", &pv_po, true},
+        {"/test_prodos_po.do", &pv_po, true},
         {"/test_prodos.do", &pv_dos, false},
         {"/test_prodos_do.dsk", &pv_dos, false},
+        {"/test_prodos_do.po", &pv_dos, false},
     };
     for (const Case & c : cases) {
         const std::string name = dir + c.name;
@@ -255,6 +273,7 @@ static void test_forty_tracks(const std::string & dir)
         {"FILE_RAW_MSB", "/test_forty.po"},
         {"FILE_MFM_NIC", "/test_forty.nic"},
         {"FILE_MFM_NIB", "/test_forty.nib"},
+        {"FILE_HXC_MFM", "/test_forty.mfm"},
         {"FILE_HXC_HFE", "/test_forty.hfe"},
     };
     for (const auto & f : formats) {
@@ -277,6 +296,23 @@ static void test_forty_tracks(const std::string & dir)
     std::string format_id, type_id, fs_id;
     CHECK(!detect_fdd_type(dir + "/test_41.dsk", format_id, type_id, fs_id) || type_id != "TYPE_AGAT_140",
         "41 tracks taken for a 140 Kb disk");
+
+    // Track images cut short are refused, not read past their end
+    const char * cut[][2] = {
+        {"FILE_MFM_NIC", "/test_cut.nic"},
+        {"FILE_MFM_NIB", "/test_cut.nib"},
+        {"FILE_HXC_MFM", "/test_cut.mfm"},
+    };
+    for (const auto & f : cut) {
+        auto writer = create_writer(f[0], 0xFE, image.get());
+        BYTES data;
+        CHECK(writer && writer->write(data), "40 tracks to %s", f[1]);
+        data.resize(data.size() / 4);
+        write_all(dir + f[1], data);
+        const DiskDefs defs;
+        auto cut_image = prepare_image(dir + f[1], f[0], "TYPE_AGAT_140", defs);
+        CHECK(!cut_image || !cut_image->load(), "%s: a cut file loads", f[1]);
+    }
 }
 
 // The HFE goes through what the GUI does with a file it opens
@@ -347,6 +383,14 @@ int main(int argc, char ** argv)
 
     test_orders(dir, disk);
     test_forty_tracks(dir);
+
+    // An Agat 840 Kb disk, whose image class derives from the 140 Kb one, keeps its
+    // 2 x 80 tracks of 21 sectors
+    printf("840 Kb\n");
+    const std::string dsk840 = dir + "/test_agat840.dsk";
+    write_all(dsk840, BYTES(2 * 80 * 21 * 256, 0));
+    auto image840 = prepare_image(dsk840, "FILE_RAW_MSB", "TYPE_AGAT_840", defs);
+    CHECK(image840 && image840->load() && image840->get_tracks() == 80, "an 840 Kb image does not load");
 
     printf(failures ? "%d FAILURES\n" : "all passed\n", failures);
     return failures ? 1 : 0;

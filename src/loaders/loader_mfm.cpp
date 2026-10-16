@@ -28,15 +28,30 @@ namespace dsk_tools {
                 throw std::runtime_error("LoaderMFM: Incorrect type id");
     }
 
-    void LoaderMFM::prepare_tracks_list(BYTES & in)
+    Result LoaderMFM::prepare_tracks_list(BYTES & in)
     {
         // A 140 Kb disk has 35 to 40 tracks, as many as the file holds
         if (type_id == "TYPE_AGAT_140" && m_track_len > 0)
-            m_tracks_count = std::min(40, std::max(35, static_cast<int>(in.size() / m_track_len)));
+            m_tracks_count = std::min(40, static_cast<int>(in.size() / m_track_len));
         for (int track=0; track < get_tracks_count(); track ++) {
             m_track_offsets[track] = track * m_track_len;
             m_track_lengths[track] = m_track_len;
         }
+        return tracks_fit(in);
+    }
+
+    // Every track of the list lies within the file
+    Result LoaderMFM::tracks_fit(const BYTES & in)
+    {
+        if (get_tracks_count() < 35)
+            return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
+        for (int track=0; track < get_tracks_count(); track ++) {
+            const int offset = get_track_offset(track);
+            const int len = get_track_len(track);
+            if (offset < 0 || len <= 0 || static_cast<size_t>(offset) + static_cast<size_t>(len) > in.size())
+                return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
+        }
+        return Result::ok();
     }
 
     std::string LoaderMFM::agat140_track_info(BYTES & in, int track_len)
@@ -249,7 +264,8 @@ namespace dsk_tools {
 
         file.read (reinterpret_cast<char*>(in_all.data()), fsize);
 
-        prepare_tracks_list(in_all);
+        Result res = prepare_tracks_list(in_all);
+        if (!res) return res;
 
         int image_size = get_tracks_count()*get_sectors_count()*256;
         buffer.resize(image_size);
@@ -288,7 +304,10 @@ namespace dsk_tools {
         BYTES in_all(fsize);
         file.read (reinterpret_cast<char*>(in_all.data()), fsize);
 
-        prepare_tracks_list(in_all);
+        if (!prepare_tracks_list(in_all)) {
+            result += "{$ERROR_PARSING}\n";
+            return result;
+        }
 
         result += get_header_info(in_all);
 

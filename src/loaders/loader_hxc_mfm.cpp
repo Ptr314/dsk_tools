@@ -22,18 +22,24 @@ namespace dsk_tools {
             throw std::runtime_error("LoaderHXC_MFM: Incorrect type id");
     }
 
-    void LoaderHXC_MFM::prepare_tracks_list(BYTES & in)
+    Result LoaderHXC_MFM::prepare_tracks_list(BYTES & in)
     {
+        if (in.size() < sizeof(HXC_MFM_HEADER))
+            return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
         HXC_MFM_HEADER * hdr = reinterpret_cast<HXC_MFM_HEADER *>(in.data());
 
-        if (hdr->number_of_track != m_tracks_count)
-            throw std::runtime_error("LoaderHXC_MFM: Incorrect tracks number");
+        // A 140 Kb disk has 35 to 40 tracks, the writer stores as many as the image has
+        if (hdr->number_of_track < 35 || hdr->number_of_track > 40
+            || static_cast<size_t>(hdr->mfmtracklistoffset) + hdr->number_of_track * sizeof(HXC_MFM_TRACK_INFO) > in.size())
+            return Result::error(ErrorCode::LoadIncorrectFile, QT_TRANSLATE_NOOP("errors", "File seems to be corrupt"));
+        m_tracks_count = hdr->number_of_track;
 
         for (int track=0; track<m_tracks_count; track++) {
             HXC_MFM_TRACK_INFO * ti = reinterpret_cast<HXC_MFM_TRACK_INFO *>(in.data() + hdr->mfmtracklistoffset + track * sizeof(HXC_MFM_TRACK_INFO));
             m_track_offsets[track] = ti->mfmtrackoffset;
             m_track_lengths[track] = ti->mfmtracksize;
         }
+        return tracks_fit(in);
     }
 
     std::string LoaderHXC_MFM::get_header_info(BYTES & in)

@@ -167,14 +167,45 @@ namespace dsk_tools {
             static_cast<unsigned>(image.size() / PRODOS_BLOCK_SIZE));
     }
 
+    // Whether the DOS 3.3 catalog of a 140 Kb image reads right in this order: INIT
+    // chains the catalog sectors of track 17 downwards, 15, 14, 13..., so a sector
+    // taken for sector s links to s - 1 only when the order is the file's own
+    static bool agat140_dos_catalog_in_order(const BYTES & image, const bool prodos_order)
+    {
+        const size_t track17 = 17 * 16 * 256;
+        if (image.size() < track17 + 16 * 256) return false;
+        const uint8_t * vtoc = image.data() + track17;      // sector 0, the same in both orders
+        unsigned t = vtoc[1], s = vtoc[2];
+        int links = 0;
+        for (int i = 0; i < 16 && t == 17 && s > 0 && s < 16; i++) {
+            const unsigned at = prodos_order ? agat_140_prodos2dos[s] : s;
+            const uint8_t * sector = image.data() + track17 + at * 256;
+            if (sector[1] == 0) break;
+            if (sector[1] != 17 || sector[2] != s - 1) return false;
+            links++;
+            t = sector[1];
+            s = sector[2];
+        }
+        return links >= 3;
+    }
+
+    // The order of a 140 Kb image: what its volume shows, a ProDOS volume header or a
+    // DOS 3.3 catalog that reads right in one order only, or else what its name says
     bool agat140_prodos_order(const std::string & file_name, const BYTES & image)
     {
         const std::string ext = get_file_ext(file_name);
-        if (ext == ".po") return true;
-        if (ext != ".dsk") return false;
+        if (ext != ".po" && ext != ".do" && ext != ".dsk") return false;
+
         const unsigned blocks = static_cast<unsigned>(image.size() / PRODOS_BLOCK_SIZE);
-        return fsProDOS::volume_header_is_valid(agat140_block2(image, true), blocks)
-            && !fsProDOS::volume_header_is_valid(agat140_block2(image, false), blocks);
+        const bool prodos_po = fsProDOS::volume_header_is_valid(agat140_block2(image, true), blocks);
+        const bool prodos_do = fsProDOS::volume_header_is_valid(agat140_block2(image, false), blocks);
+        if (prodos_po != prodos_do) return prodos_po;
+
+        const bool dos_po = agat140_dos_catalog_in_order(image, true);
+        const bool dos_do = agat140_dos_catalog_in_order(image, false);
+        if (dos_po != dos_do) return dos_po;
+
+        return ext == ".po";
     }
 
     void agat140_reorder(BYTES & image)
@@ -313,13 +344,14 @@ namespace dsk_tools {
         return track_from_cells(format, img.cells[static_cast<size_t>(tracks - 1) * img.sides], out.data(), status);
     }
 
-    // Whether an HFE holds Apple II GCR: so its header says, or, saying nothing,
-    // its first track goes four cells without a flux transition, as two 0 bits of
-    // GCR do, two cells a bit, and MFM and FM never do
+    // Whether an HFE holds Apple II GCR: so its header says, or its first track
+    // goes four cells without a flux transition, as two 0 bits of GCR do, two
+    // cells a bit, and MFM and FM never do. The tracks decide whatever else the
+    // header says: some tools leave the IBM MFM value there for any disk
     static bool hfe_tracks_are_gcr(const HfeImage & img, uint8_t encoding)
     {
         if (encoding == APPLEII_GCR1_ENCODING || encoding == APPLEII_GCR2_ENCODING) return true;
-        if (encoding != UNKNOWN_ENCODING || img.cells.empty()) return false;
+        if (img.cells.empty()) return false;
         int zeros = 0;
         for (uint8_t b : img.cells[0])
             for (int i = 0; i < 8; i++, b >>= 1) {
