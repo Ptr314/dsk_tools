@@ -1039,6 +1039,19 @@ namespace dsk_tools {
         time = static_cast<uint16_t>((lt->tm_hour << 11) | (lt->tm_min << 5) | (lt->tm_sec / 2));
     }
 
+    // The time stamp of a new entry: the source file's date when it has one FAT can hold
+    // (1980..2107; no time gives midnight), otherwise now
+    void fsFAT::fat_stamp(const FileDate & d, uint16_t & date, uint16_t & time)
+    {
+        if (!d.valid() || d.year < 1980 || d.year > 2107) {
+            fat_now(date, time);
+            return;
+        }
+        date = static_cast<uint16_t>(((d.year - 1980) << 9) | (d.month << 5) | d.day);
+        const bool has_time = d.hour >= 0 && d.hour <= 23 && d.minute >= 0 && d.minute <= 59;
+        time = has_time ? static_cast<uint16_t>((d.hour << 11) | (d.minute << 5)) : 0;
+    }
+
     Result fsFAT::put_file(const UniversalFile & uf, const std::string & format, const BYTES & data, bool force_replace)
     {
         if (!is_open) return Result::error(ErrorCode::OpenNotLoaded);
@@ -1114,7 +1127,7 @@ namespace dsk_tools {
         } else {
             e.attr = existing ? static_cast<uint8_t>(old.attr | FAT_ATTR_ARCHIVE)
                               : static_cast<uint8_t>(FAT_ATTR_ARCHIVE | (uf.is_protected ? FAT_ATTR_READ_ONLY : 0));
-            fat_now(e.writeDate, e.writeTime);
+            fat_stamp(uf.date, e.writeDate, e.writeTime);
             if (existing) {
                 e.createTimeTenth = old.createTimeTenth;
                 e.createTime      = old.createTime;
@@ -1272,7 +1285,7 @@ namespace dsk_tools {
             e.writeTime  = src->writeTime;
             e.writeDate  = src->writeDate;
         } else {
-            fat_now(e.writeDate, e.writeTime);
+            fat_stamp(uf.date, e.writeDate, e.writeTime);
             e.createTime = e.writeTime;
             e.createDate = e.writeDate;
         }

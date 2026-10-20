@@ -271,11 +271,19 @@ namespace dsk_tools {
         const std::time_t t = std::time(nullptr);
         const std::tm * lt = std::localtime(&t);
         if (!lt) return 0;
-        const unsigned year = static_cast<unsigned>(lt->tm_year) + 1900;
-        if (year < 1972 || year > 2099) return 0;
+        FileDate d;
+        d.year  = static_cast<uint16_t>(lt->tm_year + 1900);
+        d.month = static_cast<uint8_t>(lt->tm_mon + 1);
+        d.day   = static_cast<uint8_t>(lt->tm_mday);
+        return encode_date(d);
+    }
 
-        const unsigned offset = year - 1972;
-        return static_cast<uint16_t>(((lt->tm_mon + 1) << 10) | (lt->tm_mday << 5) | (offset & 037) | ((offset >> 5) << 14));
+    // The RT-11 date word, 0 (no date) when there is no date or RT-11 cannot hold it (1972..2099)
+    uint16_t fsRT11::encode_date(const FileDate & d)
+    {
+        if (!d.valid() || d.year < 1972 || d.year > 2099) return 0;
+        const unsigned offset = d.year - 1972u;
+        return static_cast<uint16_t>((d.month << 10) | (d.day << 5) | (offset & 037) | ((offset >> 5) << 14));
     }
 
     std::string fsRT11::home_text(const BYTES & home, unsigned offset)
@@ -841,7 +849,9 @@ namespace dsk_tools {
         entry.status = RT11_E_PERM;
         std::memcpy(entry.name, name, sizeof(entry.name));
         entry.length = needed;
-        entry.date = today();
+        // The source file's date when it has one, otherwise today
+        entry.date = encode_date(uf.date);
+        if (entry.date == 0) entry.date = today();
 
         RT11_Entry src;
         if (uf.fs == FS::RT11 && entry_from_bytes(uf.metadata, src)) {

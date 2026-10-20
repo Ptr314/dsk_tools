@@ -75,7 +75,8 @@ namespace dsk_tools {
         bool                    is_protected;
         bool                    is_deleted;
         PreferredType           type_preferred;
-        FileDate                date;           // Filled when the filesystem reports FSCaps::Date
+        FileDate                date;           // Filled when the filesystem reports FSCaps::Date;
+                                                // put_file/mkdir of FAT and RT-11 keep it if set
 
         // FS-specific data
         std::vector<uint8_t>    original_name;

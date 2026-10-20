@@ -105,6 +105,7 @@ namespace dsk_tools {
         static Result make_short_name(const UniversalFile & uf, uint8_t out[11]);
         static Result make_short_name(const std::string & name, uint8_t out[11]);
         static void fat_now(uint16_t & date, uint16_t & time);
+        static void fat_stamp(const FileDate & d, uint16_t & date, uint16_t & time);
 
     public:
         explicit fsFAT(diskImage * image);
