@@ -97,6 +97,7 @@ namespace dsk_tools {
         static std::string date_to_string(uint16_t date);
         static bool string_to_date(const std::string & s, uint16_t & date);
         static uint16_t today();
+        static uint16_t encode_date(const FileDate & d);
         static std::string home_text(const BYTES & home, unsigned offset);
 
     public:
