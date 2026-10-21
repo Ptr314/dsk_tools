@@ -25,7 +25,8 @@ Targets: `dsk_tools` (the library), `fddconv` and `aim2hfe` (the tools, in `util
 `-DENABLE_DSK_TOOLS=OFF` builds the library alone.
 
 `dsk_tools` stands on `dsk_tools_core` (`include/dsk_tools/core.h`): definitions, `utils`,
-`errors`, `host_helpers`, the track encodings of `src/disk_codecs.cpp` (4-and-4, GCR 6-and-2,
+`errors`, `host_helpers`, the character maps of `src/charmaps.cpp` (eCat3's serial ports window
+recodes with them), the track encodings of `src/disk_codecs.cpp` (4-and-4, GCR 6-and-2,
 Agat MFM, whole Agat 140/840 track images) and `src/hfe.cpp`: the HFE container
 (`hfe_read`/`hfe_write`, both sides interleaved in 512 byte blocks, cells LSB first) and the IBM
 FM/MFM bit cell codecs (`fm_encode`/`fm_decode`, `mfm_encode`/`mfm_decode`, a flag per byte for

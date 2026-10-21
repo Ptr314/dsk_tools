@@ -21,11 +21,11 @@ add_library(dsk_tools_core STATIC
                                         src/errors.cpp
     src/bit_enums.h
     src/host_helpers.h                  src/host_helpers.cpp
+    src/charmaps.h                      src/charmaps.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC
     include/dsk_tools/dsk_tools.h       src/dsk_tools.cpp
-    src/charmaps.h                      src/charmaps.cpp
     src/bas_tokens.h
                                         src/agat_charconv.cpp
 
