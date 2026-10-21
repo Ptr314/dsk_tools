@@ -201,7 +201,8 @@ namespace dsk_tools {
         files.clear();
 
         if (current_path.size() > 1) {
-            UniversalFile updir;
+            UniversalFile updir{};
+            updir.fs = get_fs();
             updir.name = "..";
             updir.is_dir = true;
             updir.is_deleted = false;
@@ -216,7 +217,8 @@ namespace dsk_tools {
             auto * dir_entry = reinterpret_cast<SPRITE_OS_DIR_ENTRY*>(buffer.data() + i*sizeof(SPRITE_OS_DIR_ENTRY));
             bool is_deleted = dir_entry->NAME[0] == 0xFF;
             if (dir_entry->NAME[0] != 0 && (!is_deleted || show_deleted)) {
-                UniversalFile file;
+                UniversalFile file{};
+                file.fs = get_fs();
                 file.name = trim(agat_to_utf(dir_entry->NAME, 15));
                 file.size = dir_entry->FILELEN[0] + (dir_entry->FILELEN[1] << 8) + (dir_entry->FILELEN[2] << 16);
                 file.is_dir = (dir_entry->STATUS & 0x01) != 0;
