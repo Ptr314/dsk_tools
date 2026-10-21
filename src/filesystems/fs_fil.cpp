@@ -93,7 +93,7 @@ namespace dsk_tools {
 
         const auto * header = reinterpret_cast<FIL_header *>(image->get_sector_data(0,0,0));
 
-        UniversalFile f;
+        UniversalFile f{};
 
         f.name = trim(agat_to_utf(header->name, 30));
         f.size = image->get_size()-40;
