@@ -395,7 +395,7 @@ namespace dsk_tools {
         if (uf.fs == FS::DOS33) {
             // For native FS we take an original filename
             const auto * metadata = reinterpret_cast<const Apple_DOS_File_Metadata *>(uf.metadata.data());
-            std::memcpy(dir_entry->name, &metadata->dir_entry, sizeof(dir_entry->name));
+            std::memcpy(dir_entry->name, metadata->dir_entry.name, sizeof(dir_entry->name));
         } else {
             // For other cases we convert from universal name
             std::memset(dir_entry->name, 0xA0, sizeof(dir_entry->name));
