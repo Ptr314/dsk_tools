@@ -448,7 +448,8 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
 
                 // Show each surviving deleted entry on its own — extent grouping
                 // is unreliable once the user-number byte is gone.
-                UniversalFile f;
+                UniversalFile f{};
+                f.fs = get_fs();
                 f.is_dir = false;
                 f.is_deleted = true;
                 f.name = make_file_name(*catalog[i]);
@@ -486,7 +487,8 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 prev_name = file_name;
                 prev_st = ST;
 
-                UniversalFile f;
+                UniversalFile f{};
+                f.fs = get_fs();
                 f.is_dir = false;
                 f.is_deleted = false;
                 f.name = file_name;

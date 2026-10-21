@@ -79,7 +79,8 @@ namespace dsk_tools {
                     const unsigned first_sector = FROM_BE_16(dir[i].FI);
                     const unsigned last_sector = FROM_BE_16(dir[i].LA);
 
-                    UniversalFile f;
+                    UniversalFile f{};
+                    f.fs = get_fs();
                     f.is_dir = false;
                     f.is_deleted = (T==0x1180) || (T==0x1100);
                     f.name = trim(file_name);
