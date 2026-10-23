@@ -112,6 +112,8 @@ add_library(${PROJECT_NAME} STATIC
 if(APPLE)
     # macOS needs to enable Objective-C++ compilation for host_helpers
     set_source_files_properties(src/host_helpers.cpp PROPERTIES LANGUAGE OBJCXX)
+    # NSFileManager/NSString; a build without Qt does not bring Foundation in
+    target_link_libraries(dsk_tools_core PRIVATE "-framework Foundation")
 endif()
 
 if(WIN32)
