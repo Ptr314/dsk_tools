@@ -3,6 +3,7 @@
 // Part of the dsk_tools project: https://github.com/Ptr314/dsk_tools
 // Description: A class and other definitions for the Apple DOS 3.3 filesystem
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <fstream>
@@ -222,10 +223,20 @@ namespace dsk_tools {
         return Result::error(ErrorCode::IncorrectRequest, QT_TRANSLATE_NOOP("errors", "Incorrect track number for mapping"));
     }
 
+    // Logical tracks of the filesystem: over both sides on a two-sided disk (Agat 840K),
+    // and no more than the VTOC declares, as the bitmaps past that are not its own
+    int fsDOS33::logical_tracks() const
+    {
+        const int tracks = image->get_tracks() * image->get_heads();
+        const int declared = VTOC->tracks_total;
+        return (declared > 0 && declared < tracks) ? declared : tracks;
+    }
+
     int fsDOS33::free_sectors()
     {
         int free_sectors = 0;
-        for (int track=0; track < image->get_tracks()*image->get_heads(); track ++)
+        // Track 0 cannot hold anything: see find_empty_sector()
+        for (int track=1; track < logical_tracks(); track ++)
             for (int sector=0; sector<image->get_sectors(); sector++)
                 free_sectors += sector_is_free(0, track, sector);
         return free_sectors;
@@ -278,15 +289,15 @@ namespace dsk_tools {
     {
         // std::cout << "find_empty_sector: start_track=" << (int)start_track << std::endl;
 
-        // Logical tracks, the same range free_sectors() counts: on a two-sided disk
-        // (Agat 840K) they run over both sides
-        const int tracks = image->get_tracks() * image->get_heads();
+        // The same range free_sectors() counts. Track 0 is left out even when the VTOC says
+        // it is free: 0 ends T/S lists and catalog chains, and marks an unused catalog entry
+        const int tracks = logical_tracks();
         const int sectors = image->get_sectors();
 
-        // From start_track to the end of the disk, then from below start_track down to 0
+        // From start_track to the end of the disk, then from below start_track down to track 1
         for (int pass = 0; pass < 2; pass++) {
             const int step = (pass == 0) ? 1 : -1;
-            for (int track = (pass == 0) ? start_track : start_track - 1; track >= 0 && track < tracks; track += step) {
+            for (int track = (pass == 0) ? std::max<int>(start_track, 1) : start_track - 1; track >= 1 && track < tracks; track += step) {
                 for (int i = 0; i < sectors; i++) {
                     const int sector = go_forward ? i : sectors - 1 - i;
                     if (sector_is_free(0, track, sector)) {

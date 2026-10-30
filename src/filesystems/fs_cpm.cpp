@@ -14,6 +14,13 @@
 
 namespace dsk_tools {
 
+    // Directory slots of CP/M 3 that are not files and hold no block numbers: a password (0x1F),
+    // the directory label (0x20) and date stamps (0x21, SFCB)
+    static bool is_cpm3_service_entry(const uint8_t ST)
+    {
+        return ST == 0x1F || ST == 0x20 || ST == 0x21;
+    }
+
 fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs & diskdefs):
         fileSystem(image)
         , m_filesystem_id(filesystem_id)
@@ -474,12 +481,8 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 continue;
             }
 
-            // Skip CP/M 3 password entries (and other non-file slots).
-            if (ST == 0x1F) continue;
-
-            // Skip the CP/M 3 directory label (0x20) and date stamp entries (0x21, SFCB):
-            // they are not files, and a date stamp entry has binary data in its name field.
-            if (ST == 0x20 || ST == 0x21) continue;
+            // Skip them: a date stamp entry even has binary data in its name field.
+            if (is_cpm3_service_entry(ST)) continue;
 
             std::string file_name = make_file_name(*catalog[i]);
             const int extent = catalog[i]->XH*32 + catalog[i]->XL;
@@ -853,7 +856,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         std::vector<int> target_entries; // catalog indexes belonging to target file (live)
         for (int i = 0; i < catalog_size; i++) {
             const auto * de = catalog[i];
-            if (de->ST == 0xE5 || de->ST == 0x1F) continue;
+            if (de->ST == 0xE5 || is_cpm3_service_entry(de->ST)) continue;
 
             // Match against target?
             bool is_target = (de->ST == user_no) && (std::memcmp(de->F, name_F, 8) == 0);
@@ -1022,14 +1025,14 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             if (reserved & (1u << (15 - b)))
                 dir_blocks++;
 
-        // Walk catalog and mark blocks used by live (non-deleted, non-password) entries.
+        // Walk catalog and mark blocks used by live file entries.
         std::vector<bool> block_used(total_blocks, false);
         for (int i = 0; i < directory_sectors; i++) {
             uint8_t * sector = image->get_sector_data(0, DPB.OFF, translate_sector(i));
             if (!sector) continue;
             for (int j = 0; j < entries_in_sector; j++) {
                 const auto * de = reinterpret_cast<const CPM_DIR_ENTRY *>(sector + j * sizeof(CPM_DIR_ENTRY));
-                if (de->ST == 0xE5 || de->ST == 0x1F) continue;
+                if (de->ST == 0xE5 || is_cpm3_service_entry(de->ST)) continue;
                 for (int idx = 0; idx < al_entries_per_extent; idx++) {
                     uint16_t blk = al_16bit
                         ? static_cast<uint16_t>(de->AL[idx*2] | (de->AL[idx*2+1] << 8))
@@ -1110,7 +1113,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             if (!de) continue;
 
             const uint8_t ST = de->ST;
-            if (ST == 0x1F) continue;                                   // CP/M 3 password entry
+            if (is_cpm3_service_entry(ST)) continue;
             if (ST == 0xE5 && de->F[0] == 0xE5) continue;               // never-used slot
 
             const bool deleted = (ST == 0xE5);

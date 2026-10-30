@@ -135,6 +135,7 @@ namespace dsk_tools {
         Result sector_free(int head, int track, int sector) override;
         Result sector_occupy(int head, int track, int sector) override;
         int free_sectors() override;
+        int logical_tracks() const;
         virtual Result track_map(int track, uint32_t*& mapped);
 
     private:

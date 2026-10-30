@@ -315,6 +315,63 @@ static void test_forty_tracks(const std::string & dir)
     }
 }
 
+// What the VTOC of a disk made by dos33_disk() says of a track: a bit for each free sector, 15 to 0
+static void set_free(BYTES & disk, int track, uint16_t free)
+{
+    uint8_t * vtoc = disk.data() + 17 * 16 * 256;
+    vtoc[0x38 + 4 * track] = (uint8_t)(free >> 8);
+    vtoc[0x39 + 4 * track] = (uint8_t)free;
+}
+
+// Adds a file of 256 bytes, which takes two sectors with its T/S list. Tells whether
+// the filesystem took it, and checks that it then reads back and HELLO is still there
+static bool put_small_file(const std::string & name, const BYTES & disk, const char * what)
+{
+    write_all(name, disk);
+    auto image = open_image(name, "FILESYSTEM_DOS33", "HELLO", disk, what);
+    if (!image) return false;
+    const DiskDefs defs;
+    auto fs = prepare_filesystem(image.get(), "FILESYSTEM_DOS33", defs);
+    Files files;
+    CHECK(fs && fs->open(), "%s: does not open", what);
+
+    UniversalFile uf{};
+    uf.fs = FS::Host;
+    uf.name = "NEW";
+    const BYTES data(256, 0x5A);
+    const bool taken = static_cast<bool>(fs->put_file(uf, "FILE_ANY", data, false));
+
+    CHECK(fs->dir(files, false), "%s: the catalog does not read", what);
+    CHECK(files.size() == (taken ? 2u : 1u), "%s: %zu files, taken: %d", what, files.size(), taken);
+    if (taken && files.size() == 2) {
+        BYTES back;
+        CHECK(fs->get_file(files[1], "", back) && back == data, "%s: the file does not read back", what);
+    }
+    return taken;
+}
+
+// Sectors are only taken from what the filesystem can address and owns
+static void test_allocation(const std::string & dir)
+{
+    printf("allocation\n");
+    const std::string name = dir + "/test_alloc.dsk";
+
+    // Track 0 free in the VTOC: 0 there would end the catalog and T/S lists
+    BYTES disk = dos33_disk();
+    for (int t = 1; t < 35; t++) set_free(disk, t, 0);
+    CHECK(!put_small_file(name, disk, "only track 0 free"), "a file taken on track 0");
+
+    // Below the catalog, the two sectors track 1 has are enough, track 0 is never touched
+    set_free(disk, 1, 0x0003);
+    CHECK(put_small_file(name, disk, "two sectors on track 1"), "the sectors of track 1 not used");
+
+    // Past the tracks the VTOC declares is not the filesystem's, whatever the bitmap says
+    BYTES forty = dos33_disk(40);
+    for (int t = 0; t < 40; t++) set_free(forty, t, t >= 35 ? 0xFFFF : 0);
+    forty[17 * 16 * 256 + 0x34] = 35;
+    CHECK(!put_small_file(name, forty, "tracks past the VTOC"), "a file taken past the tracks of the VTOC");
+}
+
 // The HFE goes through what the GUI does with a file it opens
 static void check_hfe(const std::string & name, const BYTES & disk, const char * what)
 {
@@ -383,6 +440,7 @@ int main(int argc, char ** argv)
 
     test_orders(dir, disk);
     test_forty_tracks(dir);
+    test_allocation(dir);
 
     // An Agat 840 Kb disk, whose image class derives from the 140 Kb one, keeps its
     // 2 x 80 tracks of 21 sectors

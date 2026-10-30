@@ -62,7 +62,8 @@ The whole track code has tests in `tools/`, built with `-DENABLE_DSK_TESTS=ON` a
   damaged, then detection, loading, bad sectors, filesystem, `load_structured()`, `file_info()`.
 - `test_agat140` - Apple II / Agat 140 Kb disks through the public API, on disks it makes up: a
   DOS 3.3 disk to HFE and back, with the transitions in either cell of a pair, and as a `.po`; a
-  ProDOS volume in both orders as `.po`, `.dsk` and `.do`, and read back from a `.nic`.
+  ProDOS volume in both orders as `.po`, `.dsk` and `.do`, and read back from a `.nic`; DOS 3.3
+  allocation, which keeps off track 0 and the tracks past the VTOC.
   `-DDSK_TEST_SAMPLES=<docs/samples>` registers it for a few sample images.
 - `tools/hfe_roundtrip.sh <fddconv> <dirs...>` - raw -> HFE -> raw for every image found: same
   type, same file list, same sectors.
