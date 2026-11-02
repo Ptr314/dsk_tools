@@ -106,8 +106,9 @@ namespace dsk_tools {
     int ibm_size_code(int sector_size);
 
     // The track the RT-11 drivers of the БК, the УК-НЦ and the DVK MY write
-    // (no index mark, 42/22/36 byte gaps) and the IBM 3740 track of the DX
-    void ibm_mfm_format_track(BYTES & data, BYTES & special, int track, int side, int sectors, int sector_size,
+    // (no index mark, 42/22/36 byte gaps; false when the sectors do not fit) and
+    // the IBM 3740 track of the DX
+    bool ibm_mfm_format_track(BYTES & data, BYTES & special, int track, int side, int sectors, int sector_size,
                               const uint8_t * flat, uint16_t deleted);
     void ibm_fm_format_track(BYTES & data, BYTES & special, int track, int side, int sectors, int sector_size,
                              const uint8_t * flat, uint16_t deleted);

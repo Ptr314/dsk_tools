@@ -261,7 +261,7 @@ bool ibm_format_track(const IbmTrackFormat & fmt, int track, int side, const uin
 
 //----------------------------- IBM MFM ------------------------------------//
 
-void ibm_mfm_format_track(BYTES & data, BYTES & special, int track, int side, int sectors, int sector_size,
+bool ibm_mfm_format_track(BYTES & data, BYTES & special, int track, int side, int sectors, int sector_size,
                           const uint8_t * flat, uint16_t deleted)
 {
     IbmTrackFormat fmt;
@@ -271,7 +271,7 @@ void ibm_mfm_format_track(BYTES & data, BYTES & special, int track, int side, in
     fmt.gaps.gap1 = 42;
     fmt.gaps.gap2 = 22;
     fmt.gaps.gap3 = 36;
-    ibm_format_track(fmt, track, side, flat, deleted, data, special);
+    return ibm_format_track(fmt, track, side, flat, deleted, data, special);
 }
 
 bool ibm_mfm_read_track(const uint8_t * data, size_t len, int sectors, int sector_size, uint8_t * out,
