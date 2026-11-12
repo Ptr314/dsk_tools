@@ -139,13 +139,15 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
 
     std::string fsCPM::make_file_name(CPM_DIR_ENTRY & di) const
     {
+        // Some programs pad a name with zero bytes instead of spaces; an attribute bit
+        // (E[0..2]) may be set on such a byte too. They are left out either way.
         std::string name, ext;
         if (m_charmap.charmap) {
-            for (const unsigned char i : di.F) name += (*m_charmap.charmap)[i];
-            for (const unsigned char i : di.E) ext += (*m_charmap.charmap)[i];
+            for (const unsigned char i : di.F) if (i & 0x7F) name += (*m_charmap.charmap)[i];
+            for (const unsigned char i : di.E) if (i & 0x7F) ext += (*m_charmap.charmap)[i];
         } else {
-            for (const unsigned char i : di.F) i ? name += static_cast<char>(i & 0x7F) : "";
-            for (const unsigned char i : di.E) i ? ext += static_cast<char>(i & 0x7F) : "";
+            for (const unsigned char i : di.F) if (i & 0x7F) name += static_cast<char>(i & 0x7F);
+            for (const unsigned char i : di.E) if (i & 0x7F) ext += static_cast<char>(i & 0x7F);
         }
         ext = trim(ext);
         return trim(name) + ((!ext.empty())?("."+ext):"");
