@@ -30,6 +30,14 @@ namespace dsk_tools {
         return false;
     }
 
+    // Block number in slot idx of an entry: 16 bytes on a disk of up to 256 blocks, 8 little endian
+    // words on a larger one. 0 is an empty slot (block 0 holds the directory); 0xE5 is not a filler
+    // but block 229, which a file on a larger disk may well have
+    static unsigned block_number(const CPM_DIR_ENTRY & de, const bool wide, const int idx)
+    {
+        return wide ? static_cast<unsigned>(de.AL[idx * 2] | (de.AL[idx * 2 + 1] << 8)) : de.AL[idx];
+    }
+
     // Directory slots of CP/M 3 that are not files and hold no block numbers: a password (0x1F),
     // the directory label (0x20) and date stamps (0x21, SFCB)
     static bool is_cpm3_service_entry(const uint8_t ST)
@@ -254,6 +262,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             const int spb = BLS / image->get_sector_size();
             const int index_shift = DPB.OFF * sectors;
             const int heads = image->get_heads();
+            const bool wide = DPB.DSM >= 256;
 
             result += "\n";
             bool any_bad = false;
@@ -267,8 +276,9 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 unsigned file_offset = 0;
                 for (size_t i = 0; i < f.metadata.size() / sizeof(CPM_DIR_ENTRY); i++) {
                     const auto de = reinterpret_cast<const CPM_DIR_ENTRY *>(f.metadata.data() + i * sizeof(CPM_DIR_ENTRY));
-                    for (const unsigned char AL : de->AL) {
-                        if (AL != 0 && AL != 0xE5) {
+                    for (int idx = 0; idx < (wide ? 8 : 16); idx++) {
+                        const unsigned AL = block_number(*de, wide, idx);
+                        if (AL != 0 && AL <= DPB.DSM) {
                             for (int k = 0; k < spb; k++) {
                                 const int sector_index = AL * spb + k + index_shift;
                                 unsigned head, track;
@@ -335,6 +345,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         const int heads = image->get_heads();
         const int sectors = image->get_sectors();
         const int index_shift = DPB.OFF * sectors;
+        const bool wide = DPB.DSM >= 256;
 
         int file_size = 0;
         std::string list;
@@ -343,8 +354,9 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             std::memcpy(&dir_entry, fd.metadata.data() + i*sizeof(CPM_DIR_ENTRY), sizeof(CPM_DIR_ENTRY));
             file_size += dir_entry.RC*128;
 
-            for (const unsigned char AL : dir_entry.AL) {
-                if (AL != 0 && AL != 0xE5)  {
+            for (int idx = 0; idx < (wide ? 8 : 16); idx++) {
+                const unsigned AL = block_number(dir_entry, wide, idx);
+                if (AL != 0)  {
                     list += "    {$CPM_BLOCK}: " + std::to_string(AL);
                     list += ", {$CPM_SECTORS} ";
                     list += heads==1 ? "(T:S)" : "(H:T:S)";
@@ -395,11 +407,10 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             const int sectors = image->get_sectors();
             const int index_shift = DPB.OFF * sectors * image->get_heads();
 
-            unsigned al_ind = 0;
-            while (al_ind < 16) {
-                const uint16_t AL = DPB.DSM<256 ? dir_entry->AL[al_ind] : dir_entry->AL[al_ind] + (dir_entry->AL[al_ind+1] << 8);
-                al_ind += DPB.DSM<256 ? 1 : 2;
-                if (AL != 0 && AL != 0xE5 && AL != 0xE5E5)  {
+            const bool wide = DPB.DSM >= 256;
+            for (int idx = 0; idx < (wide ? 8 : 16); idx++) {
+                const unsigned AL = block_number(*dir_entry, wide, idx);
+                if (AL != 0)  {
                     // std::cout << AL << std::endl;
                     // A damaged entry (or a wrong geometry) may point past the disk
                     if (AL > DPB.DSM) return Result::error(ErrorCode::ReadError);
