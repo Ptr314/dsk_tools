@@ -268,8 +268,8 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             const int sectors = image->get_sectors();
             const int BLS = 1 << (DPB.BSH + 7);
             const int spb = BLS / image->get_sector_size();
-            const int index_shift = DPB.OFF * sectors;
             const int heads = image->get_heads();
+            const int index_shift = DPB.OFF * sectors * heads;  // system tracks are cylinders, both sides
             const bool wide = DPB.DSM >= 256;
 
             result += "\n";
@@ -352,7 +352,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
 
         const int heads = image->get_heads();
         const int sectors = image->get_sectors();
-        const int index_shift = DPB.OFF * sectors;
+        const int index_shift = DPB.OFF * sectors * heads;     // system tracks are cylinders, both sides
         const bool wide = DPB.DSM >= 256;
 
         int file_size = 0;
