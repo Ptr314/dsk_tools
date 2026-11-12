@@ -5,7 +5,9 @@
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include <cstring>
+#include <map>
 #include <set>
 
 #include "dsk_tools/dsk_tools.h"
@@ -13,6 +15,20 @@
 #include "fs_cpm.h"
 
 namespace dsk_tools {
+
+    static int extent_number(const CPM_DIR_ENTRY & de)
+    {
+        return de.XH * 32 + de.XL;
+    }
+
+    // Whether the directory entries of a file already hold this extent
+    static bool has_extent(const UniversalFile & f, const int extent)
+    {
+        for (size_t i = 0; i < f.metadata.size() / sizeof(CPM_DIR_ENTRY); i++)
+            if (extent_number(*reinterpret_cast<const CPM_DIR_ENTRY *>(f.metadata.data() + i * sizeof(CPM_DIR_ENTRY))) == extent)
+                return true;
+        return false;
+    }
 
     // Directory slots of CP/M 3 that are not files and hold no block numbers: a password (0x1F),
     // the directory label (0x20) and date stamps (0x21, SFCB)
@@ -445,8 +461,9 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
 
         const std::set<std::string> txts = {".txt", ".doc", ".pas", ".asm", ".cmd", ".hlp", ".src", ".me"};
 
-        std::string prev_name;
-        uint8_t prev_st;
+        // The extents of a file are found by user and name wherever they lie: put_file takes
+        // the first free entries, those of deleted files included, so they need not be adjacent
+        std::map<std::pair<uint8_t, std::string>, size_t> file_index;
 
         // Always scan the full directory (DRM+1 entries) — CP/M has no end marker.
         for (int i = 0; i < catalog_size; i++) {
@@ -490,11 +507,13 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             if (is_cpm3_service_entry(ST)) continue;
 
             std::string file_name = make_file_name(*catalog[i]);
-            const int extent = catalog[i]->XH*32 + catalog[i]->XL;
-            if (extent == 0 || prev_name != file_name || prev_st != ST ) {
-                prev_name = file_name;
-                prev_st = ST;
-
+            const int extent = extent_number(*catalog[i]);
+            const auto key = std::make_pair(ST, file_name);
+            auto owner = file_index.find(key);
+            // The same extent once more: another file of that name (a damaged directory)
+            if (owner != file_index.end() && has_extent(files.at(owner->second), extent))
+                owner = file_index.end();
+            if (owner == file_index.end()) {
                 UniversalFile f{};
                 f.fs = get_fs();
                 f.is_dir = false;
@@ -521,13 +540,26 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 std::memcpy(f.metadata.data(), catalog[i], sizeof(CPM_DIR_ENTRY));
 
                 files.push_back(f);
+                file_index[key] = files.size() - 1;
             } else {
-                UniversalFile * f = &(files.at(files.size()-1));
+                UniversalFile * f = &(files.at(owner->second));
                 f->size += catalog[i]->RC * 128;
                 size_t old_size = f->metadata.size();
                 f->metadata.resize(old_size + sizeof(CPM_DIR_ENTRY));
                 std::memcpy(f->metadata.data() + old_size, catalog[i], sizeof(CPM_DIR_ENTRY));
             }
+        }
+
+        // load_file() reads the extents in the order of the entries
+        for (auto & f : files) {
+            const size_t count = f.metadata.size() / sizeof(CPM_DIR_ENTRY);
+            if (f.is_deleted || count < 2) continue;
+            std::vector<CPM_DIR_ENTRY> entries(count);
+            std::memcpy(entries.data(), f.metadata.data(), count * sizeof(CPM_DIR_ENTRY));
+            std::stable_sort(entries.begin(), entries.end(), [](const CPM_DIR_ENTRY & a, const CPM_DIR_ENTRY & b) {
+                return extent_number(a) < extent_number(b);
+            });
+            std::memcpy(f.metadata.data(), entries.data(), count * sizeof(CPM_DIR_ENTRY));
         }
 
         return Result::ok();
