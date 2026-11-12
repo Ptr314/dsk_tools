@@ -51,7 +51,7 @@ namespace dsk_tools {
         DiskDefs m_diskdefs;
         CharmapInfo m_charmap = {};
         std::string make_file_name(CPM_DIR_ENTRY & di) const;
-        void load_file(const BYTES & dir_records, BYTES & out) const;
+        Result load_file(const BYTES & dir_records, BYTES & out) const;
 
     public:
         fsCPM(diskImage * image, const std::string & filesystem_id, const DiskDefs & diskdefs);

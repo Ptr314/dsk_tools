@@ -361,7 +361,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         return result;
     }
 
-    void fsCPM::load_file(const BYTES & dir_records, BYTES & out) const
+    Result fsCPM::load_file(const BYTES & dir_records, BYTES & out) const
     {
         out.clear();
         int file_size = 0;
@@ -383,6 +383,8 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 al_ind += DPB.DSM<256 ? 1 : 2;
                 if (AL != 0 && AL != 0xE5 && AL != 0xE5E5)  {
                     // std::cout << AL << std::endl;
+                    // A damaged entry (or a wrong geometry) may point past the disk
+                    if (AL > DPB.DSM) return Result::error(ErrorCode::ReadError);
                     for (int k=0; k<spb; k++) {
                         const int sector_index = AL*spb + k + index_shift;
                         int head, track;
@@ -395,12 +397,14 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                         }
                         const int sector = translate_sector(sector_index % sectors);
                         const auto p = image->get_sector_data(head, track, sector);
+                        if (!p) return Result::error(ErrorCode::ReadError);
                         out.insert(out.end(), p, p + sector_size);
                     }
                 }
             }
         }
         out.resize(file_size);
+        return Result::ok();
     }
 
     std::vector<std::string> fsCPM::get_save_file_formats()
@@ -416,8 +420,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
     Result fsCPM::get_file(const UniversalFile & uf, const std::string & format, BYTES & data) const
     {
         data.clear();
-        load_file(uf.metadata, data);
-        return Result::ok();
+        return load_file(uf.metadata, data);
     }
 
     Result fsCPM::dir(std::vector<dsk_tools::UniversalFile> & files, bool show_deleted)
