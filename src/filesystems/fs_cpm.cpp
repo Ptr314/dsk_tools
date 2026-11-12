@@ -419,7 +419,6 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             for (int idx = 0; idx < (wide ? 8 : 16); idx++) {
                 const unsigned AL = block_number(*dir_entry, wide, idx);
                 if (AL != 0)  {
-                    // std::cout << AL << std::endl;
                     // A damaged entry (or a wrong geometry) may point past the disk
                     if (AL > DPB.DSM) return Result::error(ErrorCode::ReadError);
                     for (int k=0; k<spb; k++) {
@@ -1211,7 +1210,6 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                     } else if (it->second == SectorType::DeletedFile && type == SectorType::File) {
                         it->second = type;                              // live entry wins
                     }
-                    if (h==0 && t==1 && s==4 && type!=SectorType::DeletedFile) std::cout << "!!! " << i << std::endl;
                     // System / Catalog entries are left untouched (higher priority).
                 }
             }
