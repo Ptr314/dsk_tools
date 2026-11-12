@@ -38,6 +38,14 @@ namespace dsk_tools {
         return wide ? static_cast<unsigned>(de.AL[idx * 2] | (de.AL[idx * 2 + 1] << 8)) : de.AL[idx];
     }
 
+    // 128 byte records an entry holds. An entry spans EXM+1 logical extents of 128 records each; its
+    // extent number is that of the last one, so its low bits (XL & EXM) count the full logical
+    // extents before it, and RC the records in it
+    static int entry_records(const CPM_DIR_ENTRY & de, const uint8_t exm)
+    {
+        return (de.XL & exm) * 128 + de.RC;
+    }
+
     // Directory slots of CP/M 3 that are not files and hold no block numbers: a password (0x1F),
     // the directory label (0x20) and date stamps (0x21, SFCB)
     static bool is_cpm3_service_entry(const uint8_t ST)
@@ -352,7 +360,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         for (int i=0; i < fd.metadata.size() / sizeof(CPM_DIR_ENTRY); i++) {
             list += "{$EXTENT}: " +  std::to_string(i) + "\n";
             std::memcpy(&dir_entry, fd.metadata.data() + i*sizeof(CPM_DIR_ENTRY), sizeof(CPM_DIR_ENTRY));
-            file_size += dir_entry.RC*128;
+            file_size += entry_records(dir_entry, DPB.EXM) * 128;
 
             for (int idx = 0; idx < (wide ? 8 : 16); idx++) {
                 const unsigned AL = block_number(dir_entry, wide, idx);
@@ -398,7 +406,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         for (int i=0; i<dir_records.size() / sizeof(CPM_DIR_ENTRY); i++) {
             const auto dir_entry = reinterpret_cast<const CPM_DIR_ENTRY *>(dir_records.data() + i*sizeof(CPM_DIR_ENTRY));
 
-            file_size += dir_entry->RC*128;
+            file_size += entry_records(*dir_entry, DPB.EXM) * 128;
 
             const int sector_size = image->get_sector_size();
             const int BLS = 1 << (DPB.BSH + 7);                 // Block size
@@ -493,7 +501,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 f.is_dir = false;
                 f.is_deleted = true;
                 f.name = make_file_name(*catalog[i]);
-                f.size = catalog[i]->RC * 128;
+                f.size = entry_records(*catalog[i], DPB.EXM) * 128;
                 f.is_protected = (catalog[i]->E[0] & 0x80) != 0;
                 f.type_label = "";
                 f.type_label += (catalog[i]->E[1] & 0x80) ? "S" : "";
@@ -530,7 +538,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 f.is_dir = false;
                 f.is_deleted = false;
                 f.name = file_name;
-                f.size = catalog[i]->RC * 128;
+                f.size = entry_records(*catalog[i], DPB.EXM) * 128;
 
                 f.is_protected = (catalog[i]->E[0] & 0x80) != 0;
                 f.type_label = "";
@@ -554,7 +562,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 file_index[key] = files.size() - 1;
             } else {
                 UniversalFile * f = &(files.at(owner->second));
-                f->size += catalog[i]->RC * 128;
+                f->size += entry_records(*catalog[i], DPB.EXM) * 128;
                 size_t old_size = f->metadata.size();
                 f->metadata.resize(old_size + sizeof(CPM_DIR_ENTRY));
                 std::memcpy(f->metadata.data() + old_size, catalog[i], sizeof(CPM_DIR_ENTRY));
@@ -1013,12 +1021,18 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
             std::memcpy(de->F, name_F, 8);
             std::memcpy(de->E, name_E, 3);
             de->BC = 0;
-            de->XL = static_cast<uint8_t>(ext_no & 0x1F);
-            de->XH = static_cast<uint8_t>((ext_no >> 5) & 0x3F);
 
             const int records_in_ext = std::min(records_per_extent_max, records_total - records_consumed);
             const int blocks_in_ext  = std::min(blocks_per_extent_max,  blocks_needed  - blocks_consumed);
-            de->RC = static_cast<uint8_t>(records_in_ext);
+
+            // The entry spans EXM+1 logical extents of 128 records (256 records of a 2 Kb block
+            // disk below 256 blocks, EXM 1): it takes the number of the last one it fills and RC
+            // counts the records in that one, so a full entry has RC 128, not 256
+            const int last_extent = (records_in_ext > 0) ? (records_in_ext - 1) / 128 : 0;
+            const int extent = ext_no * (DPB.EXM + 1) + last_extent;
+            de->XL = static_cast<uint8_t>(extent & 0x1F);
+            de->XH = static_cast<uint8_t>((extent >> 5) & 0x3F);
+            de->RC = static_cast<uint8_t>(records_in_ext - last_extent * 128);
 
             for (int idx = 0; idx < al_entries_per_extent; idx++) {
                 const uint16_t blk = (idx < blocks_in_ext) ? alloc_blocks[blocks_consumed + idx] : 0;
