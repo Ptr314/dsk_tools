@@ -290,6 +290,28 @@ namespace dsk_tools {
         }, disk_blocks, dx);
     }
 
+    // An RT-11 volume in a file of no size the detection knows: a disk read with its last
+    // blocks missing, or a partition cut down. As for .rtd, a run of 512 byte blocks up to
+    // 1600, maybe behind a 256 byte header, here taken only when the directory is found
+    // (LoaderRAW skips the header and pads the end). The type of an .rtd of that length,
+    // nullptr if it is not one.
+    static const char * rt11_volume_of_any_size(UTF8_ifstream & file, const unsigned fsize)
+    {
+        const unsigned header = (fsize % RT11_BLOCK_SIZE == 256) ? 256 : 0;
+        if ((fsize - header) % RT11_BLOCK_SIZE != 0) return nullptr;
+        const unsigned blocks = (fsize - header) / RT11_BLOCK_SIZE;
+        if (blocks <= RT11_HOME_BLOCK || blocks > 1600) return nullptr;
+        file.clear();
+        const bool found = is_rt11_volume([&](size_t offset, uint8_t * out, size_t size) {
+            file.seekg(header + offset, std::ios::beg);
+            file.read(reinterpret_cast<char*>(out), size);
+            return file.good();
+        }, blocks, false);
+        file.clear();
+        if (!found) return nullptr;
+        return blocks <= 800 ? "TYPE_RT11:MZ-400" : "TYPE_RT11:MZ-800";
+    }
+
     static bool is_rt11_volume(const BYTES & image, const unsigned disk_blocks, const bool dx)
     {
         return is_rt11_volume([&](size_t offset, uint8_t * out, size_t size) {
@@ -601,6 +623,9 @@ namespace dsk_tools {
             } else
             if (fsize == 512*18*80*2) {
                 type_id = "TYPE_FAT:PC-1440";
+            } else
+            if (const char * rt11 = rt11_volume_of_any_size(*file, fsize)) {
+                type_id = rt11;
             } else
                 return Result::error(ErrorCode::DetectError, QT_TRANSLATE_NOOP("errors", "Invalid file size for DSK format"));
 
