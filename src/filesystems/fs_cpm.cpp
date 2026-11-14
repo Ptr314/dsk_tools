@@ -109,13 +109,14 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         const auto SPT = static_cast<uint16_t>(seclen * sectrk / 128);
         const auto BSH = static_cast<uint8_t>(n - 7);
         const auto BLM = static_cast<uint8_t>((1u << BSH) - 1u);                       // BLS/128 - 1
-        auto DSM = static_cast<uint16_t>((tracks - OFF) * heads * sectrk * seclen / BLS - 1);
+        const auto last_block = static_cast<uint16_t>((tracks - OFF) * heads * sectrk * seclen / BLS - 1);
+        auto DSM = last_block;
         // A disk may use fewer blocks than its tracks hold (the parameter block in the boot
         // sector of Orion and Korvet disks says so): "dsm" lowers the highest block number,
-        // so that put_file() does not take blocks the disk's own system does not count
+        // so that put_file() does not take blocks the disk's own system does not count.
+        // Reading still goes up to last_block: another tool may have put a file there
         unsigned dsm_limit = 0;
-        if (!get_map_value(diskdef.int_params, std::string("dsm"), dsm_limit, 0, false))
-            return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "CP/M disk definition: dsm is incorrect"));
+        get_map_value(diskdef.int_params, std::string("dsm"), dsm_limit, 0, false);
         if (dsm_limit != 0 && dsm_limit < DSM)
             DSM = static_cast<uint16_t>(dsm_limit);
         // CP/M 2.2 standard EXM: DSM<256 -> BLS/1024-1, else BLS/2048-1
@@ -137,6 +138,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         const auto AL1 = static_cast<uint8_t>(AL_word & 0xFFu);
 
         DPB = {SPT, BSH, BLM, EXM, DSM, DRM, AL0, AL1, CKS, OFF};
+        m_last_block = last_block;
 
         std::string cm_name;
         if (get_map_value(diskdef.str_params, std::string("charmap"), cm_name, "", false)) {
@@ -165,6 +167,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 16,          // CKS
                 3            // OFF
             };
+            m_last_block = DPB.DSM;
         } else {
             if (type_id.rfind("TYPE_CPM:", 0) == 0) {
                 const auto res= fill_dpb(type_id);
@@ -294,7 +297,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                     const auto de = reinterpret_cast<const CPM_DIR_ENTRY *>(f.metadata.data() + i * sizeof(CPM_DIR_ENTRY));
                     for (int idx = 0; idx < (wide ? 8 : 16); idx++) {
                         const unsigned AL = block_number(*de, wide, idx);
-                        if (AL != 0 && AL <= DPB.DSM) {
+                        if (AL != 0 && AL <= m_last_block) {
                             for (int k = 0; k < spb; k++) {
                                 const int sector_index = AL * spb + k + index_shift;
                                 unsigned head, track;
@@ -428,7 +431,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                 const unsigned AL = block_number(*dir_entry, wide, idx);
                 if (AL != 0)  {
                     // A damaged entry (or a wrong geometry) may point past the disk
-                    if (AL > DPB.DSM) return Result::error(ErrorCode::ReadError);
+                    if (AL > m_last_block) return Result::error(ErrorCode::ReadError);
                     for (int k=0; k<spb; k++) {
                         const int sector_index = AL*spb + k + index_shift;
                         int head, track;
@@ -1194,7 +1197,7 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
                        | (static_cast<unsigned>(de->AL[idx * 2 + 1]) << 8))
                     : static_cast<unsigned>(de->AL[idx]);
                 if (AL == 0) continue;                                  // unallocated slot
-                if (AL > DPB.DSM) continue;                             // out-of-range block number
+                if (AL > m_last_block) continue;                        // out-of-range block number
 
                 for (unsigned k = 0; k < spb; k++) {
                     const unsigned sector_index = AL * spb + k + index_shift;

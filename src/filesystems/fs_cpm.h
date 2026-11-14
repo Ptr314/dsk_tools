@@ -47,6 +47,7 @@ namespace dsk_tools {
     {
     protected:
         CPM_DPB DPB{};
+        uint16_t m_last_block = 0;      // The highest block the tracks hold; DPB.DSM may be lower
         std::string m_filesystem_id;
         DiskDefs m_diskdefs;
         CharmapInfo m_charmap = {};
