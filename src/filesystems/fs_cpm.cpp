@@ -109,7 +109,15 @@ fsCPM::fsCPM(diskImage * image, const std::string &filesystem_id, const DiskDefs
         const auto SPT = static_cast<uint16_t>(seclen * sectrk / 128);
         const auto BSH = static_cast<uint8_t>(n - 7);
         const auto BLM = static_cast<uint8_t>((1u << BSH) - 1u);                       // BLS/128 - 1
-        const auto DSM = static_cast<uint16_t>((tracks - OFF) * heads * sectrk * seclen / BLS - 1);
+        auto DSM = static_cast<uint16_t>((tracks - OFF) * heads * sectrk * seclen / BLS - 1);
+        // A disk may use fewer blocks than its tracks hold (the parameter block in the boot
+        // sector of Orion and Korvet disks says so): "dsm" lowers the highest block number,
+        // so that put_file() does not take blocks the disk's own system does not count
+        unsigned dsm_limit = 0;
+        if (!get_map_value(diskdef.int_params, std::string("dsm"), dsm_limit, 0, false))
+            return Result::error(ErrorCode::OpenBadFormat, QT_TRANSLATE_NOOP("errors", "CP/M disk definition: dsm is incorrect"));
+        if (dsm_limit != 0 && dsm_limit < DSM)
+            DSM = static_cast<uint16_t>(dsm_limit);
         // CP/M 2.2 standard EXM: DSM<256 -> BLS/1024-1, else BLS/2048-1
         const auto  EXM = static_cast<uint8_t>(
             (DSM < 256)
